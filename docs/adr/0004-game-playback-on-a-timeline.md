@@ -1,7 +1,7 @@
 # 0004. Game playback on a timeline
 
 Date: 2026-10-11
-Status: Accepted
+Status: Superseded by [0007](0007-game-playback-on-a-running-clock.md)
 
 ## Context
 

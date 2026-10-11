@@ -20,7 +20,7 @@ import { Empty, FormArrow, Loading, Ovr, Screen, Section } from "../components/U
 import { clock, cx, ROLE_NAMES, ROLES, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useClock, useThinkingTime } from "../lib/useClock";
-import { readSpeed, useTimeline, writeSpeed } from "../lib/useTimeline";
+import { readSpeed, SPEEDS, useGameClock, writeSpeed } from "../lib/useTimeline";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
 import { SeriesReport, teamsOf } from "./MatchDetailScreen";
@@ -720,13 +720,9 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
 
 // ---------- the game ----------
 
-function beatsFor(events: TimelineEvent[]): { ms: number }[] {
-  return events.map((e, i) => {
-    const next = events[i + 1];
-    const gap = next ? next.t - e.t : 60;
-    return { ms: Math.max(220, Math.min(1500, gap * 9)) };
-  });
-}
+// At 1x the game clock runs nine times faster than real time: a game minute takes about 6.7
+// seconds and a 30-minute game about three and a half minutes. Faster speeds multiply that.
+const GAME_SECONDS_PER_SECOND = 9;
 
 function ResultStage({ view, onFinished, onRevealed }: { view: LiveView; onFinished: (id: string) => void; onRevealed: () => void }) {
   const { career, act, busy } = useCareer();
@@ -754,24 +750,30 @@ const EVENT_ICON: Record<string, string> = {
 
 function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; data: GameView; busy: boolean; onNext: () => void; onRevealed: () => void }) {
   const events = data.timeline!.events;
-  const beats = useMemo(() => beatsFor(events), [events]);
+  const end = events[events.length - 1]?.t ?? 0;
   const [speed, setSpeed] = useState(readSpeed());
-  const timeline = useTimeline(beats, speed);
+  const timeline = useGameClock(end, speed * GAME_SECONDS_PER_SECOND);
   useEffect(() => {
     if (timeline.done) onRevealed();
   }, [timeline.done, onRevealed]);
-  const current = events[timeline.index];
-  const shown = events.slice(0, timeline.index + 1).reverse();
-  const minute = Math.floor((current?.t ?? 0) / 60);
+  // Every event whose time the clock has reached is on screen.
+  const reached = useMemo(() => {
+    let n = 0;
+    while (n < events.length && events[n].t <= timeline.t) n += 1;
+    return n;
+  }, [events, timeline.t]);
+  const current = events[reached - 1] as TimelineEvent | undefined;
+  const shown = events.slice(0, reached).reverse();
+  const minute = Math.floor(timeline.t / 60);
   const counts = useMemo(() => {
-    const upTo = events.slice(0, timeline.index + 1);
+    const upTo = events.slice(0, reached);
     const count = (kinds: string[], side: Side) => upTo.filter((e) => kinds.includes(e.kind) && e.side === side).length;
     return {
       towers: [count(["tower"], "blue"), count(["tower"], "red")],
       dragons: [count(["dragon", "soul"], "blue"), count(["dragon", "soul"], "red")],
       barons: [count(["baron"], "blue"), count(["baron"], "red")],
     };
-  }, [events, timeline.index]);
+  }, [events, reached]);
   const record = data.game;
   const seriesOver = Math.max(...view.match.score) >= Math.floor(view.match.best_of / 2) + 1;
   const blueTeam = view.blue.team;
@@ -794,7 +796,7 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
           </Group>
           <Text className={cx(classes.bigKills, "side-blue")}>{current?.score[0] ?? 0}</Text>
           <Stack gap={0} align="center">
-            <Text className={classes.clock}>{clock(current?.t ?? 0)}</Text>
+            <Text className={classes.clock}>{clock(Math.floor(timeline.t))}</Text>
             <Text fz="xs" c="dimmed">
               🗼 {counts.towers[0]}-{counts.towers[1]} · 🐉 {counts.dragons[0]}-{counts.dragons[1]} · 👾 {counts.barons[0]}-{counts.barons[1]}
             </Text>
@@ -809,7 +811,7 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
         </Box>
         <GoldGraph gold={data.timeline!.gold} upTo={timeline.done ? undefined : minute} height={140} />
         <Group justify="space-between" mt="xs">
-          <SegmentedControl size="xs" value={String(speed)} onChange={changeSpeed} data={["1", "2", "4"].map((v) => ({ value: v, label: `${v}×` }))} />
+          <SegmentedControl size="xs" value={String(speed)} onChange={changeSpeed} data={SPEEDS.map((v) => ({ value: String(v), label: `${v}×` }))} />
           {!timeline.done && (
             <Button size="xs" variant="subtle" leftSection={<IconBolt size={14} />} onClick={timeline.skip}>
               Skip to the end
@@ -821,7 +823,7 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
       {!timeline.done ? (
         <Paper p={0} className={classes.feed}>
           {shown.slice(0, 14).map((e, i) => (
-            <Group key={events.length - i} gap="md" wrap="nowrap" className={cx(classes.event, i === 0 && classes.latest)}>
+            <Group key={reached - i} gap="md" wrap="nowrap" className={cx(classes.event, i === 0 && classes.latest)}>
               <Text fz="xs" c="dimmed" w={44}>
                 {clock(e.t)}
               </Text>
@@ -833,6 +835,19 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
               </Text>
             </Group>
           ))}
+          {shown.length < 14 && (
+            <Group gap="md" wrap="nowrap" className={cx(classes.event, shown.length === 0 && classes.latest)}>
+              <Text fz="xs" c="dimmed" w={44}>
+                {clock(0)}
+              </Text>
+              <Text w={22} ta="center">
+                •
+              </Text>
+              <Text fz="sm" fw={shown.length === 0 ? 700 : 500}>
+                Minions are spawning. {blueTeam.tag} on blue side, {redTeam.tag} on red.
+              </Text>
+            </Group>
+          )}
         </Paper>
       ) : (
         <>

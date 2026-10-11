@@ -74,7 +74,7 @@ The other teams pick one at a time, a second or two each, so you can watch the b
    - **The grid.** It badges every champion your players have high mastery on. Champions already played in the series are locked under fearless draft.
    - **Arrows.** On your turn a green arrow in a champion's corner marks a good pick or ban, a red one a bad pick here. Two arrows mean very good or very bad. Hovering shows every reason with its value: the player's comfort, the patch, the lane against the enemy pick, what the composition needs, combos. Champions that fit none of your open roles are faded.
    - **Compositions.** Once the draft is done, each side's composition notes appear: power curve, champion combos, missing damage or frontline.
-3. **The game.** The timeline plays back with a clock, kills, towers, drakes, Barons and a live gold graph, at 1×, 2× or 4×, or you can skip to the end. The series score stays hidden until the game is over.
+3. **The game.** A running game clock plays the game back with kills, towers, drakes, Barons and a live gold graph. At 1× a 30-minute game takes about three and a half minutes. It can also run at 2×, 5× or 10×, or skip to the end. The series score stays hidden until the game is over.
 4. **Result.** A scoreboard with champion icons, photos, KDA, CS, damage and ratings, plus the MVP. Then the next game or the end of the series.
 
 ## Structure
@@ -87,7 +87,7 @@ src/
 ├── screens/        one per route inside a career
 ├── components/     Img (fallback chain), team logos, player photos, champion art, ratings, match card,
 │                   standings, game report, gold graph, contract talks
-├── lib/            formatting, art URLs, useApi, useTimeline
+├── lib/            formatting, art URLs, useApi, the game clock (useTimeline), turn clocks (useClock)
 ├── theme.ts        Mantine theme
 └── styles/         global.css: page background and the few colours Mantine has no slot for
 scripts/fetch-art.mjs   champion and role art download

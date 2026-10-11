@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const SPEED_KEY = "leagueManager.playbackSpeed";
+export const SPEEDS = [1, 2, 5, 10];
 
 export function readSpeed(): number {
   try {
     const value = Number(localStorage.getItem(SPEED_KEY));
-    return [1, 2, 4].includes(value) ? value : 1;
+    return SPEEDS.includes(value) ? value : 1;
   } catch {
     return 1;
   }
@@ -20,27 +21,36 @@ export function writeSpeed(speed: number): void {
 }
 
 /**
- * Steps through a list of beats, each shown for its own duration. `index` is the latest
- * beat on screen, `done` turns true once the last one has had its time. Same idea as
- * riftlike's playback, so a game can be skipped or sped up but never changes.
+ * A game clock in game seconds that runs from 0 to `end` at `rate` game seconds per real
+ * second. Changing the rate keeps the time already played, and `skip` jumps to the end.
+ * The game itself is decided before playback starts, so none of this can change it.
  */
-export function useTimeline(beats: { ms: number }[], speed: number) {
-  const [step, setStep] = useState(0);
-
-  useEffect(() => setStep(0), [beats]);
+export function useGameClock(end: number, rate: number) {
+  const [t, setT] = useState(0);
+  const played = useRef(0);
 
   useEffect(() => {
-    if (step >= beats.length) return;
-    const timer = window.setTimeout(() => setStep((s) => s + 1), beats[step].ms / speed);
-    return () => window.clearTimeout(timer);
-  }, [step, beats, speed]);
+    played.current = 0;
+    setT(0);
+  }, [end]);
 
-  const skip = useCallback(() => setStep(beats.length), [beats.length]);
+  useEffect(() => {
+    if (played.current >= end) return;
+    let last = performance.now();
+    const timer = window.setInterval(() => {
+      const now = performance.now();
+      played.current = Math.min(end, played.current + ((now - last) / 1000) * rate);
+      last = now;
+      setT(played.current);
+      if (played.current >= end) window.clearInterval(timer);
+    }, 100);
+    return () => window.clearInterval(timer);
+  }, [end, rate]);
 
-  return {
-    index: Math.min(step, beats.length - 1),
-    done: step >= beats.length,
-    progress: beats.length ? Math.min(1, step / beats.length) : 1,
-    skip,
-  };
+  const skip = useCallback(() => {
+    played.current = end;
+    setT(end);
+  }, [end]);
+
+  return { t, done: t >= end, skip };
 }

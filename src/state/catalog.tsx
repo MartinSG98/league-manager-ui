@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { api } from "../api/client";
-import type { Catalog, Champion } from "../api/types";
+import type { Catalog, Champion, LeagueInfo } from "../api/types";
 import { OfflineScreen } from "../components/OfflineScreen";
+import { Loading } from "../components/Ui";
 
 interface CatalogContextValue extends Catalog {
   champion: Record<string, Champion>;
+  league: Record<string, LeagueInfo>;
 }
 
 const CatalogContext = createContext<CatalogContextValue | null>(null);
@@ -25,12 +27,19 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   useEffect(load, [load]);
 
   const value = useMemo(
-    () => (catalog ? { ...catalog, champion: Object.fromEntries(catalog.champions.map((c) => [c.id, c])) } : null),
+    () =>
+      catalog
+        ? {
+            ...catalog,
+            champion: Object.fromEntries(catalog.champions.map((c) => [c.id, c])),
+            league: Object.fromEntries(catalog.leagues.map((l) => [l.id, l])),
+          }
+        : null,
     [catalog],
   );
 
   if (failed) return <OfflineScreen onRetry={load} />;
-  if (!value) return <div className="page center muted">Loading the 2026 season…</div>;
+  if (!value) return <Loading text="Loading the 2026 season…" />;
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 }
 

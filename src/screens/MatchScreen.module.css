@@ -1,0 +1,226 @@
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 22px;
+  background:
+    linear-gradient(90deg, rgba(78, 156, 255, 0.12), transparent 30%, transparent 70%, rgba(255, 90, 95, 0.12)),
+    #0d1320;
+}
+
+/* ---------- champion select ---------- */
+
+.selectBody {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr) 230px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .selectBody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.column {
+  position: sticky;
+  top: 84px;
+}
+
+.pickSlot {
+  position: relative;
+  height: 92px;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: linear-gradient(90deg, rgba(78, 156, 255, 0.12), #0c121e);
+}
+
+.pickRed {
+  background: linear-gradient(270deg, rgba(255, 90, 95, 0.12), #0c121e);
+}
+
+.pickWaiting {
+  border-color: var(--gold);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 16px rgba(200, 170, 110, 0.45);
+  }
+}
+
+.pickArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+}
+
+.pickShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(7, 10, 18, 0.95) 0%, rgba(7, 10, 18, 0.25) 70%);
+}
+
+.pickInfo {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+}
+
+.emptyBan {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  border: 1px dashed #3b4661;
+  border-radius: 4px;
+}
+
+.turn {
+  background: #0d1320;
+}
+
+.turnActive {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(200, 170, 110, 0.18);
+}
+
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: #0a0f19;
+}
+
+.suggestion:hover:not(:disabled) {
+  border-color: var(--gold);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 6px;
+  padding: 10px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 2px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.tile:hover:not(:disabled) {
+  border-color: #3b4661;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tile:disabled {
+  cursor: default;
+}
+
+.tileSelected {
+  border-color: var(--gold);
+  background: rgba(200, 170, 110, 0.12);
+}
+
+.mastery {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--gold);
+  color: #1a1406;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.lock {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  border-color: var(--gold);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  background: #111827;
+}
+
+.ready {
+  background:
+    radial-gradient(80% 100% at 50% 0%, rgba(200, 170, 110, 0.12), transparent 70%),
+    #0d1320;
+}
+
+/* ---------- the game ---------- */
+
+.scoreboard {
+  background:
+    linear-gradient(90deg, rgba(78, 156, 255, 0.1), transparent 35%, transparent 65%, rgba(255, 90, 95, 0.1)),
+    #0d1320;
+}
+
+.scoreRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto 1fr;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 8px;
+}
+
+.bigKills {
+  font-family: var(--font-display);
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.clock {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.feed {
+  overflow: hidden;
+}
+
+.event {
+  padding: 7px 16px;
+  border-bottom: 1px solid rgba(34, 44, 66, 0.6);
+  opacity: 0.65;
+}
+
+.latest {
+  opacity: 1;
+  background: rgba(200, 170, 110, 0.08);
+}
+
+.verdict {
+  background: #0d1320;
+}
+
+.won {
+  border-color: #3ee08f;
+  background: radial-gradient(80% 120% at 50% 0%, rgba(62, 224, 143, 0.14), transparent 70%), #0d1320;
+}
+
+.lost {
+  border-color: #ff5a5f;
+  background: radial-gradient(80% 120% at 50% 0%, rgba(255, 90, 95, 0.14), transparent 70%), #0d1320;
+}

@@ -1,18 +1,21 @@
+import { Badge, Box, Button, Grid, Group, Paper, ScrollArea, SegmentedControl, SimpleGrid, Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
+import { IconBolt, IconPlayerPlayFilled, IconPlayerTrackNext, IconRobot, IconSearch, IconSwords } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { Champion, GameView, LiveView, Role, Side, SideView, Suggestion, TimelineEvent } from "../api/types";
-import { ChampIcon, Flag, Form, Loading, Ovr, RoleTag, TeamBadge } from "../components/Bits";
 import { GameReport } from "../components/GameReport";
 import { GoldGraph } from "../components/GoldGraph";
+import { ChampIcon, ChampPortrait, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
+import { Empty, FormArrow, Loading, Ovr, Screen, Section } from "../components/Ui";
 import { clock, cx, ROLES, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { readSpeed, useTimeline, writeSpeed } from "../lib/useTimeline";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
 import { SeriesReport, teamsOf } from "./MatchDetailScreen";
-import styles from "./MatchScreen.module.css";
+import classes from "./MatchScreen.module.css";
 
 export function MatchScreen() {
   const { career, revision } = useCareer();
@@ -23,11 +26,9 @@ export function MatchScreen() {
   if (!career.live) {
     if (finished) return <FinishedSeries matchId={finished} />;
     return (
-      <div className="screen">
-        <div className="empty">
-          No match today. {career.next_match ? "Press Continue to go to the next match day." : ""}
-        </div>
-      </div>
+      <Screen>
+        <Empty>No match today. {career.next_match ? "Press Continue to go to the next match day." : ""}</Empty>
+      </Screen>
     );
   }
   if (!live.data) return <Loading text="Walking onto the stage…" />;
@@ -37,12 +38,12 @@ export function MatchScreen() {
   const hideLast = view.phase === "result" && revealed !== gameKey;
 
   return (
-    <div className="screen">
+    <Screen>
       <SeriesHeader view={view} hideLast={hideLast} />
       {view.phase === "lineup" && <LineupStage view={view} onFinished={setFinished} />}
       {(view.phase === "draft" || view.phase === "ready") && <ChampSelectStage view={view} onFinished={setFinished} />}
       {view.phase === "result" && <ResultStage view={view} onFinished={setFinished} onRevealed={() => setRevealed(gameKey)} />}
-    </div>
+    </Screen>
   );
 }
 
@@ -54,26 +55,35 @@ function SeriesHeader({ view, hideLast }: { view: LiveView; hideLast: boolean })
   const score: [number, number] = [...m.score];
   if (hideLast && last) score[last.winner === m.home?.id ? 0 : 1] -= 1;
   return (
-    <div className={cx("panel", styles.header)}>
-      <div className={styles.headTeam}>
-        <TeamBadge team={m.home} name size="lg" />
-      </div>
-      <div className={styles.headMid}>
-        <div className="eyebrow">
-          {m.competition_name} · {m.label}
-        </div>
-        <div className={styles.headScore}>
-          {score[0]} <span className="muted">–</span> {score[1]}
-        </div>
-        <div className="muted">
-          Game {view.game} · Bo{m.best_of}
-          {m.fearless && " · fearless draft"}
-        </div>
-      </div>
-      <div className={cx(styles.headTeam, styles.headRight)}>
-        <TeamBadge team={m.away} name size="lg" />
-      </div>
-    </div>
+    <Paper className={classes.header} mb="lg">
+      <Group gap="md" wrap="nowrap">
+        <TeamLogo team={m.home} size={64} />
+        <Text className="display" fz={28} truncate>
+          {m.home?.name}
+        </Text>
+      </Group>
+      <Stack gap={2} align="center">
+        <Group gap={6}>
+          <LeagueLogo logo={m.competition_logo} name={m.competition_name} size={18} />
+          <Text fz="xs" c="dimmed" tt="uppercase" fw={700} lts="0.08em">
+            {m.competition_name} · {m.label}
+          </Text>
+        </Group>
+        <Text className="display" fz={52} lh={1}>
+          {score[0]} <Text span c="dimmed" inherit>:</Text> {score[1]}
+        </Text>
+        <Text fz="xs" c="dimmed">
+          Game {view.game} · best of {m.best_of}
+          {m.fearless && " · fearless"}
+        </Text>
+      </Stack>
+      <Group gap="md" wrap="nowrap" justify="flex-end">
+        <Text className="display" fz={28} truncate ta="right">
+          {m.away?.name}
+        </Text>
+        <TeamLogo team={m.away} size={64} />
+      </Group>
+    </Paper>
   );
 }
 
@@ -81,8 +91,7 @@ function SeriesHeader({ view, hideLast }: { view: LiveView; hideLast: boolean })
 
 function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: string) => void }) {
   const { act, busy } = useCareer();
-  const ours = view[view.our_side];
-  const theirs = view[view.our_side === "blue" ? "red" : "blue"];
+  const theirs: Side = view.our_side === "blue" ? "red" : "blue";
 
   async function simSeries() {
     const result = await act({ type: "sim_series" });
@@ -90,74 +99,79 @@ function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: st
   }
 
   return (
-    <>
-      <div className="grid-2">
-        <LineupCard side={view.our_side} sideView={ours} label="Your lineup" />
-        <LineupCard side={view.our_side === "blue" ? "red" : "blue"} sideView={theirs} label="Opponent" />
-      </div>
-      <div className={cx("panel", styles.actions)}>
-        <div className="muted">
-          Change the starting five or tactics on the Squad screen before champion select starts.
-          {view.select.locked.length > 0 && ` Fearless: ${view.select.locked.length} champions are already used in this series.`}
-        </div>
-        <span className="spacer" />
-        <button className="btn btn-ghost" disabled={busy} onClick={simSeries}>
-          Simulate the series
-        </button>
-        <button className="btn btn-ghost" disabled={busy} onClick={() => act({ type: "auto_select" })}>
-          Auto draft
-        </button>
-        <button className="btn btn-gold" disabled={busy} onClick={() => act({ type: "start_champ_select" })}>
-          Champion select ▸
-        </button>
-      </div>
-    </>
+    <Stack gap="lg">
+      <Grid gap="lg">
+        <Grid.Col span={{ base: 12, lg: 6 }}>
+          <LineupCard side={view.our_side} sideView={view[view.our_side]} label="Your lineup" />
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, lg: 6 }}>
+          <LineupCard side={theirs} sideView={view[theirs]} label="Opponent" />
+        </Grid.Col>
+      </Grid>
+      <Paper p="md">
+        <Group justify="space-between" wrap="wrap">
+          <Text fz="sm" c="dimmed" maw={520}>
+            Change the starting five or tactics on the Squad screen before champion select starts.
+            {view.select.locked.length > 0 && ` Fearless: ${view.select.locked.length} champions are already used in this series.`}
+          </Text>
+          <Group>
+            <Button variant="default" leftSection={<IconPlayerTrackNext size={16} />} loading={busy} onClick={simSeries}>
+              Simulate the series
+            </Button>
+            <Button variant="light" color="hextech" leftSection={<IconRobot size={16} />} disabled={busy} onClick={() => act({ type: "auto_select" })}>
+              Auto draft
+            </Button>
+            <Button size="md" leftSection={<IconSwords size={18} />} disabled={busy} onClick={() => act({ type: "start_champ_select" })}>
+              Champion select
+            </Button>
+          </Group>
+        </Group>
+      </Paper>
+    </Stack>
   );
 }
 
 function LineupCard({ side, sideView, label }: { side: Side; sideView: SideView; label: string }) {
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <span className="panel-title">
+    <Section
+      title={
+        <span>
           {label} · <span className={`side-${side}`}>{side} side</span>
         </span>
-        <span className="muted">
-          strength <strong>{sideView.strength}</strong> · chemistry{" "}
-          <strong className={sideView.chemistry.score >= 0 ? "gain" : "loss"}>{signed(sideView.chemistry.score, 1)}</strong>
-        </span>
-      </div>
-      <table className="table">
-        <tbody>
-          {sideView.lineup.map((p) => (
-            <tr key={p.id}>
-              <td>
-                <RoleTag role={p.slot} />
-              </td>
-              <td>
-                <Flag country={p.country} /> <strong>{p.name}</strong>
-              </td>
-              <td className="num">
-                <Ovr value={p.overall} />
-              </td>
-              <td>
-                <Form value={p.form} />
-              </td>
-              <td>
-                <div className="row" style={{ gap: 3 }}>
-                  {p.signatures.map((c) => (
-                    <ChampIcon key={c} id={c} size={22} />
-                  ))}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="panel-body muted" style={{ fontSize: 13 }}>
+      }
+      right={
+        <Text fz="xs" c="dimmed">
+          strength <b>{sideView.strength}</b> · chemistry{" "}
+          <b className={sideView.chemistry.score >= 0 ? "gain" : "loss"}>{signed(sideView.chemistry.score, 1)}</b>
+        </Text>
+      }
+    >
+      <SimpleGrid cols={5} spacing="sm">
+        {sideView.lineup.map((p) => (
+          <Stack key={p.id} gap={4} align="center">
+            <PlayerPhoto photo={p.photo} name={p.name} size={64} ring={sideView.team.color} />
+            <Group gap={4} wrap="nowrap">
+              <RoleIcon role={p.slot} size={14} />
+              <Text fw={700} fz="sm" truncate maw={80}>
+                {p.name}
+              </Text>
+            </Group>
+            <Group gap={6}>
+              <Ovr value={p.overall} size="sm" />
+              <FormArrow value={p.form} />
+            </Group>
+            <Group gap={2}>
+              {p.signatures.map((c) => (
+                <ChampIcon key={c} id={c} size={20} />
+              ))}
+            </Group>
+          </Stack>
+        ))}
+      </SimpleGrid>
+      <Text fz="xs" c="dimmed" mt="md">
         {sideView.tactics.style} game plan · jungle {sideView.tactics.lane} · {sideView.tactics.objectives}
-      </div>
-    </section>
+      </Text>
+    </Section>
   );
 }
 
@@ -186,10 +200,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
   function choose(c: Champion) {
     if (!ourTurn || taken.has(c.id)) return;
     setSelected(c.id);
-    if (turn?.kind === "pick") {
-      const fit = openRoles.find((r) => c.roles.includes(r)) ?? openRoles[0] ?? null;
-      setRole(fit);
-    }
+    if (turn?.kind === "pick") setRole(openRoles.find((r) => c.roles.includes(r)) ?? openRoles[0] ?? null);
   }
 
   async function lockIn() {
@@ -200,7 +211,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
     setRole(null);
   }
 
-  async function useSuggestion(sg: Suggestion) {
+  async function take(sg: Suggestion) {
     if (turn?.kind === "ban") await act({ type: "ban", champion: sg.champion });
     else if (sg.role) await act({ type: "pick", champion: sg.champion, role: sg.role });
   }
@@ -216,159 +227,190 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
   };
 
   return (
-    <div className={styles.select}>
+    <Stack gap="md">
       <BanRow view={view} />
-      <div className={styles.selectBody}>
+      <Box className={classes.selectBody}>
         <PickColumn side="blue" view={view} />
-        <div className={styles.centre}>
+        <Stack gap="md" miw={0}>
           {view.phase === "ready" ? (
-            <div className={cx("panel", styles.ready)}>
-              <div className="eyebrow">Champion select complete</div>
-              <h2 className="screen-title">Ready to play game {view.game}</h2>
-              <div className={styles.comps}>
+            <Paper p="xl" className={classes.ready}>
+              <Text className="eyebrow" ta="center">
+                Champion select complete
+              </Text>
+              <Text className="display" fz={40} ta="center">
+                Ready for game {view.game}
+              </Text>
+              <SimpleGrid cols={2} spacing="lg" mt="md">
                 {(["blue", "red"] as Side[]).map((side) => {
                   const comp = view.compositions[side];
                   return (
-                    <div key={side} className={styles.comp}>
-                      <div className={`eyebrow side-${side}`}>
-                        {view[side].team.tag} composition {comp && <strong className={comp.value >= 0 ? "gain" : "loss"}>{signed(comp.value, 1)}</strong>}
-                      </div>
+                    <Stack key={side} gap={4}>
+                      <Group gap={6}>
+                        <TeamLogo team={view[side].team} size={22} />
+                        <Text className={`eyebrow side-${side}`}>composition</Text>
+                        {comp && (
+                          <Text fw={800} className={comp.value >= 0 ? "gain" : "loss"}>
+                            {signed(comp.value, 1)}
+                          </Text>
+                        )}
+                      </Group>
                       {comp?.notes.map((n) => (
-                        <div key={n} className="muted">
+                        <Text key={n} fz="sm" c="dimmed">
                           {n}
-                        </div>
+                        </Text>
                       ))}
-                    </div>
+                    </Stack>
                   );
                 })}
-              </div>
-              <div className="row" style={{ justifyContent: "center", marginTop: 14 }}>
-                <button className="btn btn-ghost" disabled={busy} onClick={simSeries}>
+              </SimpleGrid>
+              <Group justify="center" mt="xl">
+                <Button variant="default" leftSection={<IconPlayerTrackNext size={16} />} loading={busy} onClick={simSeries}>
                   Simulate the rest
-                </button>
-                <button className="btn btn-gold" disabled={busy} onClick={() => act({ type: "play_game" })}>
-                  Play game ▸
-                </button>
-              </div>
-            </div>
+                </Button>
+                <Button size="lg" leftSection={<IconPlayerPlayFilled size={18} />} disabled={busy} onClick={() => act({ type: "play_game" })}>
+                  Play game
+                </Button>
+              </Group>
+            </Paper>
           ) : (
             <>
-              <div className={cx("panel", styles.turn)}>
-                {ourTurn ? (
-                  <span>
-                    Your {turn?.kind} · step {s.step + 1} of 20
-                  </span>
-                ) : (
-                  <span className="muted">Waiting for the opponent…</span>
-                )}
-                <span className="spacer" />
-                <button className="btn btn-ghost btn-small" disabled={busy} onClick={() => act({ type: "auto_select" })}>
-                  Let the assistant finish
-                </button>
-              </div>
+              <Paper p="sm" className={cx(classes.turn, ourTurn && classes.turnActive)}>
+                <Group justify="space-between">
+                  <Text fw={800} tt="uppercase" lts="0.06em" c={ourTurn ? "gold.3" : "dimmed"}>
+                    {ourTurn ? `Your ${turn?.kind}` : "Opponent is choosing…"} · step {s.step + 1} / 20
+                  </Text>
+                  <Button size="xs" variant="light" color="hextech" leftSection={<IconRobot size={14} />} disabled={busy} onClick={() => act({ type: "auto_select" })}>
+                    Let the assistant finish
+                  </Button>
+                </Group>
+              </Paper>
 
               {ourTurn && view.suggestions.length > 0 && (
-                <div className={cx("panel", styles.suggest)}>
-                  <div className="eyebrow">Assistant · best {turn?.kind === "ban" ? "bans" : "picks"}</div>
-                  <div className={styles.suggestList}>
+                <Section title={`Assistant · best ${turn?.kind === "ban" ? "bans" : "picks"}`}>
+                  <SimpleGrid cols={{ base: 2, md: 3 }} spacing="xs">
                     {view.suggestions.slice(0, 6).map((sg) => (
-                      <button key={`${sg.champion}-${sg.role ?? ""}`} className={styles.suggestion} disabled={busy} onClick={() => useSuggestion(sg)}>
-                        <ChampIcon id={sg.champion} size={34} />
-                        <span className={styles.suggestText}>
-                          <strong>{catalog.champion[sg.champion]?.name}</strong>
-                          <span className="muted">
-                            {sg.role && `${sg.role} · `}
+                      <UnstyledButton key={`${sg.champion}-${sg.role ?? ""}`} className={classes.suggestion} disabled={busy} onClick={() => take(sg)}>
+                        <ChampIcon id={sg.champion} size={40} />
+                        <Stack gap={0} miw={0}>
+                          <Group gap={4} wrap="nowrap">
+                            {sg.role && <RoleIcon role={sg.role} size={14} />}
+                            <Text fw={700} fz="sm" truncate>
+                              {catalog.champion[sg.champion]?.name}
+                            </Text>
+                          </Group>
+                          <Text fz={11} c="dimmed">
                             {turn?.kind === "ban" ? `threat ${signed(sg.threat ?? 0, 1)}` : `fit ${signed(sg.power ?? 0, 1)}`}
                             {sg.need ? ` · comp +${sg.need}` : ""}
-                          </span>
-                        </span>
-                      </button>
+                            {sg.counter ? ` · lane ${signed(sg.counter, 1)}` : ""}
+                          </Text>
+                        </Stack>
+                      </UnstyledButton>
                     ))}
-                  </div>
-                </div>
+                  </SimpleGrid>
+                </Section>
               )}
 
-              <div className={cx("panel", styles.gridPanel)}>
-                <div className="row" style={{ padding: "10px 12px", borderBottom: "1px solid var(--line)" }}>
-                  <div className="tabs">
-                    {(["ALL", ...ROLES] as const).map((r) => (
-                      <button key={r} className={cx("tab", filter === r && "active")} onClick={() => setFilter(r)}>
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                  <input className="input" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
-                </div>
-                <div className={styles.grid}>
-                  {champs.map((c) => {
-                    const off = taken.has(c.id);
-                    const best = Math.max(...openRoles.filter((r) => c.roles.includes(r)).map((r) => masteryFor(c.id, r)), 0);
-                    return (
-                      <button key={c.id} className={cx(styles.tile, selected === c.id && styles.tileSelected, off && styles.tileOff)}
-                        disabled={off || !ourTurn || busy} onClick={() => choose(c)} title={c.name}>
-                        <ChampIcon id={c.id} size={48} dim={off} />
-                        {best >= 50 && !off && <span className={styles.mastery}>{best}</span>}
-                        <span className={styles.tileName}>{c.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <Section pad={false}>
+                <Group gap="sm" p="sm" style={{ borderBottom: "1px solid var(--line)" }}>
+                  <SegmentedControl
+                    size="xs"
+                    value={filter}
+                    onChange={(v) => setFilter(v as Role | "ALL")}
+                    data={[{ value: "ALL", label: "All" }, ...ROLES.map((r) => ({ value: r, label: <RoleIcon role={r} size={14} /> }))]}
+                  />
+                  <TextInput size="xs" placeholder="Search champion" leftSection={<IconSearch size={14} />} value={query} onChange={(e) => setQuery(e.currentTarget.value)} />
+                </Group>
+                <ScrollArea h={380}>
+                  <Box className={classes.grid}>
+                    {champs.map((c) => {
+                      const off = taken.has(c.id);
+                      const best = Math.max(0, ...openRoles.filter((r) => c.roles.includes(r)).map((r) => masteryFor(c.id, r)));
+                      return (
+                        <UnstyledButton key={c.id} className={cx(classes.tile, selected === c.id && classes.tileSelected)} disabled={off || !ourTurn || busy} onClick={() => choose(c)}>
+                          <ChampIcon id={c.id} size={52} dim={off} title={c.name} />
+                          {best >= 50 && !off && <span className={classes.mastery}>{best}</span>}
+                          <Text fz={10} c={off ? "dark.3" : "dimmed"} truncate maw={64}>
+                            {c.name}
+                          </Text>
+                        </UnstyledButton>
+                      );
+                    })}
+                  </Box>
+                </ScrollArea>
+              </Section>
 
               {selected && ourTurn && (
-                <div className={cx("panel", styles.lock)}>
-                  <ChampIcon id={selected} size={44} />
-                  <strong>{catalog.champion[selected]?.name}</strong>
-                  {turn?.kind === "pick" && (
-                    <div className="tabs">
-                      {openRoles.map((r) => (
-                        <button key={r} className={cx("tab", role === r && "active")} onClick={() => setRole(r)}>
-                          {r} {ourLineup[r]?.name}
-                          {!catalog.champion[selected]?.roles.includes(r) && " (off-role)"}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <span className="spacer" />
-                  <button className="btn btn-gold" disabled={busy || (turn?.kind === "pick" && !role)} onClick={lockIn}>
-                    {turn?.kind === "ban" ? "Ban" : "Lock in"}
-                  </button>
-                </div>
+                <Paper p="sm" className={classes.lock}>
+                  <Group gap="md" wrap="wrap">
+                    <ChampIcon id={selected} size={48} />
+                    <Text className="display" fz={26}>
+                      {catalog.champion[selected]?.name}
+                    </Text>
+                    {turn?.kind === "pick" && (
+                      <SegmentedControl
+                        value={role ?? undefined}
+                        onChange={(v) => setRole(v as Role)}
+                        data={openRoles.map((r) => ({
+                          value: r,
+                          label: (
+                            <Group gap={4} wrap="nowrap">
+                              <RoleIcon role={r} size={14} />
+                              <span>
+                                {ourLineup[r]?.name}
+                                {!catalog.champion[selected]?.roles.includes(r) && " (off-role)"}
+                              </span>
+                            </Group>
+                          ),
+                        }))}
+                      />
+                    )}
+                    <Box style={{ flex: 1 }} />
+                    <Button size="md" color={turn?.kind === "ban" ? "red" : "gold"} disabled={busy || (turn?.kind === "pick" && !role)} onClick={lockIn}>
+                      {turn?.kind === "ban" ? "Ban" : "Lock in"}
+                    </Button>
+                  </Group>
+                </Paper>
               )}
             </>
           )}
-        </div>
+        </Stack>
         <PickColumn side="red" view={view} />
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 }
 
 function BanRow({ view }: { view: LiveView }) {
   const s = view.select;
+  const slots = (bans: string[]) =>
+    Array.from({ length: 5 }, (_, i) => (bans[i] ? <ChampIcon key={i} id={bans[i]} size={36} dim /> : <span key={i} className={classes.emptyBan} />));
   return (
-    <div className={cx("panel", styles.bans)}>
-      <div className="row" style={{ gap: 4 }}>
-        <span className="eyebrow side-blue">Bans</span>
-        {Array.from({ length: 5 }, (_, i) =>
-          s.blue_bans[i] ? <ChampIcon key={i} id={s.blue_bans[i]} size={30} dim /> : <span key={i} className={styles.emptyBan} />,
+    <Paper p="sm">
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap={6} wrap="nowrap">
+          <Text className="eyebrow side-blue" mr={4}>
+            Bans
+          </Text>
+          {slots(s.blue_bans)}
+        </Group>
+        {s.locked.length > 0 && (
+          <Group gap={3} wrap="nowrap" visibleFrom="lg">
+            <Text className="eyebrow" mr={4}>
+              Fearless
+            </Text>
+            {s.locked.slice(0, 20).map((c) => (
+              <ChampIcon key={c} id={c} size={22} dim />
+            ))}
+          </Group>
         )}
-      </div>
-      {s.locked.length > 0 && (
-        <div className="row" style={{ gap: 3 }} title="Fearless: already played this series">
-          <span className="eyebrow">Fearless</span>
-          {s.locked.slice(0, 20).map((c) => (
-            <ChampIcon key={c} id={c} size={20} dim />
-          ))}
-        </div>
-      )}
-      <div className="row" style={{ gap: 4 }}>
-        {Array.from({ length: 5 }, (_, i) =>
-          s.red_bans[i] ? <ChampIcon key={i} id={s.red_bans[i]} size={30} dim /> : <span key={i} className={styles.emptyBan} />,
-        )}
-        <span className="eyebrow side-red">Bans</span>
-      </div>
-    </div>
+        <Group gap={6} wrap="nowrap">
+          {slots(s.red_bans)}
+          <Text className="eyebrow side-red" ml={4}>
+            Bans
+          </Text>
+        </Group>
+      </Group>
+    </Paper>
   );
 }
 
@@ -376,25 +418,41 @@ function PickColumn({ side, view }: { side: Side; view: LiveView }) {
   const catalog = useCatalog();
   const picks = side === "blue" ? view.select.blue_picks : view.select.red_picks;
   const sv = view[side];
+  const choosing = view.select.turn?.side === side && view.select.turn.kind === "pick";
   return (
-    <div className={cx("panel", styles.picks, side === "red" && styles.picksRed)}>
-      <div className="panel-head">
-        <TeamBadge team={sv.team} size="sm" />
-        <span className={`eyebrow side-${side}`}>{side === view.our_side ? "you" : "them"}</span>
-      </div>
+    <Stack gap={6} className={classes.column}>
+      <Group gap="xs" justify={side === "red" ? "flex-end" : "flex-start"} wrap="nowrap">
+        {side === "blue" && <TeamLogo team={sv.team} size={30} />}
+        <Text fw={800} className={`side-${side}`} tt="uppercase" fz="sm">
+          {side === view.our_side ? "You" : sv.team.tag}
+        </Text>
+        {side === "red" && <TeamLogo team={sv.team} size={30} />}
+      </Group>
       {sv.lineup.map((p) => {
         const champ = picks[p.slot];
         return (
-          <div key={p.id} className={styles.pickSlot}>
-            {champ ? <ChampIcon id={champ} size={46} /> : <span className={styles.emptyPick}>{p.slot}</span>}
-            <div className={styles.pickText}>
-              <span className={styles.pickPlayer}>{p.name}</span>
-              <span className="muted">{champ ? catalog.champion[champ]?.name : p.slot}</span>
-            </div>
-          </div>
+          <Box key={p.id} className={cx(classes.pickSlot, side === "red" && classes.pickRed, choosing && !champ && classes.pickWaiting)}>
+            {champ && <ChampPortrait id={champ} className={classes.pickArt} />}
+            <Box className={classes.pickShade} />
+            <Group className={classes.pickInfo} gap={8} wrap="nowrap" justify={side === "red" ? "flex-end" : "flex-start"}>
+              {side === "blue" && <PlayerPhoto photo={p.photo} name={p.name} size={32} />}
+              <Stack gap={0} align={side === "red" ? "flex-end" : "flex-start"} miw={0}>
+                <Group gap={4} wrap="nowrap">
+                  <RoleIcon role={p.slot} size={13} />
+                  <Text fw={800} fz="sm" truncate>
+                    {p.name}
+                  </Text>
+                </Group>
+                <Text fz={11} c={champ ? "gold.2" : "dimmed"} fw={champ ? 700 : 400}>
+                  {champ ? catalog.champion[champ]?.name : "picking…"}
+                </Text>
+              </Stack>
+              {side === "red" && <PlayerPhoto photo={p.photo} name={p.name} size={32} />}
+            </Group>
+          </Box>
         );
       })}
-    </div>
+    </Stack>
   );
 }
 
@@ -413,13 +471,24 @@ function ResultStage({ view, onFinished, onRevealed }: { view: LiveView; onFinis
   const game = useApi(() => api.game(career.id, view.match.id, view.game), [career.id, view.match.id, view.game]);
   if (!game.data?.timeline) return <Loading text="Loading the game…" />;
   return (
-    <Playback key={`${view.match.id}-${view.game}`} view={view} data={game.data} busy={busy} onRevealed={onRevealed}
+    <Playback
+      key={`${view.match.id}-${view.game}`}
+      view={view}
+      data={game.data}
+      busy={busy}
+      onRevealed={onRevealed}
       onNext={async () => {
         const result = await act({ type: "next_game" });
         if (result && !result.career.live) onFinished(view.match.id);
-      }} />
+      }}
+    />
   );
 }
+
+const EVENT_ICON: Record<string, string> = {
+  first_blood: "🩸", kill: "⚔", teamfight: "💥", dragon: "🐉", soul: "🐉", elder: "🐲", baron: "👾", herald: "🦀",
+  grubs: "🪲", tower: "🗼", inhibitor: "💠", nexus: "🏆", note: "•",
+};
 
 function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; data: GameView; busy: boolean; onNext: () => void; onRevealed: () => void }) {
   const events = data.timeline!.events;
@@ -434,7 +503,7 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
   const minute = Math.floor((current?.t ?? 0) / 60);
   const counts = useMemo(() => {
     const upTo = events.slice(0, timeline.index + 1);
-    const count = (kind: string[], side: Side) => upTo.filter((e) => kind.includes(e.kind) && e.side === side).length;
+    const count = (kinds: string[], side: Side) => upTo.filter((e) => kinds.includes(e.kind) && e.side === side).length;
     return {
       towers: [count(["tower"], "blue"), count(["tower"], "red")],
       dragons: [count(["dragon", "soul"], "blue"), count(["dragon", "soul"], "red")],
@@ -443,69 +512,84 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
   }, [events, timeline.index]);
   const record = data.game;
   const seriesOver = Math.max(...view.match.score) >= Math.floor(view.match.best_of / 2) + 1;
+  const blueTeam = view.blue.team;
+  const redTeam = view.red.team;
 
-  function changeSpeed(next: number) {
-    setSpeed(next);
-    writeSpeed(next);
+  function changeSpeed(next: string) {
+    setSpeed(Number(next));
+    writeSpeed(Number(next));
   }
 
   return (
-    <div className="stack">
-      <div className={cx("panel", styles.live)}>
-        <div className={styles.liveTop}>
-          <TeamBadge team={view.blue.team} size="lg" />
-          <span className={cx(styles.liveKills, "side-blue")}>{current?.score[0] ?? 0}</span>
-          <div className={styles.liveClock}>
-            <div className={styles.clock}>{clock(current?.t ?? 0)}</div>
-            <div className="muted" style={{ fontSize: 12 }}>
-              towers {counts.towers[0]}-{counts.towers[1]} · drakes {counts.dragons[0]}-{counts.dragons[1]} · barons {counts.barons[0]}-{counts.barons[1]}
-            </div>
-          </div>
-          <span className={cx(styles.liveKills, "side-red")}>{current?.score[1] ?? 0}</span>
-          <TeamBadge team={view.red.team} size="lg" />
-        </div>
-        <GoldGraph gold={data.timeline!.gold} upTo={timeline.done ? undefined : minute} height={130} />
-        <div className="row" style={{ marginTop: 6 }}>
-          <div className="tabs">
-            {[1, 2, 4].map((sp) => (
-              <button key={sp} className={cx("tab", speed === sp && "active")} onClick={() => changeSpeed(sp)}>
-                {sp}×
-              </button>
-            ))}
-          </div>
-          <span className="spacer" />
+    <Stack gap="lg">
+      <Paper p="md" className={classes.scoreboard}>
+        <Box className={classes.scoreRow}>
+          <Group gap="sm" wrap="nowrap">
+            <TeamLogo team={blueTeam} size={48} />
+            <Text fw={800} className="side-blue" visibleFrom="sm">
+              {blueTeam.tag}
+            </Text>
+          </Group>
+          <Text className={cx(classes.bigKills, "side-blue")}>{current?.score[0] ?? 0}</Text>
+          <Stack gap={0} align="center">
+            <Text className={classes.clock}>{clock(current?.t ?? 0)}</Text>
+            <Text fz="xs" c="dimmed">
+              🗼 {counts.towers[0]}-{counts.towers[1]} · 🐉 {counts.dragons[0]}-{counts.dragons[1]} · 👾 {counts.barons[0]}-{counts.barons[1]}
+            </Text>
+          </Stack>
+          <Text className={cx(classes.bigKills, "side-red")}>{current?.score[1] ?? 0}</Text>
+          <Group gap="sm" wrap="nowrap" justify="flex-end">
+            <Text fw={800} className="side-red" visibleFrom="sm">
+              {redTeam.tag}
+            </Text>
+            <TeamLogo team={redTeam} size={48} />
+          </Group>
+        </Box>
+        <GoldGraph gold={data.timeline!.gold} upTo={timeline.done ? undefined : minute} height={140} />
+        <Group justify="space-between" mt="xs">
+          <SegmentedControl size="xs" value={String(speed)} onChange={changeSpeed} data={["1", "2", "4"].map((v) => ({ value: v, label: `${v}×` }))} />
           {!timeline.done && (
-            <button className="btn btn-ghost btn-small" onClick={timeline.skip}>
+            <Button size="xs" variant="subtle" leftSection={<IconBolt size={14} />} onClick={timeline.skip}>
               Skip to the end
-            </button>
+            </Button>
           )}
-        </div>
-      </div>
+        </Group>
+      </Paper>
 
       {!timeline.done ? (
-        <section className={cx("panel", styles.feed)}>
+        <Paper p={0} className={classes.feed}>
           {shown.slice(0, 14).map((e, i) => (
-            <div key={events.length - i} className={cx(styles.event, i === 0 && styles.latest, styles[`k-${e.kind}`])}>
-              <span className="muted">{clock(e.t)}</span>
-              <span className={e.side ? `side-${e.side}` : undefined}>{e.text}</span>
-            </div>
+            <Group key={events.length - i} gap="md" wrap="nowrap" className={cx(classes.event, i === 0 && classes.latest)}>
+              <Text fz="xs" c="dimmed" w={44}>
+                {clock(e.t)}
+              </Text>
+              <Text w={22} ta="center">
+                {EVENT_ICON[e.kind] ?? "•"}
+              </Text>
+              <Text fz="sm" className={e.side ? `side-${e.side}` : undefined} fw={i === 0 ? 700 : 500}>
+                {e.text}
+              </Text>
+            </Group>
           ))}
-        </section>
+        </Paper>
       ) : (
         <>
-          <section className="panel panel-body">
+          <Paper p="lg">
             <GameReport game={record} teams={teamsOf(view.match)} />
-          </section>
-          <div className={cx("panel", styles.actions)}>
-            <span>{record.winner === view[view.our_side].team.id ? "Victory." : "Defeat."}</span>
-            <span className="spacer" />
-            <button className="btn btn-gold" disabled={busy} onClick={onNext}>
-              {seriesOver ? "Finish the series ▸" : "Next game ▸"}
-            </button>
-          </div>
+          </Paper>
+          <Paper p="md">
+            <Group justify="space-between">
+              <Badge size="xl" color={record.winner === view[view.our_side].team.id ? "teal" : "red"} variant="light">
+                {record.winner === view[view.our_side].team.id ? "Victory" : "Defeat"}
+              </Badge>
+              <Button size="md" loading={busy} rightSection={<IconPlayerPlayFilled size={16} />} onClick={onNext}>
+                {seriesOver ? "Finish the series" : "Next game"}
+              </Button>
+            </Group>
+          </Paper>
         </>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -518,20 +602,22 @@ function FinishedSeries({ matchId }: { matchId: string }) {
   if (!match.data) return <Loading />;
   const won = match.data.winner === career.team.id;
   return (
-    <div>
-      <div className={cx("panel", styles.verdict, won ? styles.won : styles.lostSeries)}>
-        <div className="eyebrow">Series over</div>
-        <h2 className="screen-title">{won ? "Victory" : "Defeat"}</h2>
-        <div className="row" style={{ justifyContent: "center" }}>
-          <Link className="btn btn-ghost" to={`/career/${career.id}`}>
-            Back to the office
-          </Link>
-          <button className="btn btn-primary" onClick={() => navigate(`/career/${career.id}/competitions/${match.data!.competition}`)}>
-            Standings
-          </button>
-        </div>
-      </div>
+    <Screen>
+      <Paper p="xl" mb="lg" className={cx(classes.verdict, won ? classes.won : classes.lost)}>
+        <Stack align="center" gap="xs">
+          <Text className="eyebrow">Series over</Text>
+          <Text className="display" fz={56} lh={1}>
+            {won ? "Victory" : "Defeat"}
+          </Text>
+          <Group mt="sm">
+            <Button component={Link} to={`/career/${career.id}`} variant="default">
+              Back to the office
+            </Button>
+            <Button onClick={() => navigate(`/career/${career.id}/competitions/${match.data!.competition}`)}>Standings</Button>
+          </Group>
+        </Stack>
+      </Paper>
       <SeriesReport match={match.data} />
-    </div>
+    </Screen>
   );
 }

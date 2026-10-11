@@ -1,8 +1,11 @@
+import { Badge, Box, Group, Progress, SimpleGrid, Stack, Table, Text } from "@mantine/core";
+import { Link } from "react-router-dom";
+
 import type { GameRecord, PlayerLine, Side, TeamRef } from "../api/types";
-import { clock, cx, ROLES } from "../lib/format";
+import { clock, ROLES } from "../lib/format";
 import { useCareer } from "../state/career";
-import { ChampIcon, PlayerLink, TeamBadge } from "./Bits";
-import styles from "./GameReport.module.css";
+import classes from "./GameReport.module.css";
+import { ChampIcon, PlayerPhoto, TeamLogo } from "./Media";
 
 /** Final scoreboard of one game: objectives, picks and bans, every player's line. */
 export function GameReport({ game, teams }: { game: GameRecord; teams: Record<string, TeamRef | null> }) {
@@ -10,113 +13,150 @@ export function GameReport({ game, teams }: { game: GameRecord; teams: Record<st
   const red = teams[game.red];
   const maxDamage = Math.max(...game.players.map((p) => p.damage));
   return (
-    <div className={styles.report}>
-      <div className={styles.header}>
+    <Stack gap="md">
+      <Box className={classes.header}>
         <SideHead team={blue} side="blue" won={game.winner === game.blue} />
-        <div className={styles.center}>
-          <div className={styles.kills}>
+        <Stack gap={0} align="center">
+          <Group gap="md" className={classes.kills}>
             <span className="side-blue">{game.kills[0]}</span>
-            <span className="muted">⚔</span>
+            <Text span c="dimmed" fz={22}>
+              ⚔
+            </Text>
             <span className="side-red">{game.kills[1]}</span>
-          </div>
-          <div className="muted">{clock(game.duration)}</div>
-        </div>
+          </Group>
+          <Text c="dimmed" fz="sm">
+            {clock(game.duration)}
+          </Text>
+        </Stack>
         <SideHead team={red} side="red" won={game.winner === game.red} />
-      </div>
+      </Box>
 
-      <div className={styles.objectives}>
+      <Group justify="center" gap={36}>
         <Objective label="Gold" blue={`${(game.gold[0] / 1000).toFixed(1)}k`} red={`${(game.gold[1] / 1000).toFixed(1)}k`} />
         <Objective label="Towers" blue={game.towers[0]} red={game.towers[1]} />
-        <Objective label="Dragons" blue={game.dragons[0]} red={game.dragons[1]} />
+        <Objective label="Drakes" blue={game.dragons[0]} red={game.dragons[1]} />
         <Objective label="Barons" blue={game.barons[0]} red={game.barons[1]} />
-      </div>
+      </Group>
 
-      <div className={styles.bans}>
-        <div className="row" style={{ gap: 4 }}>
-          <span className="eyebrow">Bans</span>
+      <Group justify="space-between">
+        <Group gap={4}>
+          <Text className="eyebrow" mr={6}>
+            Bans
+          </Text>
           {game.blue_bans.map((c) => (
-            <ChampIcon key={c} id={c} size={24} dim />
+            <ChampIcon key={c} id={c} size={26} dim />
           ))}
-        </div>
-        <div className="row" style={{ gap: 4 }}>
+        </Group>
+        <Group gap={4}>
           {game.red_bans.map((c) => (
-            <ChampIcon key={c} id={c} size={24} dim />
+            <ChampIcon key={c} id={c} size={26} dim />
           ))}
-        </div>
-      </div>
+        </Group>
+      </Group>
 
-      <div className={styles.boards}>
+      <SimpleGrid cols={{ base: 1, xl: 2 }} spacing="md">
         {(["blue", "red"] as Side[]).map((side) => {
           const team = side === "blue" ? game.blue : game.red;
           const lines = ROLES.map((r) => game.players.find((p) => p.team === team && p.role === r)).filter((p): p is PlayerLine => !!p);
           return (
-            <table key={side} className={cx("table", styles.board)}>
-              <thead>
-                <tr>
-                  <th className={`side-${side}`}>{side}</th>
-                  <th>Player</th>
-                  <th className="num">K / D / A</th>
-                  <th className="num">CS</th>
-                  <th>Damage</th>
-                  <th className="num">Rating</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table key={side} className={classes.board} verticalSpacing={6}>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th className={`side-${side}`} tt="uppercase">
+                    {side}
+                  </Table.Th>
+                  <Table.Th>Player</Table.Th>
+                  <Table.Th className="num">K / D / A</Table.Th>
+                  <Table.Th className="num">CS</Table.Th>
+                  <Table.Th>Damage</Table.Th>
+                  <Table.Th className="num">Rating</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
                 {lines.map((p) => (
                   <PlayerRow key={p.player} p={p} mvp={game.mvp === p.player} maxDamage={maxDamage} />
                 ))}
-              </tbody>
-            </table>
+              </Table.Tbody>
+            </Table>
           );
         })}
-      </div>
-    </div>
+      </SimpleGrid>
+    </Stack>
   );
 }
 
 function SideHead({ team, side, won }: { team: TeamRef | null; side: Side; won: boolean }) {
   return (
-    <div className={cx(styles.sideHead, side === "red" && styles.right)}>
-      <span className={cx("chip", side === "blue" ? "chip-teal" : "chip-red")}>{side}</span>
-      <TeamBadge team={team} name size="lg" />
-      {won && <span className="chip chip-gold">Victory</span>}
-    </div>
+    <Group gap="sm" justify={side === "red" ? "flex-end" : "flex-start"} wrap="nowrap" style={{ flexDirection: side === "red" ? "row-reverse" : "row" }}>
+      <TeamLogo team={team} size={56} />
+      <Stack gap={2} align={side === "red" ? "flex-end" : "flex-start"}>
+        <Text fw={800} fz="lg">
+          {team?.name}
+        </Text>
+        <Group gap={6}>
+          <Badge size="sm" variant="light" color={side === "blue" ? "blue" : "red"}>
+            {side} side
+          </Badge>
+          {won && (
+            <Badge size="sm" color="gold">
+              Victory
+            </Badge>
+          )}
+        </Group>
+      </Stack>
+    </Group>
   );
 }
 
 function Objective({ label, blue, red }: { label: string; blue: string | number; red: string | number }) {
   return (
-    <div className={styles.objective}>
+    <Group gap="sm" className={classes.objective}>
       <span className="side-blue">{blue}</span>
-      <span className="eyebrow">{label}</span>
+      <Text className="eyebrow">{label}</Text>
       <span className="side-red">{red}</span>
-    </div>
+    </Group>
   );
 }
 
 function PlayerRow({ p, mvp, maxDamage }: { p: PlayerLine; mvp: boolean; maxDamage: number }) {
   const { career } = useCareer();
   return (
-    <tr>
-      <td>
-        <ChampIcon id={p.champion} size={28} />
-      </td>
-      <td>
-        <PlayerLink careerId={career.id} id={p.player} name={p.name} /> {mvp && <span className="chip chip-gold">MVP</span>}
-      </td>
-      <td className="num">
+    <Table.Tr>
+      <Table.Td w={44}>
+        <ChampIcon id={p.champion} size={34} />
+      </Table.Td>
+      <Table.Td>
+        <Group gap="xs" wrap="nowrap">
+          <PlayerPhoto photo={p.photo} name={p.name} size={28} />
+          <Link className="link" to={`/career/${career.id}/player/${p.player}`}>
+            <Text fw={600} fz="sm">
+              {p.name}
+            </Text>
+          </Link>
+          {mvp && (
+            <Badge size="xs" color="gold">
+              MVP
+            </Badge>
+          )}
+        </Group>
+      </Table.Td>
+      <Table.Td className="num" fz="sm">
         {p.kills} / <span className="loss">{p.deaths}</span> / {p.assists}
-      </td>
-      <td className="num muted">{p.cs}</td>
-      <td>
-        <span className={styles.dmg}>
-          <span style={{ width: `${(p.damage / maxDamage) * 100}%` }} />
-        </span>
-        <span className="muted" style={{ fontSize: 11 }}>
-          {(p.damage / 1000).toFixed(1)}k
-        </span>
-      </td>
-      <td className={cx("num", p.rating >= 7.5 ? "gain" : p.rating < 6 ? "loss" : undefined)}>{p.rating.toFixed(1)}</td>
-    </tr>
+      </Table.Td>
+      <Table.Td className="num" c="dimmed" fz="sm">
+        {p.cs}
+      </Table.Td>
+      <Table.Td miw={110}>
+        <Group gap={6} wrap="nowrap">
+          <Progress value={(p.damage / maxDamage) * 100} color="gold" size={6} w={64} />
+          <Text fz={11} c="dimmed">
+            {(p.damage / 1000).toFixed(1)}k
+          </Text>
+        </Group>
+      </Table.Td>
+      <Table.Td className="num" fw={700} fz="sm" c={p.rating >= 7.5 ? "teal" : p.rating < 6 ? "red" : undefined}>
+        {p.rating.toFixed(1)}
+      </Table.Td>
+    </Table.Tr>
   );
 }

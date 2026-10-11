@@ -1,0 +1,30 @@
+/* Shared screen pieces: hero banners over splash art, list rows. */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 250px;
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  padding: 28px 32px;
+}
+
+.inboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.inboxRow:hover {
+  background: rgba(200, 170, 110, 0.06);
+}
+
+.inboxRow[data-active] {
+  background: rgba(200, 170, 110, 0.1);
+}

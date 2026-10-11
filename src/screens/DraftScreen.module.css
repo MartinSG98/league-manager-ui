@@ -1,0 +1,38 @@
+.slot {
+  flex: none;
+  width: 132px;
+  padding: 8px 10px;
+  min-height: 74px;
+}
+
+.slot[data-made] {
+  background: #0a0f19;
+}
+
+.slot[data-current] {
+  border-color: var(--gold);
+  box-shadow: 0 0 18px rgba(200, 170, 110, 0.35);
+}
+
+.filters {
+  border-bottom: 1px solid var(--line);
+}
+
+.openDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.rosterSlot {
+  background: #0c121e;
+}
+
+.rosterSlot[data-open] {
+  border-style: dashed;
+}
+
+.mineResult {
+  border-color: var(--gold);
+}

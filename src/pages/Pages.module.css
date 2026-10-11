@@ -1,110 +1,120 @@
 /* ---------- title ---------- */
 
 .title {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 80px 20px 60px;
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
 }
 
-.hero {
-  text-align: center;
+.titleInner {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 12vh 40px 32px;
 }
 
 .wordmark {
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(42px, 7vw, 76px);
-  letter-spacing: 0.04em;
+  font-weight: 800;
+  font-size: clamp(56px, 9vw, 112px);
+  line-height: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--gold-bright);
-  text-shadow: 0 0 40px color-mix(in srgb, var(--gold) 30%, transparent);
-  margin: 6px 0 4px;
+  text-shadow: 0 0 60px rgba(200, 170, 110, 0.35);
 }
 
-.saves {
-  margin-top: 48px;
+.saveCard {
+  cursor: pointer;
+  background: rgba(13, 19, 32, 0.82);
+  backdrop-filter: blur(6px);
+  transition: border-color 0.15s;
 }
 
-.legal {
-  margin-top: 40px;
-  text-align: center;
-  font-size: 12px;
+.saveCard:hover {
+  border-color: var(--gold);
+}
+
+.leagueStrip {
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ---------- new career ---------- */
 
-.teamGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
+.leagueTab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #0d1320;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.leagueTab:hover {
+  border-color: #3b4661;
+}
+
+.leagueTab[data-active] {
+  border-color: var(--gold);
+  background: rgba(200, 170, 110, 0.1);
 }
 
 .teamCard {
-  text-align: left;
-  padding: 14px;
+  position: relative;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-color: color-mix(in srgb, var(--team) 25%, var(--line));
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  overflow: hidden;
+  transition: border-color 0.15s, transform 0.15s;
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--team) 22%, transparent), transparent 60%),
+    linear-gradient(180deg, #111827, #0c121e);
 }
 
 .teamCard:hover {
   border-color: color-mix(in srgb, var(--team) 70%, var(--line));
+  transform: translateY(-1px);
 }
 
-.selected {
-  border-color: var(--team);
-  box-shadow: 0 0 0 1px var(--team), 0 0 24px color-mix(in srgb, var(--team) 25%, transparent);
-}
-
-.teamName {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.franchise {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.franchiseName {
-  font-weight: 700;
-  flex: 1;
+.teamCard[data-selected] {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 8px 30px rgba(200, 170, 110, 0.18);
 }
 
 .prestige {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-}
-
-.prestigeBar {
-  flex: 1;
-  height: 5px;
+  height: 4px;
   border-radius: 999px;
-  background: var(--bg-deep);
+  background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
 }
 
-.prestigeBar span {
+.prestige span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--gold-deep), var(--gold));
+  background: linear-gradient(90deg, #6a5223, var(--gold));
 }
 
-.keep {
+.previewHero {
+  position: relative;
+  min-height: 230px;
+  padding: 18px;
   display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 6px;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
 }
 
-.keepName {
-  font-size: 20px;
-  font-weight: 800;
+.previewInner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.sticky {
+  position: sticky;
+  top: 16px;
 }

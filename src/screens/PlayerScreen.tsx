@@ -1,12 +1,26 @@
+import { Badge, Box, Grid, Group, Paper, Progress, SimpleGrid, Stack, Table, Text } from "@mantine/core";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
-import { AttrBar, ChampIcon, Flag, Form, Loading, Meter, Ovr, RoleTag } from "../components/Bits";
 import { ContractPanel } from "../components/ContractPanel";
-import { ATTRIBUTE_NAMES, money, ROLE_NAMES, signed } from "../lib/format";
+import { ChampIcon, PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
+import { AttrBar, Empty, FormArrow, Loading, Meter, Ovr, Screen, Section } from "../components/Ui";
+import { ATTRIBUTE_NAMES, flag, money, ROLE_NAMES, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
+import classes from "./Screens.module.css";
+
+const ATTRIBUTE_HINTS: Record<string, string> = {
+  mechanics: "KDA, solo kills and damage per minute",
+  laning: "Gold, CS and XP difference at 15 minutes",
+  teamfighting: "Kill participation, damage share and staying alive",
+  vision: "Vision score, wards cleared and vision share",
+  macro: "Win rate and early gold leads",
+  consistency: "Few deaths, steady KDA, rarely first blood",
+  composure: "Career games and winning under pressure",
+  champion_pool: "Champions with five or more career games",
+};
 
 const STATS_2026: { key: string; label: string; digits?: number; pct?: boolean }[] = [
   { key: "games", label: "Games" },
@@ -34,171 +48,209 @@ export function PlayerScreen() {
   if (!p.data) return <Loading />;
   const d = p.data;
   const team = d.team ? catalog.teams.find((t) => t.id === d.team) : null;
+  const signature = d.signatures[0] ?? d.pool[0]?.champion;
 
   return (
-    <div className="screen">
-      <div className="screen-head">
-        <div>
-          <div className="eyebrow">
-            {ROLE_NAMES[d.role]} · {d.origin ? `${d.origin.name} in 2026` : d.league}
-          </div>
-          <h1 className="screen-title" style={{ fontSize: 34 }}>
-            <Flag country={d.country} /> {d.name}
-          </h1>
-          <div className="row" style={{ marginTop: 6 }}>
-            <RoleTag role={d.role} />
-            {team ? (
-              <Link className="link" to={`/career/${career.id}/team/${team.id}`}>
-                {team.name}
-              </Link>
-            ) : (
-              <span className="chip">Free agent</span>
-            )}
-            {d.contract_until && <span className="muted">Contract to {d.contract_until}</span>}
-          </div>
-        </div>
-        <div className="row" style={{ gap: 26 }}>
-          <div className="stack" style={{ gap: 0, alignItems: "center" }}>
-            <span className="eyebrow">Overall</span>
-            <Ovr value={d.overall} size="lg" />
-          </div>
-          <div className="stack" style={{ gap: 0, alignItems: "center" }}>
-            <span className="eyebrow">Potential</span>
-            <Ovr value={d.potential} size="lg" />
-          </div>
-          <div className="stack" style={{ gap: 0 }}>
-            <span className="eyebrow">{d.contract_until ? "Salary" : "Market value"}</span>
-            <strong style={{ fontSize: 20 }}>{money(d.salary)}</strong>
-          </div>
-        </div>
-      </div>
+    <Screen>
+      <Paper className={classes.hero} mb="lg">
+        <SplashBackdrop id={signature} strength={0.55} position="center 20%" />
+        <Group className={classes.heroInner} align="flex-end" wrap="nowrap" gap="xl">
+          <Box w={210} style={{ flex: "none" }}>
+            <PlayerPortrait photo={d.photo} name={d.name} color={team?.color} height={230} />
+          </Box>
+          <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
+            <Group gap="xs">
+              <RoleIcon role={d.role} size={20} />
+              <Text className="eyebrow">{ROLE_NAMES[d.role]}</Text>
+              {d.origin && (
+                <Text fz="sm" c="gray.4">
+                  · {d.origin.name} in 2026
+                </Text>
+              )}
+            </Group>
+            <Text className="display" fz={64} lh={0.95}>
+              {d.name}
+            </Text>
+            <Text fz="lg" c="gray.3">
+              {flag(d.country)} {d.real_name ?? d.country}
+            </Text>
+            <Group gap="sm" mt={4}>
+              {team ? (
+                <Link to={`/career/${career.id}/team/${team.id}`} className="link">
+                  <Group gap={8}>
+                    <TeamLogo team={team} size={28} />
+                    <Text fw={700}>{team.name}</Text>
+                  </Group>
+                </Link>
+              ) : (
+                <Badge variant="light" color="hextech">
+                  Free agent
+                </Badge>
+              )}
+              {d.contract_until && (
+                <Text fz="sm" c="dimmed">
+                  contract to {d.contract_until}
+                </Text>
+              )}
+            </Group>
+          </Stack>
+          <Group gap="xl" visibleFrom="md">
+            <Stack gap={0} align="center">
+              <Text className="eyebrow">Overall</Text>
+              <Ovr value={d.overall} size="xl" />
+            </Stack>
+            <Stack gap={0} align="center">
+              <Text className="eyebrow">Potential</Text>
+              <Ovr value={d.potential} size="xl" />
+            </Stack>
+            <Stack gap={0}>
+              <Text className="eyebrow">{d.contract_until ? "Salary" : "Market value"}</Text>
+              <Text fw={800} fz={28} className="display">
+                {money(d.salary)}
+              </Text>
+            </Stack>
+          </Group>
+        </Group>
+      </Paper>
 
-      {career.phase !== "draft" || d.team === career.team.id ? (
-        <div style={{ marginBottom: 18 }}>
+      {(career.phase !== "draft" || d.team === career.team.id) && (
+        <Box mb="lg">
           <ContractPanel player={d} />
-        </div>
-      ) : null}
+        </Box>
+      )}
 
-      <div className="grid-2">
-        <section className="panel">
-          <div className="panel-head">
-            <span className="panel-title">Attributes</span>
-          </div>
-          <div className="panel-body stack" style={{ gap: 9 }}>
-            {Object.keys(ATTRIBUTE_NAMES).map((a) => (
-              <AttrBar key={a} label={ATTRIBUTE_NAMES[a]} value={d.attributes[a]} />
-            ))}
-            <div style={{ borderTop: "1px solid var(--line)", margin: "6px 0" }} />
-            <AttrBar label="Aggression" value={d.aggression} />
-            <AttrBar label="Leadership" value={d.leadership} />
-            <div className="row" style={{ marginTop: 6 }}>
-              <span className="muted">Speaks</span>
-              {d.languages.map((l) => (
-                <span key={l} className="chip">
-                  {l}
-                </span>
-              ))}
-            </div>
-            <div className="row">
-              <span className="muted">Form</span> <Form value={d.form} />
-              <span className="muted">Morale</span> <Meter value={d.morale} tone={d.morale >= 60 ? "green" : "red"} />
-              <span className="muted">Fatigue</span> <Meter value={d.fatigue} tone="red" />
-            </div>
-            <div className="muted" style={{ fontSize: 13 }}>
-              {d.experience} career games · reputation {d.reputation}
-            </div>
-          </div>
-        </section>
-
-        <section className="panel">
-          <div className="panel-head">
-            <span className="panel-title">Champion pool</span>
-            <span className="muted">mastery · meta on patch {career.patch}</span>
-          </div>
-          <table className="table">
-            <tbody>
-              {d.pool.map((c) => (
-                <tr key={c.champion}>
-                  <td style={{ width: 40 }}>
-                    <ChampIcon id={c.champion} size={30} />
-                  </td>
-                  <td>{catalog.champion[c.champion]?.name ?? c.champion}</td>
-                  <td className="num muted">{c.games} games</td>
-                  <td className="num muted">{c.winrate !== null ? `${c.winrate}%` : ""}</td>
-                  <td>
-                    <Meter value={c.mastery} tone="gold" />
-                  </td>
-                  <td className={c.meta >= 0 ? "num gain" : "num loss"}>{signed(c.meta, 1)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-
-        <section className="panel">
-          <div className="panel-head">
-            <span className="panel-title">2026 season</span>
-            <span className="muted">all competitions</span>
-          </div>
-          <table className="table">
-            <tbody>
-              {STATS_2026.map((s) => {
-                const raw = d.stats_2026[s.key];
-                const value = typeof raw === "number" ? (s.digits ? raw.toFixed(s.digits) : String(Math.round(raw))) : "—";
-                return (
-                  <tr key={s.key}>
-                    <td className="muted">{s.label}</td>
-                    <td className="num">
-                      {value}
-                      {s.pct && typeof raw === "number" ? "%" : ""}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </section>
-
-        <section className="panel">
-          <div className="panel-head">
-            <span className="panel-title">This season</span>
-          </div>
-          {d.season.games === 0 ? (
-            <div className="empty">No games yet.</div>
-          ) : (
-            <div className="panel-body stack" style={{ gap: 8 }}>
-              <div className="row" style={{ gap: 22 }}>
-                <span>
-                  <span className="muted">Games</span> <strong>{d.season.games}</strong>
-                </span>
-                <span>
-                  <span className="muted">Won</span> <strong>{d.season.wins}</strong>
-                </span>
-                <span>
-                  <span className="muted">KDA</span> <strong>{d.season.kda}</strong>
-                </span>
-                <span>
-                  <span className="muted">CS/min</span> <strong>{d.season.cs_per_min}</strong>
-                </span>
-                <span>
-                  <span className="muted">Avg rating</span> <strong>{d.season.rating}</strong>
-                </span>
-                <span>
-                  <span className="muted">MVPs</span> <strong>{d.season.mvps}</strong>
-                </span>
-              </div>
-              <div className="row">
-                {d.season.champions.map(([c, n]) => (
-                  <span key={c} className="row" style={{ gap: 4 }}>
-                    <ChampIcon id={c} size={26} />
-                    <span className="muted">×{n}</span>
-                  </span>
+      <Grid gap="lg">
+        <Grid.Col span={{ base: 12, lg: 5 }}>
+          <Stack gap="lg">
+            <Section title="Attributes">
+              <Stack gap={10}>
+                {Object.keys(ATTRIBUTE_NAMES).map((a) => (
+                  <AttrBar key={a} label={ATTRIBUTE_NAMES[a]} value={d.attributes[a]} hint={ATTRIBUTE_HINTS[a]} />
                 ))}
-              </div>
-            </div>
-          )}
-        </section>
-      </div>
-    </div>
+                <Box style={{ borderTop: "1px solid var(--line)" }} my={4} />
+                <AttrBar label="Aggression" value={d.aggression} hint="A style, not a quality: first bloods and solo kills" />
+                <AttrBar label="Leadership" value={d.leadership} hint="Shotcalling, worth chemistry when it is high" />
+              </Stack>
+              <Group gap="xs" mt="md">
+                <Text fz="sm" c="dimmed">
+                  Speaks
+                </Text>
+                {d.languages.map((l) => (
+                  <Badge key={l} variant="outline" color="gray" size="sm">
+                    {l}
+                  </Badge>
+                ))}
+              </Group>
+              <Group gap="lg" mt="sm">
+                <Group gap={6}>
+                  <Text fz="sm" c="dimmed">
+                    Form
+                  </Text>
+                  <FormArrow value={d.form} />
+                </Group>
+                <Group gap={6}>
+                  <Text fz="sm" c="dimmed">
+                    Morale
+                  </Text>
+                  <Meter value={d.morale} color={d.morale >= 60 ? "teal" : "red"} />
+                </Group>
+                <Group gap={6}>
+                  <Text fz="sm" c="dimmed">
+                    Fatigue
+                  </Text>
+                  <Meter value={d.fatigue} color="red" />
+                </Group>
+              </Group>
+              <Text fz="xs" c="dimmed" mt="sm">
+                {d.experience} career games · reputation {d.reputation}
+              </Text>
+            </Section>
+
+            <Section title="This season">
+              {d.season.games === 0 ? (
+                <Empty>No games yet.</Empty>
+              ) : (
+                <Stack gap="md">
+                  <SimpleGrid cols={3} spacing="sm">
+                    <Mini label="Won" value={`${d.season.wins}-${d.season.games - d.season.wins}`} />
+                    <Mini label="KDA" value={String(d.season.kda)} />
+                    <Mini label="Avg rating" value={String(d.season.rating ?? "—")} />
+                    <Mini label="CS / min" value={String(d.season.cs_per_min)} />
+                    <Mini label="K / D / A" value={`${d.season.kills}/${d.season.deaths}/${d.season.assists}`} />
+                    <Mini label="MVPs" value={String(d.season.mvps)} />
+                  </SimpleGrid>
+                  <Group gap="xs">
+                    {d.season.champions.map(([c, n]) => (
+                      <Group key={c} gap={4}>
+                        <ChampIcon id={c} size={28} />
+                        <Text fz="xs" c="dimmed">
+                          ×{n}
+                        </Text>
+                      </Group>
+                    ))}
+                  </Group>
+                </Stack>
+              )}
+            </Section>
+          </Stack>
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12, lg: 7 }}>
+          <Stack gap="lg">
+            <Section title="Champion pool" right={<Text fz="xs" c="dimmed">mastery · meta on patch {career.patch}</Text>} pad={false}>
+              <Table verticalSpacing={5}>
+                <Table.Tbody>
+                  {d.pool.map((c) => (
+                    <Table.Tr key={c.champion}>
+                      <Table.Td w={46}>
+                        <ChampIcon id={c.champion} size={36} />
+                      </Table.Td>
+                      <Table.Td fw={600} fz="sm">
+                        {catalog.champion[c.champion]?.name ?? c.champion}
+                      </Table.Td>
+                      <Table.Td className="num" c="dimmed" fz="sm">
+                        {c.games} games
+                      </Table.Td>
+                      <Table.Td className="num" c="dimmed" fz="sm">
+                        {c.winrate !== null ? `${c.winrate}%` : ""}
+                      </Table.Td>
+                      <Table.Td w={140}>
+                        <Progress value={c.mastery} color="gold" size="sm" radius="xl" />
+                      </Table.Td>
+                      <Table.Td className={c.meta >= 0 ? "num gain" : "num loss"} fw={700} fz="sm">
+                        {signed(c.meta, 1)}
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Section>
+
+            <Section title="2026 season" right={<Text fz="xs" c="dimmed">all competitions</Text>}>
+              <SimpleGrid cols={{ base: 2, sm: 3, md: 5 }} spacing="sm">
+                {STATS_2026.map((s) => {
+                  const raw = d.stats_2026[s.key];
+                  const value = typeof raw === "number" ? (s.digits ? raw.toFixed(s.digits) : String(Math.round(raw))) : "—";
+                  return <Mini key={s.key} label={s.label} value={`${value}${s.pct && typeof raw === "number" ? "%" : ""}`} />;
+                })}
+              </SimpleGrid>
+            </Section>
+          </Stack>
+        </Grid.Col>
+      </Grid>
+    </Screen>
+  );
+}
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <Stack gap={0}>
+      <Text fz={11} c="dimmed" tt="uppercase" fw={600}>
+        {label}
+      </Text>
+      <Text fw={800} fz="lg" className="display">
+        {value}
+      </Text>
+    </Stack>
   );
 }

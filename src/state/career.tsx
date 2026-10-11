@@ -1,15 +1,15 @@
+import { notifications } from "@mantine/notifications";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { api, ApiError } from "../api/client";
 import type { Action, ActionResult, CareerView } from "../api/types";
+import { Empty, Loading } from "../components/Ui";
 
 interface CareerContextValue {
   career: CareerView;
   /** Bumps after every action, screens reload their data when it changes. */
   revision: number;
   busy: boolean;
-  error: string | null;
-  clearError: () => void;
   act: (action: Action) => Promise<ActionResult | null>;
 }
 
@@ -20,7 +20,6 @@ export function CareerProvider({ id, children }: { id: string; children: ReactNo
   const [missing, setMissing] = useState(false);
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setCareer(null);
@@ -33,14 +32,17 @@ export function CareerProvider({ id, children }: { id: string; children: ReactNo
   const act = useCallback(
     async (action: Action) => {
       setBusy(true);
-      setError(null);
       try {
         const result = await api.act(id, action);
         setCareer(result.career);
         setRevision((r) => r + 1);
         return result;
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : "The server did not answer");
+        notifications.show({
+          color: "red",
+          title: "Not now",
+          message: err instanceof ApiError ? err.message : "The server did not answer",
+        });
         return null;
       } finally {
         setBusy(false);
@@ -49,14 +51,10 @@ export function CareerProvider({ id, children }: { id: string; children: ReactNo
     [id],
   );
 
-  if (missing) return <div className="page center muted">This career does not exist any more.</div>;
-  if (!career) return <div className="page center muted">Loading your career…</div>;
+  if (missing) return <Empty>This career does not exist any more.</Empty>;
+  if (!career) return <Loading text="Loading your career…" />;
 
-  return (
-    <CareerContext.Provider value={{ career, revision, busy, error, clearError: () => setError(null), act }}>
-      {children}
-    </CareerContext.Provider>
-  );
+  return <CareerContext.Provider value={{ career, revision, busy, act }}>{children}</CareerContext.Provider>;
 }
 
 export function useCareer(): CareerContextValue {

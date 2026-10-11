@@ -13,6 +13,7 @@ export interface TeamRef {
   color: string;
   league: string;
   region: string;
+  logo: string | null;
 }
 
 // ---------- catalog ----------
@@ -28,6 +29,8 @@ export interface CatalogPlayer {
   salary: number;
   signatures: string[];
   games: number;
+  photo: string | null;
+  real_name: string | null;
 }
 
 export interface CatalogTeam {
@@ -37,6 +40,7 @@ export interface CatalogTeam {
   league: string;
   region: string;
   color: string;
+  logo: string | null;
   prestige: number;
   rank: number;
   wins: number;
@@ -71,6 +75,7 @@ export interface LeagueInfo {
   full_name: string;
   region: string;
   tier: number;
+  logo: string | null;
   players: number;
 }
 
@@ -79,6 +84,7 @@ export interface Catalog {
   regions: Region[];
   leagues: LeagueInfo[];
   teams: CatalogTeam[];
+  event_logos: Record<string, string>;
   champions: Champion[];
 }
 
@@ -87,10 +93,12 @@ export interface Catalog {
 export interface PlayerRow {
   id: string;
   name: string;
+  real_name: string | null;
+  photo: string | null;
   role: Role;
   country: string | null;
   league: string;
-  origin: { id: string; name: string; tag: string } | null;
+  origin: { id: string; name: string; tag: string; logo: string | null } | null;
   team: string | null;
   overall: number;
   potential: number;
@@ -151,6 +159,7 @@ export interface MatchSummary {
   id: string;
   competition: string;
   competition_name: string;
+  competition_logo: string | null;
   stage: string;
   label: string;
   day: string;
@@ -179,6 +188,7 @@ export interface CareerView {
   patch: string;
   team: TeamRef;
   league: string;
+  league_logo: string | null;
   region: string;
   budget: number;
   payroll: number;
@@ -276,6 +286,7 @@ export interface CompetitionRow {
   short: string;
   kind: "league" | "international";
   league: string | null;
+  logo: string | null;
   split: number | null;
   status: "upcoming" | "running" | "finished";
   start: string;
@@ -311,6 +322,7 @@ export interface CompetitionView {
   kind: "league" | "international";
   status: "upcoming" | "running" | "finished";
   league: string | null;
+  logo: string | null;
   start: string;
   end: string;
   prize_pool: number;
@@ -324,6 +336,7 @@ export interface CompetitionView {
 export interface PlayerLine {
   player: string;
   name: string;
+  photo: string | null;
   team: string;
   role: Role;
   champion: string;

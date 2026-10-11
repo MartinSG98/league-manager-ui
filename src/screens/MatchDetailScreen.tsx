@@ -1,13 +1,14 @@
+import { Grid, Group, Paper, ScrollArea, Stack, Tabs, Text } from "@mantine/core";
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { MatchView, TeamRef } from "../api/types";
-import { Loading } from "../components/Bits";
 import { GameReport } from "../components/GameReport";
 import { GoldGraph } from "../components/GoldGraph";
 import { MatchCard } from "../components/MatchCard";
-import { clock, cx } from "../lib/format";
+import { Loading, PageHeader, Screen, Section } from "../components/Ui";
+import { clock } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 
@@ -16,7 +17,11 @@ export function MatchDetailScreen() {
   const { career, revision } = useCareer();
   const view = useApi(() => api.match(career.id, match!), [career.id, match, revision]);
   if (!view.data) return <Loading />;
-  return <SeriesReport match={view.data} />;
+  return (
+    <Screen>
+      <SeriesReport match={view.data} />
+    </Screen>
+  );
 }
 
 export function teamsOf(match: MatchView): Record<string, TeamRef | null> {
@@ -28,60 +33,62 @@ export function teamsOf(match: MatchView): Record<string, TeamRef | null> {
 
 export function SeriesReport({ match }: { match: MatchView }) {
   const { career } = useCareer();
-  const [number, setNumber] = useState(match.game_list.length);
-  const game = match.game_list.find((g) => g.number === number) ?? match.game_list[match.game_list.length - 1];
-  const detail = useApi(() => (game?.detailed ? api.game(career.id, match.id, game.number) : Promise.resolve(null)), [career.id, match.id, game?.number]);
+  const [number, setNumber] = useState(String(match.game_list.length));
+  const game = match.game_list.find((g) => String(g.number) === number) ?? match.game_list[match.game_list.length - 1];
+  const detail = useApi(
+    () => (game?.detailed ? api.game(career.id, match.id, game.number) : Promise.resolve(null)),
+    [career.id, match.id, game?.number],
+  );
 
   return (
-    <div className="screen">
-      <div className="screen-head">
-        <div>
-          <div className="eyebrow">{match.competition_name}</div>
-          <h1 className="screen-title">Series report</h1>
-        </div>
-        <div className="tabs">
-          {match.game_list.map((g) => (
-            <button key={g.number} className={cx("tab", g.number === game?.number && "active")} onClick={() => setNumber(g.number)}>
-              Game {g.number}
-            </button>
-          ))}
-        </div>
-      </div>
-      <section className="panel panel-body" style={{ marginBottom: 18 }}>
-        <MatchCard match={match} mine={career.team.id} />
-      </section>
+    <Stack gap="lg">
+      <PageHeader eyebrow={match.competition_name} title="Series report" />
+      <Paper p="lg">
+        <MatchCard match={match} mine={career.team.id} size={84} />
+      </Paper>
+      {match.game_list.length > 1 && (
+        <Tabs value={number} onChange={(v) => v && setNumber(v)}>
+          <Tabs.List>
+            {match.game_list.map((g) => (
+              <Tabs.Tab key={g.number} value={String(g.number)}>
+                Game {g.number}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </Tabs>
+      )}
       {game && (
-        <section className="panel panel-body">
+        <Paper p="lg">
           <GameReport game={game} teams={teamsOf(match)} />
-        </section>
+        </Paper>
       )}
       {detail.data?.timeline && (
-        <div className="grid-2" style={{ marginTop: 18 }}>
-          <section className="panel">
-            <div className="panel-head">
-              <span className="panel-title">Gold difference</span>
-            </div>
-            <div className="panel-body">
-              <GoldGraph gold={detail.data.timeline.gold} />
-            </div>
-          </section>
-          <section className="panel" style={{ maxHeight: 420, overflow: "auto" }}>
-            <div className="panel-head">
-              <span className="panel-title">Timeline</span>
-            </div>
-            {detail.data.timeline.events
-              .filter((e) => e.kind !== "kill")
-              .map((e, i) => (
-                <div key={i} className="row" style={{ padding: "5px 16px", gap: 10, fontSize: 13 }}>
-                  <span className="muted" style={{ width: 44 }}>
-                    {clock(e.t)}
-                  </span>
-                  <span className={e.side ? `side-${e.side}` : "muted"}>{e.text}</span>
-                </div>
-              ))}
-          </section>
-        </div>
+        <Grid gap="lg">
+          <Grid.Col span={{ base: 12, lg: 6 }}>
+            <Section title="Gold difference">
+              <GoldGraph gold={detail.data.timeline.gold} height={180} />
+            </Section>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, lg: 6 }}>
+            <Section title="Timeline" pad={false}>
+              <ScrollArea h={240}>
+                {detail.data.timeline.events
+                  .filter((e) => e.kind !== "kill")
+                  .map((e, i) => (
+                    <Group key={i} gap="sm" px="md" py={4} wrap="nowrap">
+                      <Text fz="xs" c="dimmed" w={42}>
+                        {clock(e.t)}
+                      </Text>
+                      <Text fz="sm" className={e.side ? `side-${e.side}` : undefined}>
+                        {e.text}
+                      </Text>
+                    </Group>
+                  ))}
+              </ScrollArea>
+            </Section>
+          </Grid.Col>
+        </Grid>
       )}
-    </div>
+    </Stack>
   );
 }

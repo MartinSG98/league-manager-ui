@@ -1,0 +1,40 @@
+.place {
+  min-width: 200px;
+}
+
+.champion {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(200, 170, 110, 0.18), transparent 60%), #0d1320;
+}
+
+.tie {
+  display: block;
+  background: #0a0f19;
+  text-decoration: none;
+  color: inherit;
+}
+
+.tie[data-link] {
+  cursor: pointer;
+}
+
+.tie[data-link]:hover {
+  border-color: var(--gold);
+}
+
+.tieSide {
+  padding: 3px 4px;
+  border-radius: 4px;
+}
+
+.out {
+  opacity: 0.45;
+}
+
+.mineSide {
+  background: rgba(200, 170, 110, 0.12);
+}
+
+.resultRow:hover {
+  background: rgba(200, 170, 110, 0.06);
+}

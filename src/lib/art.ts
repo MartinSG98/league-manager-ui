@@ -1,15 +1,28 @@
-import type { Champion } from "../api/types";
+import type { Role } from "../api/types";
 
-/** Square champion portrait from Riot's Data Dragon CDN. Champion ids are Data Dragon ids already. */
-export function iconUrl(patch: string, championId: string): string {
-  return `https://ddragon.leagueoflegends.com/cdn/${patch}/img/champion/${championId}.png`;
+// Every image is a list of sources tried in order: the copy in public/ that `npm run fetch:art`
+// downloads, then the same file on Riot's CDN. <Img> moves down the list when one fails.
+
+const DDRAGON = "https://ddragon.leagueoflegends.com/cdn";
+const POSITIONS =
+  "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions";
+const ROLE_FILE: Record<Role, string> = { TOP: "top", JNG: "jungle", MID: "middle", BOT: "bottom", SUP: "utility" };
+
+/** Square 120px portrait. */
+export function championIcon(patch: string, id: string): string[] {
+  return [`/champions/icons/${id}.png`, `${DDRAGON}/${patch}/img/champion/${id}.png`];
 }
 
-/** Wide default splash. */
-export function splashUrl(championId: string): string {
-  return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${championId}_0.jpg`;
+/** Tall loading-screen art, 308 by 560. */
+export function championLoading(id: string): string[] {
+  return [`/champions/loading/${id}_0.jpg`, `${DDRAGON}/img/champion/loading/${id}_0.jpg`];
 }
 
-export function championName(champions: Record<string, Champion>, id: string): string {
-  return champions[id]?.name ?? id;
+/** Wide default splash, 1215 by 717. */
+export function championSplash(id: string): string[] {
+  return [`/champions/splash/${id}_0.jpg`, `${DDRAGON}/img/champion/splash/${id}_0.jpg`];
+}
+
+export function roleIcon(role: Role): string[] {
+  return [`/roles/${role}.png`, `${POSITIONS}/icon-position-${ROLE_FILE[role]}.png`];
 }

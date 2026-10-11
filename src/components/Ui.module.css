@@ -1,0 +1,48 @@
+.section {
+  overflow: hidden;
+  background: linear-gradient(180deg, #111827, #0c121e);
+}
+
+.sectionHead {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.015);
+  min-height: 42px;
+}
+
+.ovr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.ovr-sm {
+  font-size: 15px;
+  min-width: 22px;
+}
+
+.ovr-md {
+  font-size: 18px;
+  min-width: 28px;
+}
+
+.ovr-lg {
+  font-size: 30px;
+  min-width: 44px;
+}
+
+.ovr-xl {
+  font-size: 46px;
+  min-width: 64px;
+}
+
+.attr {
+  display: grid;
+  grid-template-columns: 116px 1fr 26px;
+  align-items: center;
+  gap: 10px;
+}

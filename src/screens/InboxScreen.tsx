@@ -1,7 +1,21 @@
+import { Badge, Button, Grid, Stack, Text, Title, UnstyledButton } from "@mantine/core";
+import { IconChecks } from "@tabler/icons-react";
 import { useState } from "react";
 
-import { cx, longDate } from "../lib/format";
+import { Empty, PageHeader, Screen, Section } from "../components/Ui";
+import { longDate, shortDate } from "../lib/format";
 import { useCareer } from "../state/career";
+import classes from "./Screens.module.css";
+
+const KIND_COLOR: Record<string, string> = {
+  patch: "hextech",
+  draft: "gold",
+  contract: "teal",
+  board: "grape",
+  match: "blue",
+  news: "gray",
+  finance: "yellow",
+};
 
 export function InboxScreen() {
   const { career, act, busy } = useCareer();
@@ -14,43 +28,53 @@ export function InboxScreen() {
   }
 
   return (
-    <div className="screen">
-      <div className="screen-head">
-        <div>
-          <div className="eyebrow">{career.unread} unread</div>
-          <h1 className="screen-title">Inbox</h1>
-        </div>
-        <button className="btn btn-ghost" disabled={busy || career.unread === 0} onClick={() => act({ type: "read_message" })}>
-          Mark all read
-        </button>
-      </div>
-      <div className="grid-2">
-        <section className="panel">
-          {career.inbox.map((m) => (
-            <button key={m.id} onClick={() => select(m.id, m.read)} className={cx("row")}
-              style={{
-                width: "100%", padding: "10px 16px", border: 0, borderBottom: "1px solid var(--line)", cursor: "pointer", textAlign: "left",
-                background: m.id === openId ? "color-mix(in srgb, var(--teal) 10%, transparent)" : "transparent",
-              }}>
-              <span className={cx("chip", !m.read && "chip-gold")}>{m.kind}</span>
-              <span style={{ flex: 1, fontWeight: m.read ? 500 : 700 }}>{m.subject}</span>
-              <span className="muted">{longDate(m.day)}</span>
-            </button>
-          ))}
-          {career.inbox.length === 0 && <div className="empty">Nothing yet.</div>}
-        </section>
-        <section className="panel">
-          {open ? (
-            <div className="panel-body">
-              <div className="eyebrow">{longDate(open.day)}</div>
-              <h2 style={{ margin: "6px 0 14px", fontSize: 22 }}>{open.subject}</h2>
-              <div style={{ whiteSpace: "pre-line", color: "var(--text-dim)", lineHeight: 1.6 }}>{open.body}</div>
-            </div>
-          ) : (
-            <div className="empty">Pick a message.</div>
-          )}
-        </section>
-      </div>
-    </div>
+    <Screen>
+      <PageHeader
+        eyebrow={`${career.unread} unread`}
+        title="Inbox"
+        right={
+          <Button variant="default" leftSection={<IconChecks size={16} />} disabled={busy || career.unread === 0} onClick={() => act({ type: "read_message" })}>
+            Mark all read
+          </Button>
+        }
+      />
+      <Grid gap="lg">
+        <Grid.Col span={{ base: 12, md: 5 }}>
+          <Section pad={false}>
+            {career.inbox.map((m) => (
+              <UnstyledButton key={m.id} className={classes.inboxRow} data-active={m.id === openId || undefined} onClick={() => select(m.id, m.read)}>
+                <Badge size="xs" w={70} variant={m.read ? "outline" : "filled"} color={KIND_COLOR[m.kind] ?? "gray"}>
+                  {m.kind}
+                </Badge>
+                <Text fz="sm" fw={m.read ? 400 : 700} truncate style={{ flex: 1 }}>
+                  {m.subject}
+                </Text>
+                <Text fz="xs" c="dimmed">
+                  {shortDate(m.day)}
+                </Text>
+              </UnstyledButton>
+            ))}
+            {career.inbox.length === 0 && <Empty>Nothing yet.</Empty>}
+          </Section>
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, md: 7 }}>
+          <Section>
+            {open ? (
+              <Stack gap="sm">
+                <Text className="eyebrow">{longDate(open.day)}</Text>
+                <Title order={2} className="display" fz={30}>
+                  {open.subject}
+                </Title>
+                <Text c="gray.4" style={{ whiteSpace: "pre-line", lineHeight: 1.7 }}>
+                  {open.body}
+                </Text>
+              </Stack>
+            ) : (
+              <Empty>Pick a message.</Empty>
+            )}
+          </Section>
+        </Grid.Col>
+      </Grid>
+    </Screen>
   );
 }

@@ -1,359 +1,64 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+/*
+  Colours Mantine has no slot for. Everything else comes from the theme in src/theme.ts.
+    --side-blue / --side-red   the map sides, whichever team is on them
+    --band-*                   rating bands for overall ratings and 1-20 attributes
+    --page                     the page behind the cards, darker than a card
+*/
+:root {
+  --page: #070a12;
+  --page-glow: #10203f;
+  --side-blue: #4e9cff;
+  --side-red: #ff5a5f;
+  --band-elite: #3ee08f;
+  --band-good: #a4d65e;
+  --band-decent: #f0c64a;
+  --band-weak: #ff8a5c;
+  --gold: #c8aa6e;
+  --gold-bright: #f0e6d2;
+  --teal: #0ac8b9;
+  --line: #222c42;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
 }
 
 html,
-body,
-#root {
-  margin: 0;
+body {
   min-height: 100%;
 }
 
 body {
   background:
-    radial-gradient(1100px 520px at 50% -8%, var(--bg-glow) 0%, transparent 62%),
-    radial-gradient(800px 480px at 100% 100%, var(--bg-glow-2) 0%, transparent 60%),
-    var(--bg);
+    radial-gradient(1200px 600px at 70% -10%, var(--page-glow) 0%, transparent 60%),
+    var(--page);
   background-attachment: fixed;
-  color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
-button {
-  font: inherit;
-  color: inherit;
-}
-
-a {
-  color: var(--teal);
-}
-
-h1,
-h2,
-h3 {
-  margin: 0;
-}
-
-/* ---------- layout helpers ---------- */
-
-.page {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 36px 20px 72px;
-}
-
-.screen {
-  padding: 22px 26px 60px;
-  max-width: 1400px;
-}
-
-.screen-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-
-.screen-title {
+.display {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-variant: small-caps;
-  color: var(--gold-bright);
-  font-size: 26px;
-  line-height: 1.15;
-}
-
-.grid-2 {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 18px;
-}
-
-.grid-main-side {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 18px;
-  align-items: start;
-}
-
-@media (max-width: 1100px) {
-  .grid-2,
-  .grid-main-side {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.spacer {
-  flex: 1;
-}
-
-.center {
-  text-align: center;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .eyebrow {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-
-.display {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-variant: small-caps;
-  letter-spacing: 0.02em;
-  color: var(--gold-bright);
-  font-size: clamp(28px, 4.4vw, 44px);
-  line-height: 1.1;
-}
-
-.lead {
-  color: var(--text-dim);
-  max-width: 660px;
-  margin: 12px auto 0;
-}
-
-.muted {
-  color: var(--text-muted);
-}
-
-/* Sides: us in the player color, them in the opponent color. Used for names. */
-.pos {
-  color: var(--teal);
-}
-
-.neg {
-  color: var(--red);
-}
-
-/* Numbers: every gain is green and every loss is the opponent color. */
-.gain {
-  color: var(--green);
-}
-
-.loss {
-  color: var(--red);
-}
-
-.panel {
-  background: linear-gradient(180deg, var(--surface-2), var(--surface));
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-
-/* ---------- buttons ---------- */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 22px;
-  border: 1px solid var(--line-strong);
-  border-radius: 2px;
-  background: var(--surface-2);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-decoration: none;
-  color: var(--text);
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    box-shadow 0.15s,
-    color 0.15s;
-}
-
-.btn:hover:not(:disabled) {
-  border-color: var(--gold);
-}
-
-.btn:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 2px;
-}
-
-.btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.btn-primary {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--teal) 32%, var(--bg-deep)),
-    color-mix(in srgb, var(--teal) 20%, var(--bg-deep))
-  );
-  border-color: var(--teal);
-  color: var(--teal-bright);
-  box-shadow: inset 0 0 18px color-mix(in srgb, var(--teal) 12%, transparent);
-}
-
-.btn-primary:hover:not(:disabled) {
-  border-color: var(--teal-bright);
-  box-shadow:
-    inset 0 0 18px color-mix(in srgb, var(--teal) 22%, transparent),
-    0 0 18px color-mix(in srgb, var(--teal) 25%, transparent);
-}
-
-.btn-gold {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--gold-deep) 46%, #000),
-    color-mix(in srgb, var(--gold-deep) 29%, #000)
-  );
-  border-color: var(--gold);
-  color: var(--gold-bright);
-}
-
-.btn-ghost {
-  background: transparent;
-  border-color: var(--line);
-  color: var(--text-dim);
-  text-transform: none;
-  letter-spacing: 0.02em;
-  font-weight: 600;
-}
-
-.btn-small {
-  min-height: 30px;
-  padding: 0 12px;
-  font-size: 12px;
-}
-
-.btn-block {
-  width: 100%;
-}
-
-/* ---------- panels ---------- */
-
-.panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
-}
-
-.panel-title {
-  font-size: 12px;
-  font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--gold);
 }
 
-.panel-body {
-  padding: 14px 16px;
-}
-
-/* ---------- tables ---------- */
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
-
-.table th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-  position: sticky;
-  top: 0;
-  background: var(--surface-2);
-  z-index: 1;
-}
-
-.table td {
-  padding: 7px 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
-  vertical-align: middle;
-}
-
-.table tbody tr:hover {
-  background: color-mix(in srgb, var(--teal) 6%, transparent);
-}
-
-.table .num {
+.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.table tr.mine td {
-  background: color-mix(in srgb, var(--teal) 10%, transparent);
+.side-blue {
+  color: var(--side-blue);
 }
 
-.table tr.dim td {
-  opacity: 0.45;
-}
-
-.table-wrap {
-  overflow: auto;
-}
-
-/* ---------- small pieces ---------- */
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-
-.chip-gold {
-  border-color: var(--gold-deep);
-  color: var(--gold-bright);
-  background: color-mix(in srgb, var(--gold-deep) 25%, transparent);
-}
-
-.chip-teal {
-  border-color: color-mix(in srgb, var(--teal) 60%, transparent);
-  color: var(--teal-bright);
-}
-
-.chip-red {
-  border-color: color-mix(in srgb, var(--red) 60%, transparent);
-  color: var(--red-bright);
+.side-red {
+  color: var(--side-red);
 }
 
 .band-elite {
@@ -372,83 +77,28 @@ h3 {
   color: var(--band-weak);
 }
 
-.side-blue {
-  color: var(--side-blue);
+.gain {
+  color: var(--band-elite);
 }
 
-.side-red {
+.loss {
   color: var(--side-red);
 }
 
 .link {
   color: inherit;
   text-decoration: none;
-  cursor: pointer;
 }
 
 .link:hover {
-  color: var(--teal-bright);
+  color: var(--gold-bright);
   text-decoration: underline;
 }
 
-.input,
-.select {
-  min-height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: 2px;
-  background: var(--bg-deep);
-  color: var(--text);
-  font: inherit;
-  font-size: 14px;
+tr.mine td {
+  background: rgba(200, 170, 110, 0.08);
 }
 
-.input:focus-visible,
-.select:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 1px;
-}
-
-.tabs {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.tab {
-  padding: 6px 12px;
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.tab:hover {
-  border-color: var(--line-strong);
-}
-
-.tab.active {
-  border-color: var(--teal);
-  color: var(--teal-bright);
-  background: color-mix(in srgb, var(--teal) 12%, transparent);
-}
-
-.error-box {
-  border: 1px solid var(--red);
-  background: color-mix(in srgb, var(--red-deep) 70%, transparent);
-  color: var(--red-pale);
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  font-size: 14px;
-}
-
-.empty {
-  padding: 26px;
-  text-align: center;
-  color: var(--text-muted);
+tr.dim td {
+  opacity: 0.45;
 }

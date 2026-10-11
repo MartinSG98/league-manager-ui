@@ -22,12 +22,12 @@ export function GoldGraph({ gold, upTo, height = 150 }: { gold: number[]; upTo?:
       {[10, 20, 30, 40].filter((m) => m <= minutes).map((m) => (
         <g key={m}>
           <line x1={x(m)} x2={x(m)} y1={0} y2={height} stroke="var(--line)" strokeDasharray="2 4" />
-          <text x={x(m) + 3} y={height - 4} fill="var(--text-muted)" fontSize="10">
+          <text x={x(m) + 3} y={height - 4} fill="#8e99ae" fontSize="10">
             {m}′
           </text>
         </g>
       ))}
-      <line x1={0} x2={width} y1={height / 2} y2={height / 2} stroke="var(--line-strong)" />
+      <line x1={0} x2={width} y1={height / 2} y2={height / 2} stroke="#3b4661" />
       <polygon points={area} fill="color-mix(in srgb, var(--side-blue) 30%, transparent)" clipPath="url(#gold-above)" />
       <polygon points={area} fill="color-mix(in srgb, var(--side-red) 30%, transparent)" clipPath="url(#gold-below)" />
       <polyline points={line} fill="none" stroke="var(--gold)" strokeWidth="2" />

@@ -1,24 +1,27 @@
+import { Alert, Button, Group, NumberInput, SegmentedControl, Stack, Text } from "@mantine/core";
+import { IconMessage } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
 import { api } from "../api/client";
 import type { PlayerDetail } from "../api/types";
-import { cx, money } from "../lib/format";
+import { money } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
+import { Section } from "./Ui";
 
 /** Sign a free agent, extend one of your own players, or release them. */
 export function ContractPanel({ player }: { player: PlayerDetail }) {
   const { career, act, busy, revision } = useCareer();
   const mine = player.team === career.team.id;
   const talks = useApi(() => api.negotiation(career.id, player.id), [career.id, player.id, revision]);
-  const [salary, setSalary] = useState(0);
-  const [years, setYears] = useState(2);
+  const [salary, setSalary] = useState<number>(0);
+  const [years, setYears] = useState("2");
   const [confirmRelease, setConfirmRelease] = useState(false);
 
   useEffect(() => {
     if (talks.data && salary === 0) {
       setSalary(Math.round((talks.data.asking * 0.9) / 5) * 5);
-      setYears(talks.data.years);
+      setYears(String(talks.data.years));
     }
   }, [talks.data, salary]);
 
@@ -28,74 +31,94 @@ export function ContractPanel({ player }: { player: PlayerDetail }) {
   const expiring = mine && player.contract_until !== null && player.contract_until <= career.season;
 
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <span className="panel-title">{mine ? "Contract" : "Sign this player"}</span>
-        {mine && <span className="muted">{money(player.salary)} until {player.contract_until}</span>}
-      </div>
-      <div className="panel-body stack" style={{ gap: 10 }}>
+    <Section
+      title={mine ? "Contract" : "Sign this player"}
+      right={
+        mine ? (
+          <Text fz="sm" c="dimmed">
+            {money(player.salary)} a season until {player.contract_until}
+          </Text>
+        ) : undefined
+      }
+    >
+      <Stack gap="sm">
         {(!mine || expiring) && (
           <>
-            <div className="muted">{t.hint}</div>
+            <Text fz="sm" c="dimmed">
+              {t.hint}
+            </Text>
             {t.problem ? (
-              <div className="error-box">{t.problem}</div>
+              <Alert color="red" variant="light">
+                {t.problem}
+              </Alert>
             ) : (
               <>
-                <div className="row">
-                  <label className="stack" style={{ gap: 4 }}>
-                    <span className="eyebrow">Salary a season (k$)</span>
-                    <input className="input" type="number" min={15} step={5} value={salary} onChange={(e) => setSalary(Number(e.target.value))} style={{ width: 130 }} />
-                  </label>
-                  <div className="stack" style={{ gap: 4 }}>
-                    <span className="eyebrow">Seasons</span>
-                    <div className="tabs">
-                      {[1, 2, 3].map((y) => (
-                        <button key={y} className={cx("tab", years === y && "active")} onClick={() => setYears(y)}>
-                          {y}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="muted" style={{ fontSize: 13 }}>
-                  Room in your budget: {money(t.budget_room)} · {t.rounds_left} round{t.rounds_left === 1 ? "" : "s"} of talks left
-                </div>
-                <div className="row">
-                  <button className="btn btn-primary" disabled={busy || salary > t.budget_room} onClick={() => act({ type: "offer", player: player.id, salary, years })}>
+                <Group align="flex-end" gap="md">
+                  <NumberInput
+                    label="Salary a season (k$)"
+                    value={salary}
+                    onChange={(v) => setSalary(Number(v) || 0)}
+                    min={15}
+                    step={5}
+                    w={170}
+                    thousandSeparator=","
+                  />
+                  <Stack gap={4}>
+                    <Text fz="sm" fw={500}>
+                      Seasons
+                    </Text>
+                    <SegmentedControl value={years} onChange={setYears} data={["1", "2", "3"]} />
+                  </Stack>
+                </Group>
+                <Text fz="xs" c="dimmed">
+                  Room in your budget {money(t.budget_room)} · {t.rounds_left} round{t.rounds_left === 1 ? "" : "s"} of talks left
+                </Text>
+                <Group>
+                  <Button loading={busy} disabled={salary > t.budget_room} onClick={() => act({ type: "offer", player: player.id, salary, years: Number(years) })}>
                     {mine ? "Offer extension" : "Make offer"}
-                  </button>
+                  </Button>
                   {t.counter !== null && (
-                    <button className="btn btn-gold" disabled={busy || t.counter > t.budget_room} onClick={() => act({ type: "accept_counter", player: player.id })}>
+                    <Button variant="light" color="hextech" disabled={busy || t.counter > t.budget_room} onClick={() => act({ type: "accept_counter", player: player.id })}>
                       Accept {money(t.counter)} × {t.counter_years}
-                    </button>
+                    </Button>
                   )}
-                </div>
+                </Group>
               </>
             )}
-            {t.message && <div style={{ fontWeight: 600 }}>{t.message}</div>}
+            {t.message && (
+              <Alert color="gold" variant="light" icon={<IconMessage size={16} />}>
+                {t.message}
+              </Alert>
+            )}
           </>
         )}
-        {mine && !expiring && <div className="muted">Signed through {player.contract_until}. Talks open in the contract's last season.</div>}
+        {mine && !expiring && (
+          <Text fz="sm" c="dimmed">
+            Signed through {player.contract_until}. Talks open in the contract's last season.
+          </Text>
+        )}
         {mine && (
-          <div className="row">
+          <Group gap="xs">
             {!confirmRelease ? (
-              <button className="btn btn-ghost btn-small" onClick={() => setConfirmRelease(true)}>
+              <Button variant="subtle" color="gray" size="xs" onClick={() => setConfirmRelease(true)}>
                 Release…
-              </button>
+              </Button>
             ) : (
               <>
-                <span className="muted">Pays half the remaining contract as severance.</span>
-                <button className="btn btn-ghost btn-small" disabled={busy} onClick={() => act({ type: "release", player: player.id })}>
+                <Text fz="xs" c="dimmed">
+                  Pays half the remaining contract as severance.
+                </Text>
+                <Button size="xs" color="red" variant="light" loading={busy} onClick={() => act({ type: "release", player: player.id })}>
                   Confirm release
-                </button>
-                <button className="btn btn-ghost btn-small" onClick={() => setConfirmRelease(false)}>
+                </Button>
+                <Button size="xs" variant="subtle" color="gray" onClick={() => setConfirmRelease(false)}>
                   Keep
-                </button>
+                </Button>
               </>
             )}
-          </div>
+          </Group>
         )}
-      </div>
-    </section>
+      </Stack>
+    </Section>
   );
 }

@@ -1,26 +1,35 @@
+import {
+  Accordion, Badge, Box, Button, Grid, Group, Paper, Progress, ScrollArea, SegmentedControl, Select, SimpleGrid, Stack, Switch,
+  Table, Text, TextInput, Tooltip,
+} from "@mantine/core";
+import { IconRobot, IconSearch, IconPlayerSkipForward, IconPlayerTrackNext } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { DraftTeam, DraftView, PoolPlayer, Role } from "../api/types";
-import { ChampIcon, Flag, Loading, Meter, Ovr, PlayerLink, RoleTag, TeamBadge } from "../components/Bits";
-import { cx, money, ROLES } from "../lib/format";
+import type { DraftView, PoolPlayer, Role } from "../api/types";
+import { ChampIcon, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo, TeamName } from "../components/Media";
+import { Loading, Ovr, PageHeader, Screen, Section } from "../components/Ui";
+import { cx, flag, money, ROLES } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
-import styles from "./DraftScreen.module.css";
+import classes from "./DraftScreen.module.css";
 
 type Sort = "overall" | "potential" | "salary";
 
 export function DraftScreen() {
   const { career, revision, act, busy } = useCareer();
+  const catalog = useCatalog();
   const navigate = useNavigate();
   const draft = useApi(() => api.draft(career.id), [career.id, revision]);
 
-  if (career.phase !== "draft" && draft.data?.done) return <DraftDone draft={draft.data} />;
   if (draft.error && career.phase !== "draft") return <Navigate to={`/career/${career.id}`} replace />;
   if (!draft.data) return <Loading text="Opening the draft room…" />;
   const d = draft.data;
+  if (d.done) return <DraftDone draft={d} />;
+  const league = catalog.league[d.league];
+  const rounds = d.required_rounds + d.optional_rounds;
 
   async function simAll() {
     const result = await act({ type: "draft_sim" });
@@ -28,70 +37,86 @@ export function DraftScreen() {
   }
 
   return (
-    <div className="screen">
-      <div className="screen-head">
-        <div>
-          <div className="eyebrow">
-            {d.league} pre-season draft · round {Math.min(d.round, d.required_rounds + d.optional_rounds)} of{" "}
-            {d.required_rounds + d.optional_rounds}
-            {d.round > d.required_rounds && " (bench round)"}
-          </div>
-          <h1 className="screen-title">
-            {d.done ? "The draft is over" : d.my_turn ? "You are on the clock" : "Waiting for the next pick"}
-          </h1>
-        </div>
-        <div className="row">
-          {d.my_turn && (
-            <button className="btn btn-ghost" disabled={busy} onClick={() => act({ type: "draft_auto" })}>
-              Let the assistant pick
-            </button>
-          )}
-          {d.my_turn && d.me.can_pass && (
-            <button className="btn btn-ghost" disabled={busy} onClick={() => act({ type: "draft_pass" })}>
-              Pass
-            </button>
-          )}
-          <button className="btn btn-ghost" disabled={busy || d.done} onClick={simAll}>
-            Auto-draft the rest
-          </button>
-        </div>
-      </div>
+    <Screen>
+      <PageHeader
+        icon={<LeagueLogo logo={league?.logo} name={d.league} size={52} />}
+        eyebrow={`${d.league} pre-season draft · round ${Math.min(d.round, rounds)} of ${rounds}${d.round > d.required_rounds ? " · bench round" : ""} · pick ${d.number} of ${d.total}`}
+        title={d.my_turn ? "You are on the clock" : "Waiting for the next pick"}
+        right={
+          <Group>
+            {d.my_turn && (
+              <Button variant="light" color="hextech" leftSection={<IconRobot size={16} />} loading={busy} onClick={() => act({ type: "draft_auto" })}>
+                Assistant pick
+              </Button>
+            )}
+            {d.my_turn && d.me.can_pass && (
+              <Button variant="default" leftSection={<IconPlayerSkipForward size={16} />} disabled={busy} onClick={() => act({ type: "draft_pass" })}>
+                Pass
+              </Button>
+            )}
+            <Button variant="default" leftSection={<IconPlayerTrackNext size={16} />} disabled={busy} onClick={simAll}>
+              Auto-draft the rest
+            </Button>
+          </Group>
+        }
+      />
 
       <PickStrip d={d} />
 
-      <div className="grid-main-side" style={{ marginTop: 16 }}>
-        <Pool d={d} />
-        <div className="stack">
-          <MyTeam d={d} />
-          <Feed d={d} />
-          <OtherTeams d={d} />
-        </div>
-      </div>
-    </div>
+      <Grid gap="lg" mt="md">
+        <Grid.Col span={{ base: 12, xl: 8 }}>
+          <Pool d={d} />
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, xl: 4 }}>
+          <Stack gap="lg">
+            <MyRoster d={d} />
+            <Feed d={d} />
+            <Rivals d={d} />
+          </Stack>
+        </Grid.Col>
+      </Grid>
+    </Screen>
   );
 }
 
 function PickStrip({ d }: { d: DraftView }) {
-  const perRound = d.sequence.length / (d.required_rounds + d.optional_rounds);
-  const round = Math.min(d.round, d.required_rounds + d.optional_rounds) - 1;
+  const rounds = d.required_rounds + d.optional_rounds;
+  const perRound = d.sequence.length / rounds;
+  const round = Math.min(d.round, rounds) - 1;
   const start = round * perRound;
-  const slice = d.sequence.slice(start, start + perRound);
   const team = (id: string) => d.teams.find((t) => t.team.id === id)!.team;
   return (
-    <div className={cx("panel", styles.strip)}>
-      {slice.map((tid, i) => {
-        const number = start + i + 1;
-        const pick = d.picks.find((p) => p.number === number);
-        const current = number === d.number && !d.done;
-        return (
-          <div key={number} className={cx(styles.slot, current && styles.current, pick && styles.made)}>
-            <span className={styles.slotNo}>#{number}</span>
-            <TeamBadge team={team(tid)} size="sm" />
-            <span className={styles.slotPick}>{pick ? (pick.player ? pick.player.name : "pass") : current ? "on the clock" : ""}</span>
-          </div>
-        );
-      })}
-    </div>
+    <ScrollArea type="auto" offsetScrollbars>
+      <Group gap={8} wrap="nowrap" pb={4}>
+        {d.sequence.slice(start, start + perRound).map((tid, i) => {
+          const number = start + i + 1;
+          const pick = d.picks.find((p) => p.number === number);
+          const current = number === d.number;
+          return (
+            <Paper key={number} className={classes.slot} data-current={current || undefined} data-made={!!pick || undefined}>
+              <Group justify="space-between" wrap="nowrap">
+                <Text fz={10} c="dimmed" fw={700}>
+                  #{number}
+                </Text>
+                <TeamLogo team={team(tid)} size={22} />
+              </Group>
+              {pick?.player ? (
+                <Group gap={6} wrap="nowrap" mt={6}>
+                  <PlayerPhoto photo={pick.player.photo} name={pick.player.name} size={26} />
+                  <Text fz="xs" fw={700} truncate>
+                    {pick.player.name}
+                  </Text>
+                </Group>
+              ) : (
+                <Text fz="xs" mt={10} c={current ? "gold.4" : "dimmed"} fw={current ? 700 : 400}>
+                  {pick ? "pass" : current ? "on the clock" : "—"}
+                </Text>
+              )}
+            </Paper>
+          );
+        })}
+      </Group>
+    </ScrollArea>
   );
 }
 
@@ -99,9 +124,9 @@ function Pool({ d }: { d: DraftView }) {
   const { career, act, busy } = useCareer();
   const catalog = useCatalog();
   const [role, setRole] = useState<Role | "ALL">(d.me.open_roles[0] ?? "ALL");
-  const [league, setLeague] = useState("ALL");
+  const [league, setLeague] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [affordable, setAffordable] = useState(false);
+  const [pickable, setPickable] = useState(false);
   const [sort, setSort] = useState<Sort>("overall");
   const openKey = d.me.open_roles.join(",");
 
@@ -112,265 +137,314 @@ function Pool({ d }: { d: DraftView }) {
   }, [openKey]);
 
   const leagues = useMemo(() => Array.from(new Set(d.pool.map((p) => p.league))), [d.pool]);
-  const leagueName = (id: string) => catalog.leagues.find((l) => l.id === id)?.name ?? id;
-
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     return d.pool
       .filter((p) => role === "ALL" || p.role === role)
-      .filter((p) => league === "ALL" || p.league === league)
-      .filter((p) => !affordable || p.problem === null)
+      .filter((p) => !league || p.league === league)
+      .filter((p) => !pickable || p.problem === null)
       .filter((p) => !q || p.name.toLowerCase().includes(q) || (p.origin?.name.toLowerCase().includes(q) ?? false))
       .sort((a, b) => (sort === "salary" ? a.salary - b.salary : b[sort] - a[sort]))
       .slice(0, 150);
-  }, [d.pool, role, league, query, affordable, sort]);
+  }, [d.pool, role, league, query, pickable, sort]);
 
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <span className="panel-title">Player pool · {d.pool.length} available</span>
-      </div>
-      <div className={styles.filters}>
-        <div className="tabs">
-          {(["ALL", ...ROLES] as const).map((r) => (
-            <button key={r} className={cx("tab", role === r && "active")} onClick={() => setRole(r)}>
-              {r}
-              {r !== "ALL" && d.me.open_roles.includes(r) && " •"}
-            </button>
-          ))}
-        </div>
-        <select className="select" value={league} onChange={(e) => setLeague(e.target.value)}>
-          <option value="ALL">All leagues</option>
-          {leagues.map((l) => (
-            <option key={l} value={l}>
-              {leagueName(l)}
-            </option>
-          ))}
-        </select>
-        <input className="input" placeholder="Search player or team" value={query} onChange={(e) => setQuery(e.target.value)} />
-        <select className="select" value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
-          <option value="overall">Best rated</option>
-          <option value="potential">Highest potential</option>
-          <option value="salary">Cheapest</option>
-        </select>
-        <label className="row" style={{ gap: 6 }}>
-          <input type="checkbox" checked={affordable} onChange={(e) => setAffordable(e.target.checked)} />
-          <span className="muted">Only pickable</span>
-        </label>
-      </div>
-      <div className={cx("table-wrap", styles.poolWrap)}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Role</th>
-              <th>Player</th>
-              <th>2026 team</th>
-              <th className="num">OVR</th>
-              <th className="num">POT</th>
-              <th className="num">Salary</th>
-              <th>Signatures</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
+    <Section title={`Player pool · ${d.pool.length} available`} pad={false}>
+      <Group gap="sm" p="sm" className={classes.filters}>
+        <SegmentedControl
+          value={role}
+          onChange={(v) => setRole(v as Role | "ALL")}
+          data={[
+            { value: "ALL", label: "All" },
+            ...ROLES.map((r) => ({
+              value: r,
+              label: (
+                <Group gap={4} wrap="nowrap" justify="center">
+                  <RoleIcon role={r} size={14} />
+                  {d.me.open_roles.includes(r) && <span className={classes.openDot} />}
+                </Group>
+              ),
+            })),
+          ]}
+        />
+        <Select
+          placeholder="All leagues"
+          clearable
+          value={league}
+          onChange={setLeague}
+          data={leagues.map((l) => ({ value: l, label: catalog.league[l]?.name ?? l }))}
+          w={170}
+        />
+        <TextInput placeholder="Player or team" leftSection={<IconSearch size={14} />} value={query} onChange={(e) => setQuery(e.currentTarget.value)} w={190} />
+        <Select
+          value={sort}
+          onChange={(v) => setSort((v as Sort) ?? "overall")}
+          data={[
+            { value: "overall", label: "Best rated" },
+            { value: "potential", label: "Highest potential" },
+            { value: "salary", label: "Cheapest" },
+          ]}
+          w={160}
+          allowDeselect={false}
+        />
+        <Switch label="Only pickable" checked={pickable} onChange={(e) => setPickable(e.currentTarget.checked)} />
+      </Group>
+      <ScrollArea h="calc(100vh - 330px)" mih={380}>
+        <Table stickyHeader verticalSpacing={5}>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th w={36} />
+              <Table.Th>Player</Table.Th>
+              <Table.Th>2026</Table.Th>
+              <Table.Th className="num">OVR</Table.Th>
+              <Table.Th className="num">POT</Table.Th>
+              <Table.Th className="num">Salary</Table.Th>
+              <Table.Th>Signatures</Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {rows.map((p) => (
-              <PoolRow key={p.id} p={p} canAct={d.my_turn && !busy} onPick={() => act({ type: "draft_pick", player: p.id })}
-                careerId={career.id} leagueName={leagueName(p.league)} />
+              <PoolRow key={p.id} p={p} canAct={d.my_turn && !busy} onPick={() => act({ type: "draft_pick", player: p.id })} careerId={career.id} />
             ))}
-          </tbody>
-        </table>
-        {rows.length === 0 && <div className="empty">Nobody fits those filters.</div>}
-      </div>
-    </section>
+          </Table.Tbody>
+        </Table>
+        {rows.length === 0 && (
+          <Text c="dimmed" ta="center" py="xl">
+            Nobody fits those filters.
+          </Text>
+        )}
+      </ScrollArea>
+    </Section>
   );
 }
 
-function PoolRow({ p, canAct, onPick, careerId, leagueName }: { p: PoolPlayer; canAct: boolean; onPick: () => void; careerId: string; leagueName: string }) {
+function PoolRow({ p, canAct, onPick, careerId }: { p: PoolPlayer; canAct: boolean; onPick: () => void; careerId: string }) {
+  const catalog = useCatalog();
+  const navigate = useNavigate();
+  const league = catalog.league[p.league];
   return (
-    <tr className={cx(p.problem && "dim")}>
-      <td>
-        <RoleTag role={p.role} />
-      </td>
-      <td>
-        <Flag country={p.country} /> <PlayerLink careerId={careerId} id={p.id} name={p.name} />
-      </td>
-      <td className="muted">
-        {p.origin?.tag ?? "—"} <span className={styles.league}>{leagueName}</span>
-      </td>
-      <td className="num">
+    <Table.Tr className={cx(p.problem && "dim")}>
+      <Table.Td>
+        <RoleIcon role={p.role} />
+      </Table.Td>
+      <Table.Td>
+        <Group gap="sm" wrap="nowrap" style={{ cursor: "pointer" }} onClick={() => navigate(`/career/${careerId}/player/${p.id}`)}>
+          <PlayerPhoto photo={p.photo} name={p.name} size={34} />
+          <Stack gap={0}>
+            <Text fw={700} fz="sm">
+              {p.name}
+            </Text>
+            <Text fz={11} c="dimmed">
+              {flag(p.country)} {p.real_name ?? p.country ?? ""}
+            </Text>
+          </Stack>
+        </Group>
+      </Table.Td>
+      <Table.Td>
+        <Group gap={6} wrap="nowrap">
+          {p.origin && <TeamLogo team={{ tag: p.origin.tag, color: "#3b4661", logo: p.origin.logo }} size={22} />}
+          <Tooltip label={league?.full_name ?? p.league}>
+            <span>
+              <LeagueLogo logo={league?.logo} name={p.league} size={18} />
+            </span>
+          </Tooltip>
+        </Group>
+      </Table.Td>
+      <Table.Td className="num">
         <Ovr value={p.overall} />
-      </td>
-      <td className="num muted">{p.potential}</td>
-      <td className="num">{money(p.salary)}</td>
-      <td>
-        <div className="row" style={{ gap: 3 }}>
+      </Table.Td>
+      <Table.Td className="num" c="dimmed">
+        {p.potential}
+      </Table.Td>
+      <Table.Td className="num" fz="sm">
+        {money(p.salary)}
+      </Table.Td>
+      <Table.Td>
+        <Group gap={3} wrap="nowrap">
           {p.signatures.map((c) => (
-            <ChampIcon key={c} id={c} size={22} />
+            <ChampIcon key={c} id={c} size={24} />
           ))}
-        </div>
-      </td>
-      <td className="num">
-        <button className="btn btn-primary btn-small" disabled={!canAct || !!p.problem} title={p.problem ?? "Draft this player"} onClick={onPick}>
-          Draft
-        </button>
-      </td>
-    </tr>
+        </Group>
+      </Table.Td>
+      <Table.Td className="num">
+        <Tooltip label={p.problem ?? "Draft this player"} disabled={!p.problem && canAct}>
+          <Button size="compact-sm" disabled={!canAct || !!p.problem} onClick={onPick}>
+            Draft
+          </Button>
+        </Tooltip>
+      </Table.Td>
+    </Table.Tr>
   );
 }
 
-function MyTeam({ d }: { d: DraftView }) {
+function MyRoster({ d }: { d: DraftView }) {
   const { career } = useCareer();
   const mine = d.teams.find((t) => t.team.id === career.team.id)!;
   const byId = Object.fromEntries(mine.roster.map((p) => [p.id, p]));
   const bench = mine.roster.filter((p) => !Object.values(mine.lineup).includes(p.id));
+  const tight = d.me.left < d.me.reserve;
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <span className="panel-title">Your roster</span>
-        <span className="muted">{money(d.me.left)} left</span>
-      </div>
-      <div className="panel-body stack" style={{ gap: 10 }}>
-        <div className="row">
-          <Meter value={d.me.payroll} max={d.me.budget} tone={d.me.left < d.me.reserve ? "red" : "gold"} />
-          <span className="muted">
-            {money(d.me.payroll)} of {money(d.me.budget)}
-          </span>
-        </div>
-        {d.me.open_roles.length > 0 && (
-          <div className="muted" style={{ fontSize: 13 }}>
-            Filling {d.me.open_roles.join(", ")} at the cheapest would cost {money(d.me.reserve)}.
-          </div>
-        )}
+    <Section title="Your roster" right={<Text fz="sm" fw={700}>{money(d.me.left)} left</Text>}>
+      <Stack gap="xs">
+        <Progress value={(d.me.payroll / d.me.budget) * 100} color={tight ? "red" : "gold"} size="sm" radius="xl" />
+        <Text fz="xs" c="dimmed">
+          {money(d.me.payroll)} of {money(d.me.budget)}
+          {d.me.open_roles.length > 0 && ` · filling ${d.me.open_roles.join(", ")} at the cheapest costs ${money(d.me.reserve)}`}
+        </Text>
         {ROLES.map((r) => {
           const pid = mine.lineup[r];
           const p = pid ? byId[pid] : null;
           return (
-            <div key={r} className={cx(styles.lineSlot, !p && styles.open)}>
-              <RoleTag role={r} />
-              {p ? (
-                <>
-                  <span className={styles.lineName}>
-                    <Flag country={p.country} /> {p.name}
-                    {mine.franchise === p.id && <span className="chip chip-gold">Franchise</span>}
-                  </span>
-                  <Ovr value={p.overall} size="sm" />
-                  <span className="muted">{money(p.salary)}</span>
-                </>
-              ) : (
-                <span className="muted">open</span>
-              )}
-            </div>
+            <Paper key={r} p="xs" className={classes.rosterSlot} data-open={!p || undefined}>
+              <Group gap="sm" wrap="nowrap">
+                <RoleIcon role={r} />
+                {p ? (
+                  <>
+                    <PlayerPhoto photo={p.photo} name={p.name} size={34} ring={mine.franchise === p.id ? "#c8aa6e" : undefined} />
+                    <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                      <Group gap={6} wrap="nowrap">
+                        <Text fw={700} fz="sm" truncate>
+                          {p.name}
+                        </Text>
+                        {mine.franchise === p.id && (
+                          <Badge size="xs" variant="light">
+                            Franchise
+                          </Badge>
+                        )}
+                      </Group>
+                      <Text fz="xs" c="dimmed">
+                        {money(p.salary)}
+                      </Text>
+                    </Stack>
+                    <Ovr value={p.overall} />
+                  </>
+                ) : (
+                  <Text fz="sm" c="dimmed">
+                    Open
+                  </Text>
+                )}
+              </Group>
+            </Paper>
           );
         })}
         {bench.length > 0 && (
-          <div className="muted" style={{ fontSize: 13 }}>
+          <Text fz="xs" c="dimmed">
             Bench: {bench.map((p) => `${p.name} (${p.role})`).join(", ")}
-          </div>
+          </Text>
         )}
-      </div>
-    </section>
+      </Stack>
+    </Section>
   );
 }
 
 function Feed({ d }: { d: DraftView }) {
   const team = (id: string) => d.teams.find((t) => t.team.id === id)!.team;
-  const recent = [...d.picks].reverse().slice(0, 12);
+  const recent = [...d.picks].reverse().slice(0, 10);
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <span className="panel-title">Latest picks</span>
-      </div>
-      <table className="table">
-        <tbody>
+    <Section title="Latest picks" pad={false}>
+      <Table verticalSpacing={4}>
+        <Table.Tbody>
           {recent.map((p) => (
-            <tr key={p.number}>
-              <td className="muted">#{p.number}</td>
-              <td>
-                <TeamBadge team={team(p.team)} size="sm" />
-              </td>
-              <td>{p.player ? p.player.name : <span className="muted">pass</span>}</td>
-              <td>{p.player && <RoleTag role={p.player.role} />}</td>
-              <td className="num">{p.player && <Ovr value={p.player.overall} size="sm" />}</td>
-            </tr>
+            <Table.Tr key={p.number}>
+              <Table.Td c="dimmed" fz="xs" w={36}>
+                #{p.number}
+              </Table.Td>
+              <Table.Td w={30}>
+                <TeamLogo team={team(p.team)} size={22} />
+              </Table.Td>
+              <Table.Td>
+                {p.player ? (
+                  <Group gap={6} wrap="nowrap">
+                    <PlayerPhoto photo={p.player.photo} name={p.player.name} size={24} />
+                    <Text fz="sm" fw={600}>
+                      {p.player.name}
+                    </Text>
+                  </Group>
+                ) : (
+                  <Text fz="sm" c="dimmed">
+                    pass
+                  </Text>
+                )}
+              </Table.Td>
+              <Table.Td className="num">{p.player && <Ovr value={p.player.overall} size="sm" />}</Table.Td>
+            </Table.Tr>
           ))}
-        </tbody>
-      </table>
-      {recent.length === 0 && <div className="empty">No picks yet.</div>}
-    </section>
-  );
-}
-
-function OtherTeams({ d }: { d: DraftView }) {
-  const { career } = useCareer();
-  const [open, setOpen] = useState<string | null>(null);
-  return (
-    <section className="panel">
-      <div className="panel-head">
-        <span className="panel-title">Rivals</span>
-      </div>
-      {d.teams
-        .filter((t) => t.team.id !== career.team.id)
-        .map((t) => (
-          <RivalRow key={t.team.id} t={t} open={open === t.team.id} toggle={() => setOpen(open === t.team.id ? null : t.team.id)} />
-        ))}
-    </section>
-  );
-}
-
-function RivalRow({ t, open, toggle }: { t: DraftTeam; open: boolean; toggle: () => void }) {
-  return (
-    <div className={styles.rival}>
-      <button className={styles.rivalHead} onClick={toggle}>
-        <TeamBadge team={t.team} size="sm" />
-        <span className="muted">{t.roster.length} players</span>
-        <span className="spacer" />
-        <span className="muted">{money(t.budget - t.payroll)} left</span>
-      </button>
-      {open && (
-        <div className={styles.rivalBody}>
-          {t.roster.map((p) => (
-            <div key={p.id} className="row" style={{ gap: 8 }}>
-              <RoleTag role={p.role} />
-              <span>{p.name}</span>
-              <span className="spacer" />
-              <Ovr value={p.overall} size="sm" />
-            </div>
-          ))}
-        </div>
+        </Table.Tbody>
+      </Table>
+      {recent.length === 0 && (
+        <Text c="dimmed" ta="center" py="md" fz="sm">
+          No picks yet.
+        </Text>
       )}
-    </div>
+    </Section>
+  );
+}
+
+function Rivals({ d }: { d: DraftView }) {
+  const { career } = useCareer();
+  return (
+    <Section title="Rivals" pad={false}>
+      <Accordion variant="default" chevronPosition="left">
+        {d.teams
+          .filter((t) => t.team.id !== career.team.id)
+          .map((t) => (
+            <Accordion.Item key={t.team.id} value={t.team.id}>
+              <Accordion.Control>
+                <Group justify="space-between" wrap="nowrap">
+                  <TeamName team={t.team} size={22} />
+                  <Text fz="xs" c="dimmed">
+                    {t.roster.length} · {money(t.budget - t.payroll)} left
+                  </Text>
+                </Group>
+              </Accordion.Control>
+              <Accordion.Panel>
+                <Stack gap={4}>
+                  {t.roster.map((p) => (
+                    <Group key={p.id} gap="xs" wrap="nowrap">
+                      <RoleIcon role={p.role} size={14} />
+                      <PlayerPhoto photo={p.photo} name={p.name} size={22} />
+                      <Text fz="sm" style={{ flex: 1 }}>
+                        {p.name}
+                      </Text>
+                      <Ovr value={p.overall} size="sm" />
+                    </Group>
+                  ))}
+                </Stack>
+              </Accordion.Panel>
+            </Accordion.Item>
+          ))}
+      </Accordion>
+    </Section>
   );
 }
 
 function DraftDone({ draft }: { draft: DraftView }) {
   const { career } = useCareer();
+  const catalog = useCatalog();
   return (
-    <div className="screen">
-      <div className="screen-head">
-        <div>
-          <div className="eyebrow">{draft.league} pre-season draft</div>
-          <h1 className="screen-title">Draft results</h1>
-        </div>
-      </div>
-      <div className={styles.results}>
+    <Screen>
+      <PageHeader icon={<LeagueLogo logo={catalog.league[draft.league]?.logo} name={draft.league} size={52} />} eyebrow={`${draft.league} pre-season draft`} title="Draft results" />
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="md">
         {draft.teams.map((t) => (
-          <section key={t.team.id} className={cx("panel", t.team.id === career.team.id && styles.mineResult)}>
-            <div className="panel-head">
-              <TeamBadge team={t.team} name />
-            </div>
-            <div className="panel-body stack" style={{ gap: 6 }}>
+          <Paper key={t.team.id} p="md" className={cx(t.team.id === career.team.id && classes.mineResult)}>
+            <TeamName team={t.team} size={32} />
+            <Stack gap={6} mt="sm">
               {t.roster.map((p) => (
-                <div key={p.id} className="row" style={{ gap: 8 }}>
-                  <RoleTag role={p.role} />
-                  <span>{p.name}</span>
-                  <span className="spacer" />
+                <Group key={p.id} gap="xs" wrap="nowrap">
+                  <RoleIcon role={p.role} size={14} />
+                  <PlayerPhoto photo={p.photo} name={p.name} size={24} />
+                  <Text fz="sm" style={{ flex: 1 }}>
+                    {p.name}
+                  </Text>
                   <Ovr value={p.overall} size="sm" />
-                </div>
+                </Group>
               ))}
-            </div>
-          </section>
+            </Stack>
+          </Paper>
         ))}
-      </div>
-    </div>
+      </SimpleGrid>
+      <Box h={20} />
+    </Screen>
   );
 }

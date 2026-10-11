@@ -1,0 +1,18 @@
+.starter {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  min-height: 320px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.starter:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.starterInner {
+  position: relative;
+  z-index: 1;
+  padding: 14px;
+}

@@ -70,7 +70,7 @@ After the players come a round for an assistant coach and a round for an analyst
 
 1. **Lineup.** Both fives with photos, form and signature champions, plus team strength and chemistry, and your analyst's scouting report on the opponent. From here you can start champion select, let the assistant draft, or simulate the whole series.
 2. **Champion select.** The real tournament order of bans and picks, laid out like a broadcast. Each team's column fills with loading-screen art as champions lock in, and bans line up along the top.
-   - **The clock.** Every ban and pick has 30 seconds. When yours runs out, the champion you selected locks in; if you selected none, the assistant's first choice does. The opponent takes two to five seconds per turn, and **Skip to my turn** plays all of its turns up to yours.
+   - **The clock.** Every ban and pick has 30 seconds. When yours runs out, the champion you selected locks in; if you selected none, the assistant's first choice does. The opponent takes 7 to 30 seconds per turn, like a real team, and **Skip to my turn** plays all of its turns up to yours.
    - **Players.** Hovering a player on either side shows their signature champions and the rest of their pool with mastery. Banned and picked champions are greyed out.
    - **The assistant.** On your turn it lists its best options with their reasons: for picks, the player's fit, what the composition still needs and the lane counter; for bans, the threat.
    - **The grid.** It badges every champion your players have high mastery on. Champions already played in the series are locked under fearless draft.

@@ -195,8 +195,8 @@ function LineupCard({ side, sideView, label, mastery }: { side: Side; sideView: 
 // ---------- champion select ----------
 
 const TURN_SECONDS = 30;
-// The AI takes a few seconds over every ban and pick instead of locking in the moment it can.
-const OPPONENT_THINKS: [number, number] = [2, 5];
+// The AI takes its time over every ban and pick, like a real team, instead of locking in at once.
+const OPPONENT_THINKS: [number, number] = [7, 30];
 
 function phaseName(step: number): string {
   if (step < 6) return "Ban phase 1";

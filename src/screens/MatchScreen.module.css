@@ -243,6 +243,21 @@
   text-align: center;
 }
 
+.comps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 16px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.comp {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 /* ---------- the game ---------- */
 
 .live {

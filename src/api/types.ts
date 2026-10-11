@@ -415,6 +415,7 @@ export interface LiveView {
     locked: string[];
   };
   suggestions: Suggestion[];
+  compositions: Record<Side, { value: number; notes: string[] } | null>;
   bench: PlayerRow[];
   mastery: Record<string, Record<string, number>>;
 }

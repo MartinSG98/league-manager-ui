@@ -225,6 +225,23 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
             <div className={cx("panel", styles.ready)}>
               <div className="eyebrow">Champion select complete</div>
               <h2 className="screen-title">Ready to play game {view.game}</h2>
+              <div className={styles.comps}>
+                {(["blue", "red"] as Side[]).map((side) => {
+                  const comp = view.compositions[side];
+                  return (
+                    <div key={side} className={styles.comp}>
+                      <div className={`eyebrow side-${side}`}>
+                        {view[side].team.tag} composition {comp && <strong className={comp.value >= 0 ? "gain" : "loss"}>{signed(comp.value, 1)}</strong>}
+                      </div>
+                      {comp?.notes.map((n) => (
+                        <div key={n} className="muted">
+                          {n}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
               <div className="row" style={{ justifyContent: "center", marginTop: 14 }}>
                 <button className="btn btn-ghost" disabled={busy} onClick={simSeries}>
                   Simulate the rest

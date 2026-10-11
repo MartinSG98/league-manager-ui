@@ -19,3 +19,7 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Champion and role art from Data Dragon and CommunityDragon (npm run fetch:art)
+public/champions/
+public/roles/

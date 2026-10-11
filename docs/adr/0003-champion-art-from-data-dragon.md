@@ -1,7 +1,7 @@
 # 0003. Champion art from Data Dragon, no team logos
 
 Date: 2026-10-11
-Status: Accepted
+Status: Superseded by [0006](0006-local-champion-art-and-esports-images.md)
 
 ## Context
 

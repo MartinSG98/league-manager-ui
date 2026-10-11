@@ -1,7 +1,7 @@
 # 0002. A manager-game layout
 
 Date: 2026-10-11
-Status: Accepted
+Status: Superseded by [0005](0005-mantine-and-a-broadcast-look.md)
 
 ## Context
 

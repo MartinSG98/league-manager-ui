@@ -67,7 +67,7 @@ export function PlayerScreen() {
             <Ovr value={d.potential} size="lg" />
           </div>
           <div className="stack" style={{ gap: 0 }}>
-            <span className="eyebrow">Salary</span>
+            <span className="eyebrow">{d.contract_until ? "Salary" : "Market value"}</span>
             <strong style={{ fontSize: 20 }}>{money(d.salary)}</strong>
           </div>
         </div>

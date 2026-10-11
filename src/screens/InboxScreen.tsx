@@ -2,6 +2,7 @@ import { Badge, Button, Grid, Stack, Text, Title, UnstyledButton } from "@mantin
 import { IconChecks } from "@tabler/icons-react";
 import { useState } from "react";
 
+import { ScoutingReport } from "../components/ScoutingReport";
 import { Empty, PageHeader, Screen, Section } from "../components/Ui";
 import { longDate, shortDate } from "../lib/format";
 import { useCareer } from "../state/career";
@@ -15,6 +16,8 @@ const KIND_COLOR: Record<string, string> = {
   match: "blue",
   news: "gray",
   finance: "yellow",
+  scouting: "red",
+  staff: "teal",
 };
 
 export function InboxScreen() {
@@ -65,9 +68,13 @@ export function InboxScreen() {
                 <Title order={2} className="display" fz={30}>
                   {open.subject}
                 </Title>
-                <Text c="gray.4" style={{ whiteSpace: "pre-line", lineHeight: 1.7 }}>
-                  {open.body}
-                </Text>
+                {open.report ? (
+                  <ScoutingReport report={open.report} />
+                ) : (
+                  <Text c="gray.4" style={{ whiteSpace: "pre-line", lineHeight: 1.7 }}>
+                    {open.body}
+                  </Text>
+                )}
               </Stack>
             ) : (
               <Empty>Pick a message.</Empty>

@@ -1,19 +1,21 @@
 import {
-  Accordion, Badge, Box, Button, Grid, Group, Paper, Progress, ScrollArea, SegmentedControl, Select, SimpleGrid, Stack, Switch,
-  Table, Text, TextInput, Tooltip,
+  Accordion, Badge, Box, Button, Grid, Group, HoverCard, Paper, Progress, ScrollArea, SegmentedControl, Select, SimpleGrid, Stack,
+  Switch, Table, Text, TextInput, Tooltip,
 } from "@mantine/core";
 import {
-  IconPlayerPauseFilled, IconPlayerPlayFilled, IconPlayerSkipForward, IconPlayerTrackNext, IconRobot, IconSearch,
+  IconChartDots, IconPlayerPauseFilled, IconPlayerPlayFilled, IconPlayerSkipForward, IconPlayerTrackNext, IconRobot,
+  IconSchool, IconSearch,
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { DraftView, PoolPlayer, Role } from "../api/types";
+import type { DraftView, PoolPlayer, Role, StaffKind, StaffPoolRow, StaffRow } from "../api/types";
 import { ChampIcon, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo, TeamName } from "../components/Media";
 import { PlayerHoverCard } from "../components/PlayerHoverCard";
+import { StaffAttributes, StaffCard, StaffOrigin } from "../components/Staff";
 import { Loading, Ovr, PageHeader, Screen, Section } from "../components/Ui";
-import { cx, flag, money, ROLES } from "../lib/format";
+import { cx, flag, money, ROLES, STAFF_KIND_NAMES } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useClock, useThinkingTime } from "../lib/useClock";
 import { useCareer } from "../state/career";
@@ -53,7 +55,11 @@ function DraftRoom({ d }: { d: DraftView }) {
     moved.current = key;
     void act({ type: "draft_next" }, { quiet: true });
   }, [left, waiting, paused, key, act]);
-  const rounds = d.required_rounds + d.optional_rounds;
+  const rounds = d.required_rounds + d.optional_rounds + d.staff_rounds.length;
+  const roundLabel =
+    d.round_kind !== "player" ? ` · ${STAFF_KIND_NAMES[d.round_kind].toLowerCase()} round` : d.round > d.required_rounds ? " · bench round" : "";
+  const [tab, setTab] = useState<"players" | "staff">(d.round_kind === "player" ? "players" : "staff");
+  useEffect(() => setTab(d.round_kind === "player" ? "players" : "staff"), [d.round_kind]);
 
   async function simAll() {
     const result = await act({ type: "draft_sim" });
@@ -64,7 +70,7 @@ function DraftRoom({ d }: { d: DraftView }) {
     <Screen>
       <PageHeader
         icon={<LeagueLogo logo={league?.logo} name={d.league} size={52} />}
-        eyebrow={`${d.league} pre-season draft · round ${Math.min(d.round, rounds)} of ${rounds}${d.round > d.required_rounds ? " · bench round" : ""} · pick ${d.number} of ${d.total}`}
+        eyebrow={`${d.league} pre-season draft · round ${Math.min(d.round, rounds)} of ${rounds}${roundLabel} · pick ${d.number} of ${d.total}`}
         title={d.my_turn ? "You are on the clock" : "Waiting for the next pick"}
         right={
           <Group>
@@ -91,7 +97,16 @@ function DraftRoom({ d }: { d: DraftView }) {
 
       <Grid gap="lg" mt="md">
         <Grid.Col span={{ base: 12, xl: 8 }}>
-          <Pool d={d} />
+          <SegmentedControl
+            mb="sm"
+            value={tab}
+            onChange={(v) => setTab(v as "players" | "staff")}
+            data={[
+              { value: "players", label: `Players · ${d.pool.length}` },
+              { value: "staff", label: `Coaches and analysts · ${d.staff_pool.length}` },
+            ]}
+          />
+          {tab === "players" ? <Pool d={d} /> : <StaffPool d={d} />}
         </Grid.Col>
         <Grid.Col span={{ base: 12, xl: 4 }}>
           <Stack gap="lg">
@@ -137,20 +152,8 @@ function OnTheClock({ d, paused, onPause, progress }: { d: DraftView; paused: bo
               Last pick
             </Text>
             <TeamLogo team={lastTeam} size={24} />
-            {last.player ? (
-              <>
-                <PlayerPhoto photo={last.player.photo} name={last.player.name} size={30} />
-                <RoleIcon role={last.player.role} size={14} />
-                <Text fw={700} fz="sm">
-                  {last.player.name}
-                </Text>
-                <Ovr value={last.player.overall} size="sm" />
-              </>
-            ) : (
-              <Text fz="sm" c="dimmed">
-                pass
-              </Text>
-            )}
+            <PickWho pick={last} size={30} />
+            {(last.player ?? last.staff) && <Ovr value={(last.player ?? last.staff)!.overall} size="sm" />}
           </Group>
         )}
 
@@ -172,8 +175,44 @@ function OnTheClock({ d, paused, onPause, progress }: { d: DraftView; paused: bo
   );
 }
 
+function StaffIcon({ kind, size = 14 }: { kind: StaffKind; size?: number }) {
+  const Icon = kind === "coach" ? IconSchool : IconChartDots;
+  return <Icon size={size} color="var(--teal)" />;
+}
+
+/** Who a pick took: a player, a staff member, or nobody. */
+function PickWho({ pick, size = 26 }: { pick: DraftView["picks"][number]; size?: number }) {
+  if (pick.player) {
+    return (
+      <Group gap={6} wrap="nowrap" miw={0}>
+        <PlayerPhoto photo={pick.player.photo} name={pick.player.name} size={size} />
+        <RoleIcon role={pick.player.role} size={14} />
+        <Text fz={size > 26 ? "sm" : "xs"} fw={700} truncate>
+          {pick.player.name}
+        </Text>
+      </Group>
+    );
+  }
+  if (pick.staff) {
+    return (
+      <Group gap={6} wrap="nowrap" miw={0}>
+        <PlayerPhoto photo={pick.staff.photo} name={pick.staff.name} size={size} />
+        <StaffIcon kind={pick.staff.kind} />
+        <Text fz={size > 26 ? "sm" : "xs"} fw={700} truncate>
+          {pick.staff.name}
+        </Text>
+      </Group>
+    );
+  }
+  return (
+    <Text fz="xs" c="dimmed">
+      pass
+    </Text>
+  );
+}
+
 function PickStrip({ d }: { d: DraftView }) {
-  const rounds = d.required_rounds + d.optional_rounds;
+  const rounds = d.required_rounds + d.optional_rounds + d.staff_rounds.length;
   const perRound = d.sequence.length / rounds;
   const round = Math.min(d.round, rounds) - 1;
   const start = round * perRound;
@@ -194,13 +233,10 @@ function PickStrip({ d }: { d: DraftView }) {
                 </Text>
                 <TeamLogo team={team(tid)} size={22} />
               </Group>
-              {pick?.player ? (
-                <Group gap={6} wrap="nowrap" mt={6}>
-                  <PlayerPhoto photo={pick.player.photo} name={pick.player.name} size={26} />
-                  <Text fz="xs" fw={700} truncate>
-                    {pick.player.name}
-                  </Text>
-                </Group>
+              {pick?.player || pick?.staff ? (
+                <Box mt={6}>
+                  <PickWho pick={pick} />
+                </Box>
               ) : (
                 <Text fz="xs" mt={10} c={current ? "gold.4" : "dimmed"} fw={current ? 700 : 400}>
                   {pick ? "pass" : current ? "on the clock" : "—"}
@@ -429,8 +465,139 @@ function MyRoster({ d }: { d: DraftView }) {
             Bench: {bench.map((p) => `${p.name} (${p.role})`).join(", ")}
           </Text>
         )}
+        {(["coach", "analyst"] as StaffKind[]).map((kind) => {
+          const person = mine[kind];
+          return (
+            <Paper key={kind} p="xs" className={classes.rosterSlot} data-open={!person || undefined}>
+              <Group gap="sm" wrap="nowrap">
+                <StaffIcon kind={kind} size={18} />
+                {person ? (
+                  <>
+                    <PlayerPhoto photo={person.photo} name={person.name} size={34} />
+                    <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                      <Text fw={700} fz="sm" truncate>
+                        {person.name}
+                      </Text>
+                      <Text fz="xs" c="dimmed">
+                        {STAFF_KIND_NAMES[kind]} · {money(person.salary)}
+                      </Text>
+                    </Stack>
+                    <Ovr value={person.overall} />
+                  </>
+                ) : (
+                  <Text fz="sm" c="dimmed">
+                    {STAFF_KIND_NAMES[kind]}: {d.round_kind === "player" ? "after the player rounds" : "open"}
+                  </Text>
+                )}
+              </Group>
+            </Paper>
+          );
+        })}
       </Stack>
     </Section>
+  );
+}
+
+function StaffPool({ d }: { d: DraftView }) {
+  const { act, busy } = useCareer();
+  const current = d.round_kind === "player" ? null : d.round_kind;
+  const [kind, setKind] = useState<StaffKind>(current ?? "coach");
+  const [pickable, setPickable] = useState(false);
+  useEffect(() => {
+    if (current) setKind(current);
+  }, [current]);
+  const rows = d.staff_pool.filter((s) => s.kind === kind).filter((s) => !pickable || s.problem === null);
+  const canAct = d.my_turn && !busy && d.round_kind === kind;
+
+  return (
+    <Section title={`${kind === "coach" ? "Assistant coaches" : "Analysts"} · ${rows.length} available`} pad={false}>
+      <Group gap="sm" p="sm" className={classes.filters}>
+        <SegmentedControl
+          value={kind}
+          onChange={(v) => setKind(v as StaffKind)}
+          data={[
+            { value: "coach", label: "Assistant coaches" },
+            { value: "analyst", label: "Analysts" },
+          ]}
+        />
+        <Switch label="Only pickable" checked={pickable} onChange={(e) => setPickable(e.currentTarget.checked)} />
+        <Text fz="xs" c="dimmed" maw={360}>
+          {d.round_kind === "player"
+            ? `Staff are drafted after the players: ${d.staff_rounds.map((k) => STAFF_KIND_NAMES[k].toLowerCase()).join(", then ")}.`
+            : `This round is for an ${STAFF_KIND_NAMES[d.round_kind].toLowerCase()}. Hover a name for what each attribute does.`}
+        </Text>
+      </Group>
+      <ScrollArea h="calc(100vh - 380px)" mih={380}>
+        <Table stickyHeader verticalSpacing={5}>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Name</Table.Th>
+              <Table.Th>2026</Table.Th>
+              <Table.Th className="num">OVR</Table.Th>
+              <Table.Th>Attributes</Table.Th>
+              <Table.Th className="num">Salary</Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {rows.map((s) => (
+              <StaffPoolLine key={s.id} person={s} canAct={canAct} onPick={() => act({ type: "draft_staff", staff: s.id })} />
+            ))}
+          </Table.Tbody>
+        </Table>
+        {rows.length === 0 && (
+          <Text c="dimmed" ta="center" py="xl">
+            Nobody fits those filters.
+          </Text>
+        )}
+      </ScrollArea>
+    </Section>
+  );
+}
+
+function StaffPoolLine({ person, canAct, onPick }: { person: StaffPoolRow; canAct: boolean; onPick: () => void }) {
+  return (
+    <Table.Tr className={cx(person.problem && "dim")}>
+      <Table.Td>
+        <HoverCard openDelay={180} position="right" withArrow shadow="xl" width={320}>
+          <HoverCard.Target>
+            <Group gap="sm" wrap="nowrap">
+              <PlayerPhoto photo={person.photo} name={person.name} size={34} />
+              <Stack gap={0}>
+                <Text fw={700} fz="sm">
+                  {person.name}
+                </Text>
+                <Text fz={11} c="dimmed">
+                  {flag(person.country)} {person.real_name ?? (person.generated ? "Up-and-coming" : "")}
+                </Text>
+              </Stack>
+            </Group>
+          </HoverCard.Target>
+          <HoverCard.Dropdown p={0}>
+            <StaffCard person={person} kind={person.kind} />
+          </HoverCard.Dropdown>
+        </HoverCard>
+      </Table.Td>
+      <Table.Td maw={200}>
+        <StaffOrigin person={person} />
+      </Table.Td>
+      <Table.Td className="num">
+        <Ovr value={person.overall} />
+      </Table.Td>
+      <Table.Td>
+        <StaffAttributes person={person} />
+      </Table.Td>
+      <Table.Td className="num" fz="sm">
+        {money(person.salary)}
+      </Table.Td>
+      <Table.Td className="num">
+        <Tooltip label={person.problem ?? "Hire"} disabled={!person.problem && canAct}>
+          <Button size="compact-sm" disabled={!canAct || !!person.problem} onClick={onPick}>
+            Draft
+          </Button>
+        </Tooltip>
+      </Table.Td>
+    </Table.Tr>
   );
 }
 
@@ -450,20 +617,9 @@ function Feed({ d }: { d: DraftView }) {
                 <TeamLogo team={team(p.team)} size={22} />
               </Table.Td>
               <Table.Td>
-                {p.player ? (
-                  <Group gap={6} wrap="nowrap">
-                    <PlayerPhoto photo={p.player.photo} name={p.player.name} size={24} />
-                    <Text fz="sm" fw={600}>
-                      {p.player.name}
-                    </Text>
-                  </Group>
-                ) : (
-                  <Text fz="sm" c="dimmed">
-                    pass
-                  </Text>
-                )}
+                <PickWho pick={p} size={24} />
               </Table.Td>
-              <Table.Td className="num">{p.player && <Ovr value={p.player.overall} size="sm" />}</Table.Td>
+              <Table.Td className="num">{(p.player ?? p.staff) && <Ovr value={(p.player ?? p.staff)!.overall} size="sm" />}</Table.Td>
             </Table.Tr>
           ))}
         </Table.Tbody>
@@ -506,12 +662,36 @@ function Rivals({ d }: { d: DraftView }) {
                       <Ovr value={p.overall} size="sm" />
                     </Group>
                   ))}
+                  <StaffLines coach={t.coach} analyst={t.analyst} />
                 </Stack>
               </Accordion.Panel>
             </Accordion.Item>
           ))}
       </Accordion>
     </Section>
+  );
+}
+
+function StaffLines({ coach, analyst }: { coach: StaffRow | null; analyst: StaffRow | null }) {
+  return (
+    <>
+      {[coach, analyst].map(
+        (s) =>
+          s && (
+            <Group key={s.id} gap="xs" wrap="nowrap">
+              <StaffIcon kind={s.kind} />
+              <PlayerPhoto photo={s.photo} name={s.name} size={22} />
+              <Text fz="sm" style={{ flex: 1 }}>
+                {s.name}{" "}
+                <Text span fz="xs" c="dimmed">
+                  {STAFF_KIND_NAMES[s.kind].toLowerCase()}
+                </Text>
+              </Text>
+              <Ovr value={s.overall} size="sm" />
+            </Group>
+          ),
+      )}
+    </>
   );
 }
 
@@ -536,6 +716,7 @@ function DraftDone({ draft }: { draft: DraftView }) {
                   <Ovr value={p.overall} size="sm" />
                 </Group>
               ))}
+              <StaffLines coach={t.coach} analyst={t.analyst} />
             </Stack>
           </Paper>
         ))}

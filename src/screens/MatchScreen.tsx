@@ -16,6 +16,7 @@ import { GameReport } from "../components/GameReport";
 import { GoldGraph } from "../components/GoldGraph";
 import { ChampIcon, ChampPortrait, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
 import { PlayerHoverCard } from "../components/PlayerHoverCard";
+import { ScoutingReport } from "../components/ScoutingReport";
 import { Empty, FormArrow, Loading, Ovr, Screen, Section } from "../components/Ui";
 import { clock, cx, ROLE_NAMES, ROLES, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -117,6 +118,11 @@ function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: st
           <LineupCard side={theirs} sideView={view[theirs]} label="Opponent" mastery={view.mastery} />
         </Grid.Col>
       </Grid>
+      {view.scouting && (
+        <Section title="Scouting report">
+          <ScoutingReport report={view.scouting} />
+        </Section>
+      )}
       <Paper p="md">
         <Group justify="space-between" wrap="wrap">
           <Text fz="sm" c="dimmed" maw={520}>
@@ -384,7 +390,16 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
               )}
 
               {ourTurn && view.suggestions.length > 0 && (
-                <Section title={`Assistant · best ${turn?.kind === "ban" ? "bans" : "picks"}`}>
+                <Section
+                  title={`${view.coach ? `${view.coach.name} suggests` : "Assistant"} · best ${turn?.kind === "ban" ? "bans" : "picks"}`}
+                  right={
+                    view.coach && (
+                      <Text fz="xs" c="dimmed">
+                        drafting {view.coach.drafting}/20
+                      </Text>
+                    )
+                  }
+                >
                   <SimpleGrid cols={{ base: 2, md: 3 }} spacing="xs">
                     {view.suggestions.slice(0, 6).map((sg) => (
                       <UnstyledButton key={`${sg.champion}-${sg.role ?? ""}`} className={classes.suggestion} disabled={busy} onClick={() => take(sg)}>
@@ -445,6 +460,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                           champion={c}
                           entry={off ? undefined : board?.champions[c.id]}
                           kind={board?.kind ?? null}
+                          coach={view.coach}
                           off={off}
                           mastery={turn?.kind === "pick" ? best : 0}
                           selected={selected === c.id}
@@ -531,6 +547,7 @@ function ChampTile({
   champion,
   entry,
   kind,
+  coach,
   off,
   mastery,
   selected,
@@ -540,6 +557,7 @@ function ChampTile({
   champion: Champion;
   entry: BoardEntry | undefined;
   kind: "ban" | "pick" | null;
+  coach: LiveView["coach"];
   off: boolean;
   mastery: number;
   selected: boolean;
@@ -560,7 +578,7 @@ function ChampTile({
   );
   return (
     <Tooltip
-      label={entry ? <Breakdown name={champion.name} entry={entry} kind={kind} /> : champion.name}
+      label={entry ? <Breakdown name={champion.name} entry={entry} kind={kind} coach={coach} /> : champion.name}
       multiline
       w={entry ? 300 : undefined}
       openDelay={150}
@@ -573,7 +591,7 @@ function ChampTile({
   );
 }
 
-function Breakdown({ name, entry, kind }: { name: string; entry: BoardEntry; kind: "ban" | "pick" | null }) {
+function Breakdown({ name, entry, kind, coach }: { name: string; entry: BoardEntry; kind: "ban" | "pick" | null; coach: LiveView["coach"] }) {
   const others = Object.entries(entry.others) as [Role, BoardChoice][];
   return (
     <Stack gap={5}>
@@ -620,6 +638,9 @@ function Breakdown({ name, entry, kind }: { name: string; entry: BoardEntry; kin
           Also playable {ROLE_NAMES[r].toLowerCase()}: {signed(o.score ?? 0, 1)}
         </Text>
       ))}
+      <Text fz={10} c="dimmed" fs="italic">
+        {coach ? `${coach.name}'s read (drafting ${coach.drafting}/20)` : "No assistant coach: a rough read"}
+      </Text>
     </Stack>
   );
 }

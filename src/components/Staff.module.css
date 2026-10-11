@@ -1,0 +1,48 @@
+.card {
+  background: #0c121e;
+}
+
+.card[data-empty] {
+  border-style: dashed;
+}
+
+.attr {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 30px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #0a0f19;
+  border: 1px solid var(--line);
+  line-height: 1.1;
+}
+
+.attrName {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.attrValue {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.attr[data-band="elite"] .attrValue {
+  color: var(--band-elite);
+}
+
+.attr[data-band="good"] .attrValue {
+  color: var(--band-good);
+}
+
+.attr[data-band="decent"] .attrValue {
+  color: var(--band-decent);
+}
+
+.attr[data-band="weak"] .attrValue {
+  color: var(--band-weak);
+}

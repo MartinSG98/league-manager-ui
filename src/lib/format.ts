@@ -23,6 +23,17 @@ export const ATTRIBUTE_NAMES: Record<string, string> = {
   champion_pool: "Champion pool",
 };
 
+export const STAFF_ATTRIBUTES: Record<string, { name: string; hint: string }> = {
+  development: { name: "Development", hint: "How fast players grow towards their potential" },
+  drafting: { name: "Drafting", hint: "How well the coach reads champion select: the arrows, scores and suggestions you see" },
+  motivation: { name: "Motivation", hint: "Morale after defeats, morale recovery and how fast a new lineup gels" },
+  teaching: { name: "Teaching", hint: "How fast players learn champions, on stage and in weekly practice" },
+  scouting: { name: "Scouting", hint: "How much the report on the next opponent reveals" },
+  meta: { name: "Meta reading", hint: "How early and how well the patch preview reads the next balance changes" },
+};
+
+export const STAFF_KIND_NAMES: Record<string, string> = { coach: "Assistant coach", analyst: "Analyst" };
+
 export function cx(...names: (string | false | null | undefined)[]): string {
   return names.filter(Boolean).join(" ");
 }

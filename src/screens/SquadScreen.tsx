@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { PlayerDetail, Role, SquadView, Tactics } from "../api/types";
 import { ChampIcon, PlayerPhoto, PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
+import { StaffCard } from "../components/Staff";
 import { Empty, FormArrow, Loading, Meter, Ovr, PageHeader, Screen, Section } from "../components/Ui";
 import { ATTRIBUTE_NAMES, attributeBand, cx, flag, money, ROLE_NAMES, ROLES, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -131,6 +132,12 @@ function Squad({ squad }: { squad: SquadView }) {
                   <List.Item key={r}>{r}</List.Item>
                 ))}
               </List>
+            </Section>
+            <Section title="Staff">
+              <Stack gap="sm">
+                <StaffCard person={squad.staff.coach} kind="coach" />
+                <StaffCard person={squad.staff.analyst} kind="analyst" />
+              </Stack>
             </Section>
             {squad.is_mine && <TacticsPanel tactics={squad.tactics} />}
             {squad.is_mine && bench.length > 0 && <LineupPanel squad={squad} />}

@@ -149,10 +149,38 @@ export interface PlayerDetail extends PlayerRow {
 export interface InboxMessage {
   id: number;
   day: string;
-  kind: "news" | "draft" | "match" | "patch" | "board" | "contract" | "finance";
+  kind: "news" | "draft" | "match" | "patch" | "board" | "contract" | "finance" | "scouting" | "staff";
   subject: string;
   body: string;
   read: boolean;
+  report: ScoutingReport | null;
+}
+
+/** The analyst's report on the next opponent. What is filled in depends on `level` (1-4). */
+export interface ScoutingReport {
+  match: string;
+  opponent: string;
+  level: number;
+  analyst: string | null;
+  competition: string;
+  label: string;
+  best_of: number;
+  form: { won: boolean; against: string; score: string }[];
+  players: {
+    id: string;
+    name: string;
+    role: Role;
+    photo: string | null;
+    overall: number;
+    form: number;
+    signatures: string[];
+    /** Level 2+: champion and games this season. */
+    recent?: [string, number][];
+  }[];
+  plan?: Tactics;
+  bans?: string[];
+  threat?: { id: string; name: string; why: string };
+  weaknesses?: string[];
 }
 
 export interface MatchSummary {
@@ -196,6 +224,7 @@ export interface CareerView {
   next_match: MatchSummary | null;
   live: LiveSummary | null;
   draft: { on_the_clock: string | null; my_turn: boolean; round: number; number: number; total: number } | null;
+  staff: TeamStaff;
   unread: number;
   inbox: InboxMessage[];
   season_over: boolean;
@@ -218,6 +247,39 @@ export interface ActionResult {
 
 // ---------- draft ----------
 
+// ---------- staff ----------
+
+export type StaffKind = "coach" | "analyst";
+
+export interface StaffRow {
+  id: string;
+  name: string;
+  real_name: string | null;
+  kind: StaffKind;
+  /** The job they held in 2026, or "Free agent" for generated staff. */
+  position: string;
+  country: string | null;
+  photo: string | null;
+  generated: boolean;
+  region: string;
+  origin: { id: string; name: string; tag: string; logo: string | null } | null;
+  team: string | null;
+  /** 1-20: development, drafting, motivation, teaching for a coach; scouting, meta for an analyst. */
+  attributes: Record<string, number>;
+  overall: number;
+  salary: number;
+  contract_until: number | null;
+}
+
+export interface StaffPoolRow extends StaffRow {
+  problem: string | null;
+}
+
+export interface TeamStaff {
+  coach: StaffRow | null;
+  analyst: StaffRow | null;
+}
+
 export interface PoolPlayer extends PlayerRow {
   problem: string | null;
   languages: string[];
@@ -231,6 +293,8 @@ export interface DraftTeam {
   payroll: number;
   open_roles: Role[];
   franchise: string | null;
+  coach: StaffRow | null;
+  analyst: StaffRow | null;
 }
 
 export interface DraftView {
@@ -244,10 +308,22 @@ export interface DraftView {
   on_the_clock: string | null;
   my_turn: boolean;
   sequence: string[];
-  picks: { number: number; round: number; team: string; salary: number; player: PlayerRow | null }[];
+  /** What the current round is for. */
+  round_kind: "player" | StaffKind;
+  staff_rounds: StaffKind[];
+  picks: { number: number; round: number; team: string; salary: number; player: PlayerRow | null; staff: StaffRow | null }[];
   teams: DraftTeam[];
   pool: PoolPlayer[];
-  me: { budget: number; payroll: number; left: number; open_roles: Role[]; reserve: number; can_pass: boolean };
+  staff_pool: StaffPoolRow[];
+  me: {
+    budget: number;
+    payroll: number;
+    left: number;
+    open_roles: Role[];
+    staff_needed: StaffKind[];
+    reserve: number;
+    can_pass: boolean;
+  };
 }
 
 // ---------- squad ----------
@@ -276,6 +352,7 @@ export interface SquadView {
   cash: number;
   prestige: number;
   franchise: string | null;
+  staff: TeamStaff;
 }
 
 // ---------- competitions ----------
@@ -412,6 +489,7 @@ export interface Suggestion {
 
 /** One reason a champion is a good or bad choice, in the units of the score it adds to. */
 export interface ChoiceNote {
+  kind: string;
   text: string;
   value: number;
 }
@@ -456,6 +534,9 @@ export interface LiveView {
   suggestions: Suggestion[];
   /** Every available champion scored for our current ban or pick; null on the opponent's turn. */
   board: Board | null;
+  /** The manager's assistant coach, whose read the board and suggestions are. */
+  coach: { name: string; drafting: number } | null;
+  scouting: ScoutingReport | null;
   compositions: Record<Side, { value: number; notes: string[] } | null>;
   bench: PlayerRow[];
   mastery: Record<string, Record<string, number>>;
@@ -507,6 +588,7 @@ export interface NegotiationView {
 
 export type Action =
   | { type: "draft_pick"; player: string }
+  | { type: "draft_staff"; staff: string }
   | { type: "draft_pass" }
   | { type: "draft_auto" }
   | { type: "draft_sim" }

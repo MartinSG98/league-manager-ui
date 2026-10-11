@@ -1,0 +1,122 @@
+.strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 6px;
+  padding: 10px;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  font-size: 12px;
+  min-height: 70px;
+}
+
+.slotNo {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.slotPick {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.current {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--gold) 30%, transparent);
+}
+
+.current .slotPick {
+  color: var(--gold-bright);
+}
+
+.made {
+  background: color-mix(in srgb, var(--surface-3) 60%, transparent);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.poolWrap {
+  max-height: calc(100vh - 290px);
+  min-height: 360px;
+}
+
+.league {
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
+.lineSlot {
+  display: grid;
+  grid-template-columns: 44px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.open {
+  border-style: dashed;
+}
+
+.lineName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  min-width: 0;
+}
+
+.rival {
+  border-bottom: 1px solid var(--line);
+}
+
+.rivalHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 16px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rivalHead:hover {
+  background: color-mix(in srgb, var(--teal) 6%, transparent);
+}
+
+.rivalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px 16px 12px;
+  font-size: 13px;
+}
+
+.results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.mineResult {
+  border-color: var(--teal);
+}

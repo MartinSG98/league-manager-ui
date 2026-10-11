@@ -1,0 +1,110 @@
+/* ---------- title ---------- */
+
+.title {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 80px 20px 60px;
+}
+
+.hero {
+  text-align: center;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(42px, 7vw, 76px);
+  letter-spacing: 0.04em;
+  color: var(--gold-bright);
+  text-shadow: 0 0 40px color-mix(in srgb, var(--gold) 30%, transparent);
+  margin: 6px 0 4px;
+}
+
+.saves {
+  margin-top: 48px;
+}
+
+.legal {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* ---------- new career ---------- */
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.teamCard {
+  text-align: left;
+  padding: 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-color: color-mix(in srgb, var(--team) 25%, var(--line));
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.teamCard:hover {
+  border-color: color-mix(in srgb, var(--team) 70%, var(--line));
+}
+
+.selected {
+  border-color: var(--team);
+  box-shadow: 0 0 0 1px var(--team), 0 0 24px color-mix(in srgb, var(--team) 25%, transparent);
+}
+
+.teamName {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.franchise {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.franchiseName {
+  font-weight: 700;
+  flex: 1;
+}
+
+.prestige {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.prestigeBar {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--bg-deep);
+  overflow: hidden;
+}
+
+.prestigeBar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold));
+}
+
+.keep {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.keepName {
+  font-size: 20px;
+  font-weight: 800;
+}

@@ -1,0 +1,153 @@
+.shell {
+  display: grid;
+  grid-template-columns: 228px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 14px;
+  background: linear-gradient(180deg, var(--surface), var(--bg-deep));
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: var(--gold-bright);
+  text-decoration: none;
+}
+
+.club {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.clubName {
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: 3px;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  border-left: 2px solid transparent;
+}
+
+.navItem:hover {
+  background: color-mix(in srgb, var(--teal) 7%, transparent);
+  color: var(--text);
+}
+
+.active {
+  color: var(--teal-bright);
+  border-left-color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 11%, transparent);
+}
+
+.badge {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  padding: 10px 26px;
+  background: color-mix(in srgb, var(--bg-deep) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+
+.date,
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-weight: 600;
+}
+
+.day {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.continue {
+  min-width: 170px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 26px 0;
+  padding: 8px 14px;
+  border: 1px solid var(--red);
+  background: color-mix(in srgb, var(--red-deep) 70%, transparent);
+  color: var(--red-pale);
+  border-radius: var(--radius);
+}
+
+.content {
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+}

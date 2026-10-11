@@ -290,6 +290,7 @@ export interface CareerView {
     sacked: boolean;
     season: number;
     objectives: { id: string; text: string; status: ObjectiveStatus; result: string }[];
+    bonuses: BoardBonus[];
   };
   reputation: Reputation;
   /** Clubs that want you, after a sacking. */
@@ -300,6 +301,16 @@ export interface CareerView {
 }
 
 export type ObjectiveStatus = "pending" | "met" | "failed";
+
+/** Rewarded but not demanded: qualifying for First Stand or MSI, or a deep run there. */
+export interface BoardBonus {
+  id: string;
+  text: string;
+  status: "pending" | "earned" | "missed";
+  confidence: number;
+  /** Thousands of USD the sponsors pay into the bank. */
+  payment: number;
+}
 
 export interface Reputation {
   team: number;
@@ -774,6 +785,7 @@ export interface BoardView {
   sacked: boolean;
   joined: string | null;
   objectives: BoardObjective[];
+  bonuses: BoardBonus[];
   history: string[];
   reputation: Reputation & { prestige: number };
   finances: { budget: number; payroll: number; cash: number; sponsors_per_week: number; budget_step: number };

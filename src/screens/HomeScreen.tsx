@@ -189,6 +189,20 @@ export function HomeScreen() {
                     </Text>
                   </Group>
                 ))}
+                {career.board.bonuses
+                  .filter((x) => x.status !== "missed")
+                  .map((x) => (
+                    <Group key={x.id} gap={8} wrap="nowrap">
+                      {x.status === "earned" ? (
+                        <IconCheck size={15} color="var(--mantine-color-teal-5)" />
+                      ) : (
+                        <IconClock size={15} color="var(--mantine-color-gray-6)" />
+                      )}
+                      <Text fz="sm" c={x.status === "earned" ? "dimmed" : undefined} truncate>
+                        Bonus: {x.text}
+                      </Text>
+                    </Group>
+                  ))}
               </Stack>
             </Section>
 

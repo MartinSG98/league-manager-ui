@@ -6,6 +6,7 @@ import { api } from "../api/client";
 import { money } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
+import { BonusList } from "./BonusList";
 import { Stars } from "./Stars";
 import { Loading } from "./Ui";
 
@@ -76,6 +77,14 @@ export function BoardMeeting() {
               </Paper>
             );
           })}
+          {b.bonuses.length > 0 && (
+            <Paper p="sm" withBorder>
+              <Text className="eyebrow" mb="xs">
+                Bonuses on offer · nothing lost if you miss them
+              </Text>
+              <BonusList bonuses={b.bonuses} />
+            </Paper>
+          )}
           <Group justify="space-between">
             <Text fz="sm" c="dimmed">
               Salary budget {money(budget)}

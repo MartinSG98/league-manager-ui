@@ -3,6 +3,7 @@ import { IconAlertTriangle, IconCheck, IconClock, IconX } from "@tabler/icons-re
 
 import { api } from "../api/client";
 import type { BoardView, ObjectiveStatus } from "../api/types";
+import { BonusList } from "../components/BonusList";
 import { TeamLogo } from "../components/Media";
 import { Stars } from "../components/Stars";
 import { Empty, Loading, PageHeader, Screen, Section } from "../components/Ui";
@@ -102,6 +103,12 @@ function Club({ b }: { b: BoardView }) {
                 </Stack>
               )}
             </Section>
+
+            {b.bonuses.length > 0 && (
+              <Section title="Bonuses" right={<Text fz="xs" c="dimmed">rewarded, never demanded</Text>}>
+                <BonusList bonuses={b.bonuses} />
+              </Section>
+            )}
 
             <Section title="The board's reviews">
               {b.history.length === 0 ? (

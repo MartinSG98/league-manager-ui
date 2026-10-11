@@ -1,6 +1,7 @@
 import type {
-  Action, ActionResult, CareerView, Catalog, CompetitionRow, CompetitionView, DraftView, GameView, LiveView,
+  Action, ActionResult, BoardView, CareerView, Catalog, CompetitionRow, CompetitionView, DraftView, GameView, LiveView,
   MatchSummary, MatchView, MetaView, NegotiationView, PlayerDetail, PlayerRow, Role, SaveRow, SquadView, TeamPreview,
+  TrainingView, TransfersView,
 } from "./types";
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8020";
@@ -73,4 +74,7 @@ export const api = {
   live: (id: string) => request<LiveView | null>(`${career(id)}/live`),
   meta: (id: string) => request<MetaView>(`${career(id)}/meta`),
   negotiation: (id: string, player: string) => request<NegotiationView>(`${career(id)}/negotiate/${player}`),
+  training: (id: string) => request<TrainingView>(`${career(id)}/training`),
+  board: (id: string) => request<BoardView>(`${career(id)}/board`),
+  transfers: (id: string) => request<TransfersView>(`${career(id)}/transfers`),
 };

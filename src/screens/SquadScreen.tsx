@@ -91,6 +91,18 @@ function Squad({ squad }: { squad: SquadView }) {
                           <Text fw={700} fz="sm">
                             {p.name}
                           </Text>
+                          {squad.listed.includes(p.id) && (
+                            <Badge size="xs" color="orange" variant="light">
+                              listed
+                            </Badge>
+                          )}
+                          {p.status
+                            .filter((s) => s !== "Sharp")
+                            .map((s) => (
+                              <Badge key={s} size="xs" color="red" variant="light">
+                                {s}
+                              </Badge>
+                            ))}
                         </Group>
                       </Table.Td>
                       <Table.Td className="num">

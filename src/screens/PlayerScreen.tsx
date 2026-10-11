@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
 import { ContractPanel } from "../components/ContractPanel";
+import { TransferPanel } from "../components/TransferPanel";
 import { ChampIcon, PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
 import { AttrBar, Empty, FormArrow, Loading, Meter, Ovr, Screen, Section } from "../components/Ui";
 import { ATTRIBUTE_NAMES, flag, money, ROLE_NAMES, signed } from "../lib/format";
@@ -113,6 +114,11 @@ export function PlayerScreen() {
         </Group>
       </Paper>
 
+      {career.phase !== "draft" && d.team && (
+        <Box mb="lg">
+          <TransferPanel player={d} />
+        </Box>
+      )}
       {(career.phase !== "draft" || d.team === career.team.id) && (
         <Box mb="lg">
           <ContractPanel player={d} />
@@ -158,8 +164,34 @@ export function PlayerScreen() {
                   <Text fz="sm" c="dimmed">
                     Fatigue
                   </Text>
-                  <Meter value={d.fatigue} color="red" />
+                  <Meter value={d.fatigue} color="red" label={`Fatigue ${d.fatigue}`} />
                 </Group>
+                <Group gap={6}>
+                  <Text fz="sm" c="dimmed">
+                    Sharpness
+                  </Text>
+                  <Meter value={d.sharpness} color="hextech" label={`Sharpness ${d.sharpness}`} />
+                </Group>
+              </Group>
+              <Group gap="xs" mt="sm">
+                <Badge variant="light" color="gold">
+                  {d.development}
+                </Badge>
+                {d.status.map((s) => (
+                  <Badge key={s} variant="light" color={s === "Sharp" ? "teal" : "red"}>
+                    {s}
+                  </Badge>
+                ))}
+                {d.training.attribute && (
+                  <Text fz="xs" c="dimmed">
+                    works on {ATTRIBUTE_NAMES[d.training.attribute]?.toLowerCase()}
+                  </Text>
+                )}
+                {d.training.champion && (
+                  <Text fz="xs" c="dimmed">
+                    learns {catalog.champion[d.training.champion]?.name}
+                  </Text>
+                )}
               </Group>
               <Text fz="xs" c="dimmed" mt="sm">
                 {d.experience} career games · reputation {d.reputation}

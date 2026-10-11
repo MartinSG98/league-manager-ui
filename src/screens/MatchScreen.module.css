@@ -329,3 +329,32 @@
   border-color: #ff5a5f;
   background: radial-gradient(80% 120% at 50% 0%, rgba(255, 90, 95, 0.14), transparent 70%), #0d1320;
 }
+
+/* ---------- set plays ---------- */
+
+.playOption {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.015);
+  text-align: left;
+}
+
+.playOption:hover:not(:disabled) {
+  border-color: rgba(200, 170, 110, 0.5);
+}
+
+.playOption[data-used] {
+  opacity: 0.4;
+}
+
+.playChosen {
+  border-color: var(--gold);
+  background: rgba(200, 170, 110, 0.1);
+}
+
+.special {
+  box-shadow: inset 3px 0 0 var(--gold);
+}

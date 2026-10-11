@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { CareerLayout } from "./pages/CareerLayout";
+import { ClubScreen } from "./screens/ClubScreen";
 import { NewCareerPage } from "./pages/NewCareerPage";
 import { TitlePage } from "./pages/TitlePage";
 import { CompetitionScreen } from "./screens/CompetitionScreen";
@@ -15,6 +16,8 @@ import { PlayerScreen } from "./screens/PlayerScreen";
 import { PlayersScreen } from "./screens/PlayersScreen";
 import { ScheduleScreen } from "./screens/ScheduleScreen";
 import { SquadScreen } from "./screens/SquadScreen";
+import { TrainingScreen } from "./screens/TrainingScreen";
+import { TransfersScreen } from "./screens/TransfersScreen";
 import { CareerProvider } from "./state/career";
 import { CatalogProvider } from "./state/catalog";
 
@@ -48,6 +51,9 @@ export default function App() {
             <Route path="competitions/:comp" element={<CompetitionScreen />} />
             <Route path="meta" element={<MetaScreen />} />
             <Route path="inbox" element={<InboxScreen />} />
+            <Route path="training" element={<TrainingScreen />} />
+            <Route path="club" element={<ClubScreen />} />
+            <Route path="transfers" element={<TransfersScreen />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

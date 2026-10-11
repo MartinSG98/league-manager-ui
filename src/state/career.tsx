@@ -19,6 +19,7 @@ interface CareerContextValue {
 }
 
 const CareerContext = createContext<CareerContextValue | null>(null);
+const OFFLINE = "server-offline";
 
 export function CareerProvider({ id, children }: { id: string; children: ReactNode }) {
   const [career, setCareer] = useState<CareerView | null>(null);
@@ -43,13 +44,22 @@ export function CareerProvider({ id, children }: { id: string; children: ReactNo
           const result = await api.act(id, action);
           setCareer(result.career);
           setRevision((r) => r + 1);
+          notifications.hide(OFFLINE);
           return result;
         } catch (err) {
-          notifications.show({
-            color: "red",
-            title: "Not now",
-            message: err instanceof ApiError ? err.message : "The server did not answer",
-          });
+          if (err instanceof ApiError) {
+            notifications.show({ color: "red", title: "Not now", message: err.message });
+          } else {
+            // One message for a server that is down, however many clock-driven actions fail against it.
+            notifications.hide(OFFLINE);
+            notifications.show({
+              id: OFFLINE,
+              color: "red",
+              title: "No connection to the game server",
+              message: "Nothing was saved. Check that the backend is running on port 8020, then try again.",
+              autoClose: false,
+            });
+          }
           return null;
         } finally {
           if (!options.quiet) setBusy(false);

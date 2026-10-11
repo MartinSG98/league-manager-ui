@@ -195,6 +195,7 @@ export interface InboxMessage {
 /** The analyst's read of the team's recent games, with the areas to work on. */
 export interface ReviewReport {
   kind: "review";
+  team: string;
   games: number;
   analyst: string | null;
   skill: number;

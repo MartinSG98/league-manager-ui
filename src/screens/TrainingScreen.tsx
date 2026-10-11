@@ -79,7 +79,7 @@ function LoadPicker({ view }: { view: TrainingView }) {
             onClick={() => act({ type: "set_training", load: l.id as Load })}
           >
             <Stack gap={4}>
-              <Group justify="space-between" wrap="nowrap">
+              <Group justify="space-between" wrap="wrap" gap={4}>
                 <Text fw={800}>{l.name}</Text>
                 {view.recommended === l.id && (
                   <Badge size="xs" color="gold" variant="light">
@@ -90,14 +90,16 @@ function LoadPicker({ view }: { view: TrainingView }) {
               <Text fz="xs" c="dimmed" lh={1.35}>
                 {l.text}
               </Text>
-              <Text fz="xs" mt={4}>
-                <span className="loss">+{l.fatigue} fatigue</span> ·{" "}
-                <span className={l.sharpness >= 0 ? "gain" : "loss"}>
+              <Stack gap={0} mt={4}>
+                <Text fz="xs" className={l.fatigue > 0 ? "loss" : undefined}>
+                  +{l.fatigue} fatigue a week
+                </Text>
+                <Text fz="xs" className={l.sharpness >= 0 ? "gain" : "loss"}>
                   {l.sharpness >= 0 ? "+" : ""}
                   {l.sharpness} sharpness
-                </span>{" "}
-                · ×{l.gain} progress
-              </Text>
+                </Text>
+                <Text fz="xs">×{l.gain} progress</Text>
+              </Stack>
             </Stack>
           </UnstyledButton>
         ))}

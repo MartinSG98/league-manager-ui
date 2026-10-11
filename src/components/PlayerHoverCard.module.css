@@ -1,0 +1,13 @@
+.target {
+  min-width: 0;
+}
+
+.card {
+  background: #0e1524;
+  border-color: #2c3854;
+}
+
+.gone {
+  opacity: 0.35;
+  filter: grayscale(1);
+}

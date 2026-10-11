@@ -1,16 +1,25 @@
-import { Badge, Box, Button, Grid, Group, Paper, ScrollArea, SegmentedControl, SimpleGrid, Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
-import { IconBolt, IconPlayerPlayFilled, IconPlayerTrackNext, IconRobot, IconSearch, IconSwords } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  Badge, Box, Button, Grid, Group, Paper, Progress, ScrollArea, SegmentedControl, SimpleGrid, Stack, Text, TextInput, Tooltip,
+  UnstyledButton,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import {
+  IconBolt, IconChevronDown, IconChevronsDown, IconChevronsUp, IconChevronUp, IconPlayerPlayFilled, IconPlayerTrackNext, IconRobot,
+  IconSearch, IconSwords,
+} from "@tabler/icons-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { Champion, GameView, LiveView, Role, Side, SideView, Suggestion, TimelineEvent } from "../api/types";
+import type { BoardChoice, BoardEntry, Champion, GameView, LiveView, Role, Side, SideView, Suggestion, TimelineEvent } from "../api/types";
 import { GameReport } from "../components/GameReport";
 import { GoldGraph } from "../components/GoldGraph";
 import { ChampIcon, ChampPortrait, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
+import { PlayerHoverCard } from "../components/PlayerHoverCard";
 import { Empty, FormArrow, Loading, Ovr, Screen, Section } from "../components/Ui";
-import { clock, cx, ROLES, signed } from "../lib/format";
+import { clock, cx, ROLE_NAMES, ROLES, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
+import { useClock, useThinkingTime } from "../lib/useClock";
 import { readSpeed, useTimeline, writeSpeed } from "../lib/useTimeline";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
@@ -102,10 +111,10 @@ function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: st
     <Stack gap="lg">
       <Grid gap="lg">
         <Grid.Col span={{ base: 12, lg: 6 }}>
-          <LineupCard side={view.our_side} sideView={view[view.our_side]} label="Your lineup" />
+          <LineupCard side={view.our_side} sideView={view[view.our_side]} label="Your lineup" mastery={view.mastery} />
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 6 }}>
-          <LineupCard side={theirs} sideView={view[theirs]} label="Opponent" />
+          <LineupCard side={theirs} sideView={view[theirs]} label="Opponent" mastery={view.mastery} />
         </Grid.Col>
       </Grid>
       <Paper p="md">
@@ -131,7 +140,7 @@ function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: st
   );
 }
 
-function LineupCard({ side, sideView, label }: { side: Side; sideView: SideView; label: string }) {
+function LineupCard({ side, sideView, label, mastery }: { side: Side; sideView: SideView; label: string; mastery: LiveView["mastery"] }) {
   return (
     <Section
       title={
@@ -149,7 +158,9 @@ function LineupCard({ side, sideView, label }: { side: Side; sideView: SideView;
       <SimpleGrid cols={5} spacing="sm">
         {sideView.lineup.map((p) => (
           <Stack key={p.id} gap={4} align="center">
-            <PlayerPhoto photo={p.photo} name={p.name} size={64} ring={sideView.team.color} />
+            <PlayerHoverCard player={p} mastery={mastery[p.id]} position="bottom">
+              <PlayerPhoto photo={p.photo} name={p.name} size={64} ring={sideView.team.color} />
+            </PlayerHoverCard>
             <Group gap={4} wrap="nowrap">
               <RoleIcon role={p.slot} size={14} />
               <Text fw={700} fz="sm" truncate maw={80}>
@@ -177,6 +188,17 @@ function LineupCard({ side, sideView, label }: { side: Side; sideView: SideView;
 
 // ---------- champion select ----------
 
+const TURN_SECONDS = 30;
+// The AI takes a few seconds over every ban and pick instead of locking in the moment it can.
+const OPPONENT_THINKS: [number, number] = [2, 5];
+
+function phaseName(step: number): string {
+  if (step < 6) return "Ban phase 1";
+  if (step < 12) return "Pick phase 1";
+  if (step < 16) return "Ban phase 2";
+  return "Pick phase 2";
+}
+
 function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (id: string) => void }) {
   const { act, busy } = useCareer();
   const catalog = useCatalog();
@@ -187,10 +209,39 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
   const s = view.select;
   const turn = s.turn;
   const ourTurn = turn?.side === view.our_side;
+  const theirTurn = !!turn && !ourTurn;
   const ourPicks = view.our_side === "blue" ? s.blue_picks : s.red_picks;
   const openRoles = ROLES.filter((r) => !ourPicks[r]);
-  const taken = new Set([...s.blue_bans, ...s.red_bans, ...Object.values(s.blue_picks), ...Object.values(s.red_picks), ...s.locked]);
+  const taken = useMemo(
+    () => new Set([...s.blue_bans, ...s.red_bans, ...Object.values(s.blue_picks), ...Object.values(s.red_picks), ...s.locked]),
+    [s],
+  );
   const ourLineup = Object.fromEntries(view[view.our_side].lineup.map((p) => [p.slot, p]));
+  const board = ourTurn ? view.board : null;
+
+  // ---- the clock: every turn has thirty seconds, the opponent uses a few of them ----
+  const stepKey = `${view.match.id}-${view.game}-${s.step}`;
+  const running = view.phase === "draft" && !!turn;
+  const left = useClock(stepKey, TURN_SECONDS, running);
+  const thinking = useThinkingTime(stepKey, ...OPPONENT_THINKS);
+  const moved = useRef<string | null>(null);
+
+  useEffect(() => {
+    setSelected(null);
+    setRole(null);
+  }, [stepKey]);
+
+  useEffect(() => {
+    if (!running || moved.current === stepKey) return;
+    if (theirTurn && TURN_SECONDS - left >= thinking) {
+      moved.current = stepKey;
+      void act({ type: "opponent_turn" }, { quiet: true });
+    } else if (ourTurn && left <= 0 && !busy) {
+      moved.current = stepKey;
+      void timeUp();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [left, running, stepKey, theirTurn, ourTurn, thinking, busy]);
 
   const champs = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -200,20 +251,40 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
   function choose(c: Champion) {
     if (!ourTurn || taken.has(c.id)) return;
     setSelected(c.id);
-    if (turn?.kind === "pick") setRole(openRoles.find((r) => c.roles.includes(r)) ?? openRoles[0] ?? null);
+    if (turn?.kind === "pick") {
+      const best = board?.champions[c.id]?.role ?? null;
+      setRole(best && openRoles.includes(best) ? best : openRoles.find((r) => c.roles.includes(r)) ?? openRoles[0] ?? null);
+    }
+  }
+
+  async function lock(champion: string, pickRole: Role | null) {
+    if (!turn) return null;
+    if (turn.kind === "ban") return act({ type: "ban", champion });
+    if (pickRole) return act({ type: "pick", champion, role: pickRole });
+    return null;
   }
 
   async function lockIn() {
-    if (!selected || !turn) return;
-    if (turn.kind === "ban") await act({ type: "ban", champion: selected });
-    else if (role) await act({ type: "pick", champion: selected, role });
-    setSelected(null);
-    setRole(null);
+    if (selected) await lock(selected, role);
   }
 
   async function take(sg: Suggestion) {
-    if (turn?.kind === "ban") await act({ type: "ban", champion: sg.champion });
-    else if (sg.role) await act({ type: "pick", champion: sg.champion, role: sg.role });
+    await lock(sg.champion, sg.role ?? null);
+  }
+
+  async function timeUp() {
+    // Like the real client: the champion you were hovering locks in, otherwise the assistant's choice.
+    const champion = selected ?? view.suggestions[0]?.champion;
+    const pickRole = selected ? role : view.suggestions[0]?.role ?? null;
+    if (!champion) return;
+    const result = await lock(champion, pickRole);
+    if (result) {
+      notifications.show({
+        color: "gold",
+        title: "Time ran out",
+        message: `${selected ? "Locked in" : "The assistant locked in"} ${catalog.champion[champion]?.name ?? champion}.`,
+      });
+    }
   }
 
   async function simSeries() {
@@ -226,11 +297,13 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
     return p ? view.mastery[p.id]?.[championId] ?? 0 : 0;
   };
 
+  const choice = selected && board ? choiceFor(board.champions[selected], role) : null;
+
   return (
     <Stack gap="md">
       <BanRow view={view} />
       <Box className={classes.selectBody}>
-        <PickColumn side="blue" view={view} />
+        <PickColumn side="blue" view={view} unavailable={taken} />
         <Stack gap="md" miw={0}>
           {view.phase === "ready" ? (
             <Paper p="xl" className={classes.ready}>
@@ -274,16 +347,41 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
             </Paper>
           ) : (
             <>
-              <Paper p="sm" className={cx(classes.turn, ourTurn && classes.turnActive)}>
-                <Group justify="space-between">
-                  <Text fw={800} tt="uppercase" lts="0.06em" c={ourTurn ? "gold.3" : "dimmed"}>
-                    {ourTurn ? `Your ${turn?.kind}` : "Opponent is choosing…"} · step {s.step + 1} / 20
-                  </Text>
-                  <Button size="xs" variant="light" color="hextech" leftSection={<IconRobot size={14} />} disabled={busy} onClick={() => act({ type: "auto_select" })}>
-                    Let the assistant finish
-                  </Button>
-                </Group>
-              </Paper>
+              {turn && (
+                <Paper p="sm" className={cx(classes.turn, ourTurn && classes.turnActive)}>
+                  <Group justify="space-between" wrap="nowrap" gap="sm">
+                    <Group gap="sm" wrap="nowrap" miw={0}>
+                      <TeamLogo team={view[turn.side].team} size={34} />
+                      <Stack gap={0} miw={0}>
+                        <Text fw={800} tt="uppercase" lts="0.06em" truncate c={ourTurn ? "gold.3" : undefined} className={ourTurn ? undefined : `side-${turn.side}`}>
+                          {ourTurn ? `Your ${turn.kind}` : `${view[turn.side].team.tag} ${turn.kind === "ban" ? "banning" : "picking"}…`}
+                        </Text>
+                        <Text fz="xs" c="dimmed">
+                          {phaseName(s.step)} · step {s.step + 1} of 20
+                        </Text>
+                      </Stack>
+                    </Group>
+                    <Text className={cx(classes.clock, classes.turnClock, left <= 10 && classes.clockLow)}>{Math.ceil(left)}</Text>
+                    <Group gap="xs" wrap="nowrap">
+                      {theirTurn && (
+                        <Button size="xs" variant="default" leftSection={<IconPlayerTrackNext size={14} />} disabled={busy} onClick={() => act({ type: "opponent_turn", until_mine: true })}>
+                          Skip to my turn
+                        </Button>
+                      )}
+                      <Button size="xs" variant="light" color="hextech" leftSection={<IconRobot size={14} />} disabled={busy} onClick={() => act({ type: "auto_select" })}>
+                        Let the assistant finish
+                      </Button>
+                    </Group>
+                  </Group>
+                  <Progress
+                    mt={8}
+                    size={4}
+                    value={(left / TURN_SECONDS) * 100}
+                    color={left <= 10 ? "red" : ourTurn ? "gold" : turn.side === "blue" ? "blue" : "red"}
+                    transitionDuration={100}
+                  />
+                </Paper>
+              )}
 
               {ourTurn && view.suggestions.length > 0 && (
                 <Section title={`Assistant · best ${turn?.kind === "ban" ? "bans" : "picks"}`}>
@@ -300,7 +398,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                           </Group>
                           <Text fz={11} c="dimmed">
                             {turn?.kind === "ban" ? `threat ${signed(sg.threat ?? 0, 1)}` : `fit ${signed(sg.power ?? 0, 1)}`}
-                            {sg.need ? ` · comp +${sg.need}` : ""}
+                            {sg.need ? ` · comp ${signed(sg.need, 1)}` : ""}
                             {sg.counter ? ` · lane ${signed(sg.counter, 1)}` : ""}
                           </Text>
                         </Stack>
@@ -319,20 +417,40 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                     data={[{ value: "ALL", label: "All" }, ...ROLES.map((r) => ({ value: r, label: <RoleIcon role={r} size={14} /> }))]}
                   />
                   <TextInput size="xs" placeholder="Search champion" leftSection={<IconSearch size={14} />} value={query} onChange={(e) => setQuery(e.currentTarget.value)} />
+                  {board && (
+                    <Group gap={10} ml="auto" visibleFrom="md">
+                      <Group gap={4}>
+                        <VerdictMark value={1} />
+                        <Text fz={11} c="dimmed">
+                          {board.kind === "ban" ? "worth banning" : "good pick"}
+                        </Text>
+                      </Group>
+                      <Group gap={4}>
+                        <VerdictMark value={-1} />
+                        <Text fz={11} c="dimmed">
+                          {board.kind === "ban" ? "you need it more" : "bad here"}
+                        </Text>
+                      </Group>
+                    </Group>
+                  )}
                 </Group>
-                <ScrollArea h={380}>
+                <ScrollArea h={400}>
                   <Box className={classes.grid}>
                     {champs.map((c) => {
                       const off = taken.has(c.id);
                       const best = Math.max(0, ...openRoles.filter((r) => c.roles.includes(r)).map((r) => masteryFor(c.id, r)));
                       return (
-                        <UnstyledButton key={c.id} className={cx(classes.tile, selected === c.id && classes.tileSelected)} disabled={off || !ourTurn || busy} onClick={() => choose(c)}>
-                          <ChampIcon id={c.id} size={52} dim={off} title={c.name} />
-                          {best >= 50 && !off && <span className={classes.mastery}>{best}</span>}
-                          <Text fz={10} c={off ? "dark.3" : "dimmed"} truncate maw={64}>
-                            {c.name}
-                          </Text>
-                        </UnstyledButton>
+                        <ChampTile
+                          key={c.id}
+                          champion={c}
+                          entry={off ? undefined : board?.champions[c.id]}
+                          kind={board?.kind ?? null}
+                          off={off}
+                          mastery={turn?.kind === "pick" ? best : 0}
+                          selected={selected === c.id}
+                          disabled={off || !ourTurn || busy}
+                          onClick={() => choose(c)}
+                        />
                       );
                     })}
                   </Box>
@@ -342,10 +460,23 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
               {selected && ourTurn && (
                 <Paper p="sm" className={classes.lock}>
                   <Group gap="md" wrap="wrap">
-                    <ChampIcon id={selected} size={48} />
-                    <Text className="display" fz={26}>
-                      {catalog.champion[selected]?.name}
-                    </Text>
+                    <ChampIcon id={selected} size={52} />
+                    <Stack gap={4} miw={0}>
+                      <Text className="display" fz={26} lh={1}>
+                        {catalog.champion[selected]?.name}
+                      </Text>
+                      {choice && (
+                        <Group gap={4}>
+                          {choice.notes
+                            .filter((n) => Math.abs(n.value) >= 0.05)
+                            .map((n) => (
+                              <Badge key={n.text} size="sm" variant="light" color={n.value > 0 ? "teal" : "red"} tt="none">
+                                {n.text} {signed(n.value, 1)}
+                              </Badge>
+                            ))}
+                        </Group>
+                      )}
+                    </Stack>
                     {turn?.kind === "pick" && (
                       <SegmentedControl
                         value={role ?? undefined}
@@ -374,16 +505,138 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
             </>
           )}
         </Stack>
-        <PickColumn side="red" view={view} />
+        <PickColumn side="red" view={view} unavailable={taken} />
       </Box>
+    </Stack>
+  );
+}
+
+/** The score for the role the manager has chosen, which may be a flex pick's other role. */
+function choiceFor(entry: BoardEntry | undefined, role: Role | null): BoardChoice | null {
+  if (!entry) return null;
+  if (!role || entry.role === role) return entry;
+  return entry.others[role] ?? null;
+}
+
+function VerdictMark({ value }: { value: number }) {
+  const Icon = value >= 2 ? IconChevronsUp : value === 1 ? IconChevronUp : value === -1 ? IconChevronDown : IconChevronsDown;
+  return (
+    <span className={cx(classes.mark, value > 0 ? classes.markUp : classes.markDown)}>
+      <Icon size={12} stroke={3} />
+    </span>
+  );
+}
+
+function ChampTile({
+  champion,
+  entry,
+  kind,
+  off,
+  mastery,
+  selected,
+  disabled,
+  onClick,
+}: {
+  champion: Champion;
+  entry: BoardEntry | undefined;
+  kind: "ban" | "pick" | null;
+  off: boolean;
+  mastery: number;
+  selected: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const tile = (
+    <UnstyledButton className={cx(classes.tile, selected && classes.tileSelected, entry && !entry.fits && classes.tileUnfit)} disabled={disabled} onClick={onClick}>
+      <Box className={classes.tileArt}>
+        <ChampIcon id={champion.id} size={56} dim={off} tooltip={false} />
+        {mastery >= 50 && !off && <span className={classes.mastery}>{mastery}</span>}
+        {entry && entry.fits && entry.verdict !== 0 && <VerdictMark value={entry.verdict} />}
+      </Box>
+      <Text fz={10} c={off ? "dark.3" : "dimmed"} truncate maw={66}>
+        {champion.name}
+      </Text>
+    </UnstyledButton>
+  );
+  return (
+    <Tooltip
+      label={entry ? <Breakdown name={champion.name} entry={entry} kind={kind} /> : champion.name}
+      multiline
+      w={entry ? 300 : undefined}
+      openDelay={150}
+      classNames={{ tooltip: classes.tip }}
+      position="top"
+      withArrow
+    >
+      <span className={classes.tileWrap}>{tile}</span>
+    </Tooltip>
+  );
+}
+
+function Breakdown({ name, entry, kind }: { name: string; entry: BoardEntry; kind: "ban" | "pick" | null }) {
+  const others = Object.entries(entry.others) as [Role, BoardChoice][];
+  return (
+    <Stack gap={5}>
+      <Group justify="space-between" wrap="nowrap">
+        <Text fw={800} fz="sm">
+          {name}
+        </Text>
+        {entry.role && (
+          <Group gap={4} wrap="nowrap">
+            <RoleIcon role={entry.role} size={12} />
+            <Text fz={11} c="dimmed">
+              {kind === "ban" ? `their ${ROLE_NAMES[entry.role].toLowerCase()}` : ROLE_NAMES[entry.role]}
+            </Text>
+          </Group>
+        )}
+      </Group>
+      {entry.notes.map((n) => (
+        <Group key={n.text} justify="space-between" wrap="nowrap" gap="sm" align="flex-start">
+          <Text fz="xs" c="gray.3">
+            {n.text}
+          </Text>
+          {n.value !== 0 && (
+            <Text fz="xs" fw={700} className={n.value > 0.05 ? "gain" : n.value < -0.05 ? "loss" : undefined} style={{ flex: "none" }}>
+              {signed(n.value, 1)}
+            </Text>
+          )}
+        </Group>
+      ))}
+      {entry.score !== null && (
+        <Group justify="space-between" className={classes.tipTotal}>
+          <Text fz="xs" fw={700} tt="uppercase" lts="0.06em">
+            {kind === "ban" ? "Ban value" : "Pick value"}
+          </Text>
+          <Group gap={6}>
+            {entry.verdict !== 0 && <VerdictMark value={entry.verdict} />}
+            <Text fz="sm" fw={800} className={entry.score >= 0 ? "gain" : "loss"}>
+              {signed(entry.score, 1)}
+            </Text>
+          </Group>
+        </Group>
+      )}
+      {others.map(([r, o]) => (
+        <Text key={r} fz={11} c="dimmed">
+          Also playable {ROLE_NAMES[r].toLowerCase()}: {signed(o.score ?? 0, 1)}
+        </Text>
+      ))}
     </Stack>
   );
 }
 
 function BanRow({ view }: { view: LiveView }) {
   const s = view.select;
-  const slots = (bans: string[]) =>
-    Array.from({ length: 5 }, (_, i) => (bans[i] ? <ChampIcon key={i} id={bans[i]} size={36} dim /> : <span key={i} className={classes.emptyBan} />));
+  const banning = s.turn?.kind === "ban" ? s.turn.side : null;
+  const slots = (side: Side, bans: string[]) =>
+    Array.from({ length: 5 }, (_, i) =>
+      bans[i] ? (
+        <span key={i} className={classes.banned}>
+          <ChampIcon id={bans[i]} size={42} dim />
+        </span>
+      ) : (
+        <span key={i} className={cx(classes.emptyBan, banning === side && i === bans.length && classes.banWaiting)} />
+      ),
+    );
   return (
     <Paper p="sm">
       <Group justify="space-between" wrap="nowrap">
@@ -391,7 +644,7 @@ function BanRow({ view }: { view: LiveView }) {
           <Text className="eyebrow side-blue" mr={4}>
             Bans
           </Text>
-          {slots(s.blue_bans)}
+          {slots("blue", s.blue_bans)}
         </Group>
         {s.locked.length > 0 && (
           <Group gap={3} wrap="nowrap" visibleFrom="lg">
@@ -404,7 +657,7 @@ function BanRow({ view }: { view: LiveView }) {
           </Group>
         )}
         <Group gap={6} wrap="nowrap">
-          {slots(s.red_bans)}
+          {slots("red", s.red_bans)}
           <Text className="eyebrow side-red" ml={4}>
             Bans
           </Text>
@@ -414,42 +667,51 @@ function BanRow({ view }: { view: LiveView }) {
   );
 }
 
-function PickColumn({ side, view }: { side: Side; view: LiveView }) {
+function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; unavailable: Set<string> }) {
   const catalog = useCatalog();
   const picks = side === "blue" ? view.select.blue_picks : view.select.red_picks;
   const sv = view[side];
   const choosing = view.select.turn?.side === side && view.select.turn.kind === "pick";
+  const red = side === "red";
   return (
-    <Stack gap={6} className={classes.column}>
-      <Group gap="xs" justify={side === "red" ? "flex-end" : "flex-start"} wrap="nowrap">
-        {side === "blue" && <TeamLogo team={sv.team} size={30} />}
+    <Stack gap={8} className={classes.column}>
+      <Group gap="xs" justify={red ? "flex-end" : "flex-start"} wrap="nowrap">
+        {!red && <TeamLogo team={sv.team} size={32} />}
         <Text fw={800} className={`side-${side}`} tt="uppercase" fz="sm">
           {side === view.our_side ? "You" : sv.team.tag}
         </Text>
-        {side === "red" && <TeamLogo team={sv.team} size={30} />}
+        {red && <TeamLogo team={sv.team} size={32} />}
       </Group>
       {sv.lineup.map((p) => {
         const champ = picks[p.slot];
         return (
-          <Box key={p.id} className={cx(classes.pickSlot, side === "red" && classes.pickRed, choosing && !champ && classes.pickWaiting)}>
-            {champ && <ChampPortrait id={champ} className={classes.pickArt} />}
-            <Box className={classes.pickShade} />
-            <Group className={classes.pickInfo} gap={8} wrap="nowrap" justify={side === "red" ? "flex-end" : "flex-start"}>
-              {side === "blue" && <PlayerPhoto photo={p.photo} name={p.name} size={32} />}
-              <Stack gap={0} align={side === "red" ? "flex-end" : "flex-start"} miw={0}>
-                <Group gap={4} wrap="nowrap">
-                  <RoleIcon role={p.slot} size={13} />
-                  <Text fw={800} fz="sm" truncate>
-                    {p.name}
-                  </Text>
-                </Group>
-                <Text fz={11} c={champ ? "gold.2" : "dimmed"} fw={champ ? 700 : 400}>
-                  {champ ? catalog.champion[champ]?.name : "picking…"}
-                </Text>
-              </Stack>
-              {side === "red" && <PlayerPhoto photo={p.photo} name={p.name} size={32} />}
-            </Group>
-          </Box>
+          <PlayerHoverCard key={p.id} player={p} mastery={view.mastery[p.id]} unavailable={unavailable} position={red ? "left" : "right"}>
+            <Box className={cx(classes.pickSlot, red && classes.pickRed, choosing && !champ && classes.pickWaiting)}>
+              {champ && <ChampPortrait id={champ} className={classes.pickArt} />}
+              <Box className={classes.pickShade} />
+              <Group className={classes.pickInfo} gap={10} wrap="nowrap" justify={red ? "flex-end" : "flex-start"}>
+                {!red && <PlayerPhoto photo={p.photo} name={p.name} size={40} />}
+                <Stack gap={0} align={red ? "flex-end" : "flex-start"} miw={0}>
+                  <Group gap={4} wrap="nowrap">
+                    <RoleIcon role={p.slot} size={14} />
+                    <Text fw={700} fz="sm" truncate>
+                      {p.name}
+                    </Text>
+                  </Group>
+                  {champ ? (
+                    <Text className={classes.pickChamp} truncate>
+                      {catalog.champion[champ]?.name}
+                    </Text>
+                  ) : (
+                    <Text fz="xs" c={choosing ? "gold.4" : "dimmed"} fw={choosing ? 700 : 400}>
+                      {choosing ? "picking…" : "waiting"}
+                    </Text>
+                  )}
+                </Stack>
+                {red && <PlayerPhoto photo={p.photo} name={p.name} size={40} />}
+              </Group>
+            </Box>
+          </PlayerHoverCard>
         );
       })}
     </Stack>

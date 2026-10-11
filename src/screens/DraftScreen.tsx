@@ -2,33 +2,57 @@ import {
   Accordion, Badge, Box, Button, Grid, Group, Paper, Progress, ScrollArea, SegmentedControl, Select, SimpleGrid, Stack, Switch,
   Table, Text, TextInput, Tooltip,
 } from "@mantine/core";
-import { IconRobot, IconSearch, IconPlayerSkipForward, IconPlayerTrackNext } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  IconPlayerPauseFilled, IconPlayerPlayFilled, IconPlayerSkipForward, IconPlayerTrackNext, IconRobot, IconSearch,
+} from "@tabler/icons-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { DraftView, PoolPlayer, Role } from "../api/types";
 import { ChampIcon, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo, TeamName } from "../components/Media";
+import { PlayerHoverCard } from "../components/PlayerHoverCard";
 import { Loading, Ovr, PageHeader, Screen, Section } from "../components/Ui";
 import { cx, flag, money, ROLES } from "../lib/format";
 import { useApi } from "../lib/useApi";
+import { useClock, useThinkingTime } from "../lib/useClock";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
 import classes from "./DraftScreen.module.css";
 
 type Sort = "overall" | "potential" | "salary";
 
+// Seconds each AI team takes over its pick, so the board fills up where you can follow it.
+const AI_PICK_SECONDS: [number, number] = [1.2, 2.4];
+
 export function DraftScreen() {
-  const { career, revision, act, busy } = useCareer();
-  const catalog = useCatalog();
-  const navigate = useNavigate();
+  const { career, revision } = useCareer();
   const draft = useApi(() => api.draft(career.id), [career.id, revision]);
 
   if (draft.error && career.phase !== "draft") return <Navigate to={`/career/${career.id}`} replace />;
   if (!draft.data) return <Loading text="Opening the draft room…" />;
-  const d = draft.data;
-  if (d.done) return <DraftDone draft={d} />;
+  if (draft.data.done) return <DraftDone draft={draft.data} />;
+  return <DraftRoom d={draft.data} />;
+}
+
+function DraftRoom({ d }: { d: DraftView }) {
+  const { career, act, busy } = useCareer();
+  const catalog = useCatalog();
+  const navigate = useNavigate();
+  const [paused, setPaused] = useState(false);
   const league = catalog.league[d.league];
+
+  // The team on the clock thinks for a moment, then the server makes its pick.
+  const waiting = !d.my_turn && !d.done && career.phase === "draft";
+  const key = String(d.number);
+  const thinking = useThinkingTime(key, ...AI_PICK_SECONDS);
+  const left = useClock(key, thinking, waiting && !paused);
+  const moved = useRef<string | null>(null);
+  useEffect(() => {
+    if (!waiting || paused || left > 0 || moved.current === key) return;
+    moved.current = key;
+    void act({ type: "draft_next" }, { quiet: true });
+  }, [left, waiting, paused, key, act]);
   const rounds = d.required_rounds + d.optional_rounds;
 
   async function simAll() {
@@ -61,6 +85,8 @@ export function DraftScreen() {
         }
       />
 
+      <OnTheClock d={d} paused={paused} onPause={() => setPaused((p) => !p)} progress={waiting ? 1 - left / thinking : 0} />
+
       <PickStrip d={d} />
 
       <Grid gap="lg" mt="md">
@@ -79,6 +105,73 @@ export function DraftScreen() {
   );
 }
 
+function OnTheClock({ d, paused, onPause, progress }: { d: DraftView; paused: boolean; onPause: () => void; progress: number }) {
+  const { career, act, busy } = useCareer();
+  const team = (id: string) => d.teams.find((t) => t.team.id === id)?.team;
+  const onClock = d.on_the_clock ? team(d.on_the_clock) : null;
+  const next = d.sequence.indexOf(career.team.id, d.number - 1);
+  const until = next < 0 ? null : next - (d.number - 1);
+  const last = d.picks[d.picks.length - 1];
+  const lastTeam = last ? team(last.team) : null;
+
+  return (
+    <Paper p="sm" mb="md" className={classes.clockBar} data-mine={d.my_turn || undefined}>
+      <Group justify="space-between" wrap="nowrap" gap="md">
+        <Group gap="sm" wrap="nowrap" miw={0}>
+          <TeamLogo team={onClock} size={40} />
+          <Stack gap={0} miw={0}>
+            <Text fw={800} tt="uppercase" lts="0.05em" c={d.my_turn ? "gold.3" : undefined} truncate>
+              {d.my_turn ? "Your pick" : `${onClock?.name ?? "Next team"} ${paused ? "is waiting" : "is picking…"}`}
+            </Text>
+            <Text fz="xs" c="dimmed">
+              Pick {d.number} of {d.total}
+              {!d.my_turn && until !== null && ` · ${until === 1 ? "you are next" : `${until} picks until yours`}`}
+              {until === null && " · you have no picks left"}
+            </Text>
+          </Stack>
+        </Group>
+
+        {last && (
+          <Group gap="xs" wrap="nowrap" className={classes.lastPick} key={last.number} visibleFrom="md">
+            <Text fz={10} c="dimmed" tt="uppercase" fw={700} lts="0.08em">
+              Last pick
+            </Text>
+            <TeamLogo team={lastTeam} size={24} />
+            {last.player ? (
+              <>
+                <PlayerPhoto photo={last.player.photo} name={last.player.name} size={30} />
+                <RoleIcon role={last.player.role} size={14} />
+                <Text fw={700} fz="sm">
+                  {last.player.name}
+                </Text>
+                <Ovr value={last.player.overall} size="sm" />
+              </>
+            ) : (
+              <Text fz="sm" c="dimmed">
+                pass
+              </Text>
+            )}
+          </Group>
+        )}
+
+        {!d.my_turn && (
+          <Group gap="xs" wrap="nowrap">
+            <Button size="xs" variant="default" leftSection={paused ? <IconPlayerPlayFilled size={14} /> : <IconPlayerPauseFilled size={14} />} onClick={onPause}>
+              {paused ? "Resume" : "Pause"}
+            </Button>
+            {until !== null && (
+              <Button size="xs" leftSection={<IconPlayerTrackNext size={14} />} disabled={busy} onClick={() => act({ type: "draft_next", until_mine: true })}>
+                Skip to my pick
+              </Button>
+            )}
+          </Group>
+        )}
+      </Group>
+      {!d.my_turn && <Progress mt={8} size={3} value={Math.min(100, progress * 100)} color={paused ? "gray" : "gold"} transitionDuration={100} />}
+    </Paper>
+  );
+}
+
 function PickStrip({ d }: { d: DraftView }) {
   const rounds = d.required_rounds + d.optional_rounds;
   const perRound = d.sequence.length / rounds;
@@ -92,8 +185,9 @@ function PickStrip({ d }: { d: DraftView }) {
           const number = start + i + 1;
           const pick = d.picks.find((p) => p.number === number);
           const current = number === d.number;
+          const fresh = number === d.picks.length;
           return (
-            <Paper key={number} className={classes.slot} data-current={current || undefined} data-made={!!pick || undefined}>
+            <Paper key={number} className={classes.slot} data-current={current || undefined} data-made={!!pick || undefined} data-fresh={fresh || undefined}>
               <Group justify="space-between" wrap="nowrap">
                 <Text fz={10} c="dimmed" fw={700}>
                   #{number}
@@ -229,17 +323,19 @@ function PoolRow({ p, canAct, onPick, careerId }: { p: PoolPlayer; canAct: boole
         <RoleIcon role={p.role} />
       </Table.Td>
       <Table.Td>
-        <Group gap="sm" wrap="nowrap" style={{ cursor: "pointer" }} onClick={() => navigate(`/career/${careerId}/player/${p.id}`)}>
-          <PlayerPhoto photo={p.photo} name={p.name} size={34} />
-          <Stack gap={0}>
-            <Text fw={700} fz="sm">
-              {p.name}
-            </Text>
-            <Text fz={11} c="dimmed">
-              {flag(p.country)} {p.real_name ?? p.country ?? ""}
-            </Text>
-          </Stack>
-        </Group>
+        <PlayerHoverCard player={p}>
+          <Group gap="sm" wrap="nowrap" style={{ cursor: "pointer" }} onClick={() => navigate(`/career/${careerId}/player/${p.id}`)}>
+            <PlayerPhoto photo={p.photo} name={p.name} size={34} />
+            <Stack gap={0}>
+              <Text fw={700} fz="sm">
+                {p.name}
+              </Text>
+              <Text fz={11} c="dimmed">
+                {flag(p.country)} {p.real_name ?? p.country ?? ""}
+              </Text>
+            </Stack>
+          </Group>
+        </PlayerHoverCard>
       </Table.Td>
       <Table.Td>
         <Group gap={6} wrap="nowrap">

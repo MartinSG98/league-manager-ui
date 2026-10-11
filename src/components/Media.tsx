@@ -100,11 +100,11 @@ export function PlayerPortrait({ photo, name, color, height = 150 }: { photo: st
   );
 }
 
-export function ChampIcon({ id, size = 32, dim = false, title, radius = 4 }: { id: string; size?: number; dim?: boolean; title?: string; radius?: number }) {
+export function ChampIcon({ id, size = 32, dim = false, title, radius = 4, tooltip = true }: { id: string; size?: number; dim?: boolean; title?: string; radius?: number; tooltip?: boolean }) {
   const { patch, champion } = useCatalog();
   const name = champion[id]?.name ?? id;
   return (
-    <Tooltip label={title ?? name} disabled={size >= 64}>
+    <Tooltip label={title ?? name} disabled={!tooltip || size >= 64}>
       <Box w={size} h={size} className={classes.champ} data-dim={dim || undefined} style={{ borderRadius: radius }}>
         <Img
           sources={championIcon(patch, id)}

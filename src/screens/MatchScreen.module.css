@@ -13,7 +13,7 @@
 
 .selectBody {
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr) 230px;
+  grid-template-columns: 270px minmax(0, 1fr) 270px;
   gap: 16px;
   align-items: start;
 }
@@ -31,15 +31,16 @@
 
 .pickSlot {
   position: relative;
-  height: 92px;
+  height: 116px;
   overflow: hidden;
   border-radius: 6px;
   border: 1px solid var(--line);
-  background: linear-gradient(90deg, rgba(78, 156, 255, 0.12), #0c121e);
+  background: linear-gradient(90deg, rgba(78, 156, 255, 0.14), #0c121e);
+  cursor: default;
 }
 
 .pickRed {
-  background: linear-gradient(270deg, rgba(255, 90, 95, 0.12), #0c121e);
+  background: linear-gradient(270deg, rgba(255, 90, 95, 0.14), #0c121e);
 }
 
 .pickWaiting {
@@ -59,28 +60,67 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 18%;
+  object-position: center 16%;
+  animation: reveal 0.45s ease-out;
 }
 
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+/* Dark at the bottom where the names sit, so they read on any splash. */
 .pickShade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, rgba(7, 10, 18, 0.95) 0%, rgba(7, 10, 18, 0.25) 70%);
+  background: linear-gradient(0deg, rgba(7, 10, 18, 0.97) 0%, rgba(7, 10, 18, 0.82) 34%, rgba(7, 10, 18, 0.15) 78%, transparent 100%);
 }
 
 .pickInfo {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 8px;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+}
+
+.pickChamp {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--gold-bright);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
 }
 
 .emptyBan {
   display: inline-block;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   border: 1px dashed #3b4661;
   border-radius: 4px;
+}
+
+.banWaiting {
+  border: 1px solid var(--gold);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.banned {
+  position: relative;
+  display: inline-flex;
+  animation: reveal 0.35s ease-out;
+}
+
+.banned::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 46%, rgba(255, 90, 95, 0.85) 48%, rgba(255, 90, 95, 0.85) 52%, transparent 54%);
+  pointer-events: none;
 }
 
 .turn {
@@ -90,6 +130,15 @@
 .turnActive {
   border-color: var(--gold);
   box-shadow: 0 0 20px rgba(200, 170, 110, 0.18);
+}
+
+.turnClock {
+  min-width: 52px;
+  text-align: center;
+}
+
+.clockLow {
+  color: var(--side-red);
 }
 
 .suggestion {
@@ -108,9 +157,14 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   gap: 6px;
   padding: 10px;
+}
+
+.tileWrap {
+  display: block;
+  min-width: 0;
 }
 
 .tile {
@@ -119,6 +173,7 @@
   flex-direction: column;
   align-items: center;
   gap: 3px;
+  width: 100%;
   padding: 4px 2px;
   border-radius: 6px;
   border: 1px solid transparent;
@@ -138,16 +193,66 @@
   background: rgba(200, 170, 110, 0.12);
 }
 
+/* Plays none of our open roles (or, for a ban, nobody left on their side plays it). */
+.tileUnfit {
+  opacity: 0.4;
+}
+
+.tileArt {
+  position: relative;
+  line-height: 0;
+}
+
 .mastery {
   position: absolute;
-  top: 2px;
-  right: 6px;
+  top: -3px;
+  right: -5px;
   padding: 0 4px;
   border-radius: 3px;
   background: var(--gold);
   color: #1a1406;
   font-size: 10px;
   font-weight: 800;
+  line-height: 15px;
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  box-shadow: 0 0 0 2px #0d1320;
+}
+
+.tileArt .mark {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+}
+
+.markUp {
+  background: #1f9d5c;
+}
+
+.markDown {
+  background: #d9434a;
+}
+
+.tip {
+  background: #0e1524;
+  border: 1px solid #2c3854;
+  color: var(--mantine-color-text);
+  padding: 10px 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+.tipTotal {
+  border-top: 1px solid var(--line);
+  padding-top: 5px;
+  margin-top: 2px;
 }
 
 .lock {

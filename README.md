@@ -41,7 +41,7 @@ Both public folders are git-ignored, about 42 MB together. Every image tries its
 | `/` | Title over a champion splash: start a career or continue a saved one |
 | `/new` | Choose a league and a team, see the franchise player you keep and the 2026 roster you release |
 | `/career/:id` | Manager's office: next match, the current table, your five, inbox |
-| `/career/:id/draft` | Draft room: pick order, the region's pool with photos and filters, your roster and budget, rivals |
+| `/career/:id/draft` | Draft room: the team on the clock, pick order, the region's pool with photos and filters, your roster and budget, rivals |
 | `/career/:id/squad` | Starting five as portrait cards, attributes, form and morale, chemistry, tactics, lineup |
 | `/career/:id/team/:team` | Any other team's squad |
 | `/career/:id/player/:player` | Profile with photo and real name, contract talks, attributes, champion pool with mastery and meta, stats |
@@ -60,12 +60,19 @@ The **Continue** button in the top bar always does the next sensible thing:
 - During the season, it simulates until your next match.
 - After Worlds, it starts the next season.
 
+## Draft room
+
+The other teams pick one at a time, a second or two each, so you can watch the board fill up. **Pause** stops them and **Skip to my pick** makes every pick up to yours at once. Hovering a player in the pool shows their signature champions and the rest of their pool with mastery.
+
 ## Match day
 
 1. **Lineup.** Both fives with photos, form and signature champions, plus team strength and chemistry. From here you can start champion select, let the assistant draft, or simulate the whole series.
 2. **Champion select.** The real tournament order of bans and picks, laid out like a broadcast. Each team's column fills with loading-screen art as champions lock in, and bans line up along the top.
+   - **The clock.** Every ban and pick has 30 seconds. When yours runs out, the champion you selected locks in; if you selected none, the assistant's first choice does. The opponent takes two to five seconds per turn, and **Skip to my turn** plays all of its turns up to yours.
+   - **Players.** Hovering a player on either side shows their signature champions and the rest of their pool with mastery. Banned and picked champions are greyed out.
    - **The assistant.** On your turn it lists its best options with their reasons: for picks, the player's fit, what the composition still needs and the lane counter; for bans, the threat.
    - **The grid.** It badges every champion your players have high mastery on. Champions already played in the series are locked under fearless draft.
+   - **Arrows.** On your turn a green arrow in a champion's corner marks a good pick or ban, a red one a bad pick here. Two arrows mean very good or very bad. Hovering shows every reason with its value: the player's comfort, the patch, the lane against the enemy pick, what the composition needs, combos. Champions that fit none of your open roles are faded.
    - **Compositions.** Once the draft is done, each side's composition notes appear: power curve, champion combos, missing damage or frontline.
 3. **The game.** The timeline plays back with a clock, kills, towers, drakes, Barons and a live gold graph, at 1×, 2× or 4×, or you can skip to the end. The series score stays hidden until the game is over.
 4. **Result.** A scoreboard with champion icons, photos, KDA, CS, damage and ratings, plus the MVP. Then the next game or the end of the series.

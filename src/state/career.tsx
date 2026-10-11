@@ -1,5 +1,5 @@
 import { notifications } from "@mantine/notifications";
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { api, ApiError } from "../api/client";
 import type { Action, ActionResult, CareerView } from "../api/types";
@@ -10,7 +10,12 @@ interface CareerContextValue {
   /** Bumps after every action, screens reload their data when it changes. */
   revision: number;
   busy: boolean;
-  act: (action: Action) => Promise<ActionResult | null>;
+  /**
+   * Run an action. Actions run one after another, never side by side, so a timer moving the AI
+   * and a click can not overwrite each other's save. A quiet action (an AI step on a timer) does
+   * not mark the career busy, so buttons do not flicker while the other teams pick.
+   */
+  act: (action: Action, options?: { quiet?: boolean }) => Promise<ActionResult | null>;
 }
 
 const CareerContext = createContext<CareerContextValue | null>(null);
@@ -20,6 +25,7 @@ export function CareerProvider({ id, children }: { id: string; children: ReactNo
   const [missing, setMissing] = useState(false);
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
 
   useEffect(() => {
     setCareer(null);
@@ -30,23 +36,28 @@ export function CareerProvider({ id, children }: { id: string; children: ReactNo
   }, [id]);
 
   const act = useCallback(
-    async (action: Action) => {
-      setBusy(true);
-      try {
-        const result = await api.act(id, action);
-        setCareer(result.career);
-        setRevision((r) => r + 1);
-        return result;
-      } catch (err) {
-        notifications.show({
-          color: "red",
-          title: "Not now",
-          message: err instanceof ApiError ? err.message : "The server did not answer",
-        });
-        return null;
-      } finally {
-        setBusy(false);
-      }
+    (action: Action, options: { quiet?: boolean } = {}) => {
+      const run = async () => {
+        if (!options.quiet) setBusy(true);
+        try {
+          const result = await api.act(id, action);
+          setCareer(result.career);
+          setRevision((r) => r + 1);
+          return result;
+        } catch (err) {
+          notifications.show({
+            color: "red",
+            title: "Not now",
+            message: err instanceof ApiError ? err.message : "The server did not answer",
+          });
+          return null;
+        } finally {
+          if (!options.quiet) setBusy(false);
+        }
+      };
+      const next = queue.current.then(run);
+      queue.current = next;
+      return next;
     },
     [id],
   );

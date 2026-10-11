@@ -410,6 +410,32 @@ export interface Suggestion {
   threat?: number;
 }
 
+/** One reason a champion is a good or bad choice, in the units of the score it adds to. */
+export interface ChoiceNote {
+  text: string;
+  value: number;
+}
+
+export interface BoardChoice {
+  role: Role | null;
+  score: number | null;
+  /** -2..2: the arrow on the champion in the grid. */
+  verdict: number;
+  notes: ChoiceNote[];
+}
+
+export interface BoardEntry extends BoardChoice {
+  /** False when the champion plays none of our open roles (pick) or nobody left on their side plays it (ban). */
+  fits: boolean;
+  /** A flex pick scored in its other open roles. */
+  others: Partial<Record<Role, BoardChoice>>;
+}
+
+export interface Board {
+  kind: "ban" | "pick" | null;
+  champions: Record<string, BoardEntry>;
+}
+
 export interface LiveView {
   match: MatchView;
   game: number;
@@ -428,6 +454,8 @@ export interface LiveView {
     locked: string[];
   };
   suggestions: Suggestion[];
+  /** Every available champion scored for our current ban or pick; null on the opponent's turn. */
+  board: Board | null;
   compositions: Record<Side, { value: number; notes: string[] } | null>;
   bench: PlayerRow[];
   mastery: Record<string, Record<string, number>>;
@@ -482,6 +510,7 @@ export type Action =
   | { type: "draft_pass" }
   | { type: "draft_auto" }
   | { type: "draft_sim" }
+  | { type: "draft_next"; until_mine?: boolean }
   | { type: "advance" }
   | { type: "set_lineup"; lineup: Record<Role, string> }
   | { type: "set_tactics"; tactics: Tactics }
@@ -489,6 +518,7 @@ export type Action =
   | { type: "ban"; champion: string }
   | { type: "pick"; champion: string; role: Role }
   | { type: "auto_select" }
+  | { type: "opponent_turn"; until_mine?: boolean }
   | { type: "play_game" }
   | { type: "next_game" }
   | { type: "sim_series" }

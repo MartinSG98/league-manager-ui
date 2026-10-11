@@ -14,6 +14,35 @@
   box-shadow: 0 0 18px rgba(200, 170, 110, 0.35);
 }
 
+/* The pick that just came in flashes once. */
+.slot[data-fresh] {
+  animation: fresh 1.2s ease-out;
+}
+
+@keyframes fresh {
+  from {
+    border-color: var(--teal);
+    box-shadow: 0 0 22px rgba(10, 200, 185, 0.55);
+  }
+}
+
+.clockBar {
+  background: #0d1320;
+}
+
+.clockBar[data-mine] {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(200, 170, 110, 0.18);
+}
+
+.lastPick {
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: #0a0f19;
+  border: 1px solid var(--line);
+  animation: fresh 1.2s ease-out;
+}
+
 .filters {
   border-bottom: 1px solid var(--line);
 }

@@ -1,0 +1,74 @@
+/*
+  Design tokens. Every color in the app comes from this file, so a new palette is a
+  change here and nowhere else. The modules mix their tints, glows and button fills
+  from these tokens with color-mix(), which means those follow the palette too. The
+  only raw colors left in the modules are neutral black for shadows and white for
+  faint highlights. Fonts are loaded in index.html, so a new font family also needs
+  its Google Fonts link changed there.
+
+  Palette: Hextech, carried over from riftlike. Ink-blue ground, electric blue for the player, orange-coral for the
+  opponent, champagne for titles and labels. The variable names keep their old hue
+  words (teal, red, gold) because they name roles, not colors:
+    teal  = everything the player can act on, and "us"
+    red   = the opponent, losses and negative numbers
+    gold  = titles, highlights and the small uppercase labels
+    green = gains and positive numbers
+  Every text token passes WCAG AA (4.5:1) on --bg, --bg-deep and all three surfaces.
+*/
+
+:root {
+  /* Surfaces */
+  --bg: #060a18;
+  --bg-deep: #03050f;
+  --surface: #0b1330;
+  --surface-2: #10193a;
+  --surface-3: #152147;
+  --line: #22305a;
+  --line-strong: #364a7e;
+  --bg-glow: #1a2a66;
+  --bg-glow-2: #0d1a40;
+
+  /* Text */
+  --text: #eef1f8;
+  --text-dim: #b6bed3;
+  --text-muted: #8f9ab8;
+
+  /* Accents */
+  --gold: #dcc48e; /* champagne: titles, highlights, uppercase labels */
+  --gold-bright: #f6e8c4;
+  --gold-deep: #7a6634;
+  --gold-pale: #fffaf0;
+  --gold-ink: #1a1406; /* text on a gold fill */
+  --teal: #56b6ff; /* electric blue: actions and "us" */
+  --teal-bright: #ade0ff;
+  --teal-deep: #0d2b4f;
+  --teal-ink: #03132a; /* text on a teal fill */
+  --red: #ff7d4a; /* orange-coral: the opponent, losses, negatives */
+  --red-bright: #ffa982;
+  --red-pale: #ffe2d4; /* text on a red-deep fill */
+  --red-deep: #48190a;
+  --green: #5bd88f;
+
+  /* Map sides, kept apart from "us" and "them" because either can be on either side */
+  --side-blue: #4ea3ff;
+  --side-red: #ff6b6b;
+
+  /* Rating bands, used for overall ratings and attributes */
+  --band-elite: #5bd88f;
+  --band-good: #9fd36a;
+  --band-decent: #e8c66a;
+  --band-weak: #ff8f6b;
+
+  /* Champion focus */
+  --focus-early: #ffc94d;
+  --focus-mid: #c895ff;
+  --focus-late: #48e0cf;
+
+  /* Type */
+  --font-display: "Cinzel", Georgia, "Times New Roman", serif;
+  --font-ui: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Shape */
+  --radius: 6px;
+  --shadow: 0 16px 44px rgba(1, 4, 16, 0.62);
+}

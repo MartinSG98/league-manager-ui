@@ -97,7 +97,12 @@ export function ContractPanel({ player }: { player: PlayerDetail }) {
             Signed through {player.contract_until}. Talks open in the contract's last season.
           </Text>
         )}
-        {mine && (
+        {mine && player.franchise && (
+          <Text fz="xs" c="dimmed">
+            Franchise player: the contract renews automatically and the board will not let them go.
+          </Text>
+        )}
+        {mine && !player.franchise && (
           <Group gap="xs">
             {!confirmRelease ? (
               <Button variant="subtle" color="gray" size="xs" onClick={() => setConfirmRelease(true)}>

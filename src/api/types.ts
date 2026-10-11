@@ -100,6 +100,8 @@ export interface PlayerRow {
   league: string;
   origin: { id: string; name: string; tag: string; logo: string | null } | null;
   team: string | null;
+  /** The face of their team: renews automatically and cannot be released. */
+  franchise: boolean;
   overall: number;
   potential: number;
   salary: number;

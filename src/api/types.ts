@@ -249,6 +249,9 @@ export interface MatchSummary {
   score: [number, number];
   winner: string | null;
   games: number;
+  /** Double elimination only: which bracket the match is in, and its column. */
+  bracket: "upper" | "lower" | "final" | null;
+  round: number;
 }
 
 export interface LiveSummary {
@@ -472,7 +475,7 @@ export interface StandingRow {
 export interface StageView {
   id: string;
   name: string;
-  kind: "round_robin" | "single_elim" | "swiss";
+  kind: "round_robin" | "single_elim" | "double_elim" | "swiss";
   finished: boolean;
   best_of: number;
   advance: number;

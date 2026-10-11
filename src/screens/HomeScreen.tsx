@@ -39,7 +39,7 @@ export function HomeScreen() {
   const current = comps.data ? currentCompetition(comps.data, career.league) : null;
   const table = useApi(() => (current ? api.competition(career.id, current.id) : Promise.resolve(null)), [career.id, revision, current?.id]);
   const squad = useApi(() => api.squad(career.id), [career.id, revision]);
-  const stage = table.data ? table.data.stages.find((s) => s.kind !== "single_elim") ?? null : null;
+  const stage = table.data ? table.data.stages.find((s) => s.kind === "round_robin" || s.kind === "swiss") ?? null : null;
 
   return (
     <Screen>

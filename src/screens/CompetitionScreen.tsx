@@ -62,7 +62,13 @@ export function CompetitionScreen() {
       <Grid gap="lg">
         <Grid.Col span={{ base: 12, xl: 8 }}>
           <Section title={stage.name} right={<Text fz="xs" c="dimmed">Bo{stage.best_of}{stage.advance ? ` · top ${stage.advance} advance` : ""}</Text>} pad={false}>
-            {stage.kind === "single_elim" ? <Bracket stage={stage} /> : <StandingsTable stage={stage} mine={career.team.id} careerId={career.id} />}
+            {stage.kind === "single_elim" ? (
+              <Bracket stage={stage} />
+            ) : stage.kind === "double_elim" ? (
+              <DoubleBracket stage={stage} />
+            ) : (
+              <StandingsTable stage={stage} mine={career.team.id} careerId={career.id} />
+            )}
           </Section>
         </Grid.Col>
         <Grid.Col span={{ base: 12, xl: 4 }}>
@@ -75,40 +81,76 @@ export function CompetitionScreen() {
   );
 }
 
-function Bracket({ stage }: { stage: StageView }) {
-  const { career } = useCareer();
-  const navigate = useNavigate();
+/** Consecutive matches with the same label make a column. */
+function columns(matches: MatchSummary[]): { label: string; matches: MatchSummary[] }[] {
   const rounds: { label: string; matches: MatchSummary[] }[] = [];
-  for (const m of stage.matches) {
+  for (const m of matches) {
     const last = rounds[rounds.length - 1];
     if (last && last.label === m.label) last.matches.push(m);
     else rounds.push({ label: m.label, matches: [m] });
   }
+  return rounds;
+}
+
+function Bracket({ stage }: { stage: StageView }) {
   return (
     <ScrollArea type="auto">
-      <Group align="stretch" gap="lg" p="md" wrap="nowrap">
-        {rounds.map((r, i) => (
-          <Stack key={i} justify="space-around" gap="md" miw={230}>
-            <Text className="eyebrow">{r.label}</Text>
-            {r.matches.map((m) => (
-              <Paper
-                key={m.id}
-                p="xs"
-                className={classes.tie}
-                data-link={m.games ? true : undefined}
-                onClick={() => m.games && navigate(`/career/${career.id}/matches/${m.id}`)}
-              >
-                <TieSide team={m.home} score={m.score[0]} won={m.winner === m.home?.id} done={!!m.winner} mine={m.home?.id === career.team.id} />
-                <TieSide team={m.away} score={m.score[1]} won={m.winner === m.away?.id} done={!!m.winner} mine={m.away?.id === career.team.id} />
-                <Text fz={10} c="dimmed" mt={4}>
-                  {shortDate(m.day)} · Bo{m.best_of}
-                </Text>
-              </Paper>
-            ))}
-          </Stack>
-        ))}
-      </Group>
+      <BracketRow rounds={columns(stage.matches)} />
     </ScrollArea>
+  );
+}
+
+/** Upper bracket on top with the grand final at its end, lower bracket underneath. */
+function DoubleBracket({ stage }: { stage: StageView }) {
+  const byRound = (m: MatchSummary[]) => [...m].sort((a, b) => a.round - b.round);
+  const upper = columns(byRound(stage.matches.filter((m) => m.bracket === "upper")));
+  const final = stage.matches.filter((m) => m.bracket === "final");
+  const lower = columns(byRound(stage.matches.filter((m) => m.bracket === "lower")));
+  return (
+    <ScrollArea type="auto">
+      <Text className="eyebrow" px="md" pt="md">
+        Upper bracket
+      </Text>
+      <BracketRow rounds={[...upper, ...(final.length ? [{ label: "Grand final", matches: final }] : [])]} />
+      <Text className="eyebrow" px="md" pt="xs">
+        Lower bracket · one more defeat and you are out
+      </Text>
+      <BracketRow rounds={lower} />
+    </ScrollArea>
+  );
+}
+
+function BracketRow({ rounds }: { rounds: { label: string; matches: MatchSummary[] }[] }) {
+  return (
+    <Group align="stretch" gap="lg" p="md" wrap="nowrap">
+      {rounds.map((r, i) => (
+        <Stack key={i} justify="space-around" gap="md" miw={230}>
+          <Text className="eyebrow">{r.label}</Text>
+          {r.matches.map((m) => (
+            <Tie key={m.id} m={m} />
+          ))}
+        </Stack>
+      ))}
+    </Group>
+  );
+}
+
+function Tie({ m }: { m: MatchSummary }) {
+  const { career } = useCareer();
+  const navigate = useNavigate();
+  return (
+    <Paper
+      p="xs"
+      className={classes.tie}
+      data-link={m.games ? true : undefined}
+      onClick={() => m.games && navigate(`/career/${career.id}/matches/${m.id}`)}
+    >
+      <TieSide team={m.home} score={m.score[0]} won={m.winner === m.home?.id} done={!!m.winner} mine={m.home?.id === career.team.id} />
+      <TieSide team={m.away} score={m.score[1]} won={m.winner === m.away?.id} done={!!m.winner} mine={m.away?.id === career.team.id} />
+      <Text fz={10} c="dimmed" mt={4}>
+        {shortDate(m.day)} · Bo{m.best_of}
+      </Text>
+    </Paper>
   );
 }
 

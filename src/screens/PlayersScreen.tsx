@@ -1,10 +1,10 @@
-import { Group, ScrollArea, SegmentedControl, Select, Stack, Switch, Table, Text, TextInput } from "@mantine/core";
-import { IconSearch } from "@tabler/icons-react";
+import { Group, ScrollArea, SegmentedControl, Select, Stack, Switch, Table, Text, TextInput, UnstyledButton } from "@mantine/core";
+import { IconChevronDown, IconChevronUp, IconSearch } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { Role } from "../api/types";
+import type { PlayerRow, Role } from "../api/types";
 import { ChampIcon, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
 import { ShortlistButton } from "../components/ShortlistButton";
 import { Loading, Ovr, PageHeader, Screen, Section } from "../components/Ui";
@@ -12,6 +12,30 @@ import { cx, flag, money, ROLES } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
+
+type SortKey = "name" | "overall" | "potential" | "salary";
+
+const SORTS: Record<SortKey, (a: PlayerRow, b: PlayerRow) => number> = {
+  name: (a, b) => a.name.localeCompare(b.name),
+  overall: (a, b) => a.overall - b.overall,
+  potential: (a, b) => a.potential - b.potential,
+  salary: (a, b) => a.salary - b.salary,
+};
+
+/** A column header that sorts the list; a second click turns the order round. */
+function SortHeader({ label, k, sort, onSort, num = false }: { label: string; k: SortKey; sort: { key: SortKey; desc: boolean }; onSort: (k: SortKey) => void; num?: boolean }) {
+  const on = sort.key === k;
+  return (
+    <Table.Th className={num ? "num" : undefined}>
+      <UnstyledButton onClick={() => onSort(k)} fz="inherit" fw="inherit" c={on ? "gold.3" : "inherit"}>
+        <Group gap={2} wrap="nowrap" justify={num ? "flex-end" : "flex-start"}>
+          {label}
+          {on && (sort.desc ? <IconChevronDown size={12} /> : <IconChevronUp size={12} />)}
+        </Group>
+      </UnstyledButton>
+    </Table.Th>
+  );
+}
 
 export function PlayersScreen() {
   const { career, revision } = useCareer();
@@ -21,6 +45,8 @@ export function PlayersScreen() {
   const [role, setRole] = useState<Role | "ALL">("ALL");
   const [freeAgents, setFreeAgents] = useState(false);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "overall", desc: true });
+  const onSort = (key: SortKey) => setSort((s) => ({ key, desc: s.key === key ? !s.desc : key !== "name" }));
   const players = useApi(
     () => api.players(career.id, { region: region ?? undefined, role: role === "ALL" ? undefined : role, freeAgents, limit: 400 }),
     [career.id, revision, region, role, freeAgents],
@@ -28,8 +54,10 @@ export function PlayersScreen() {
   const teamOf = (id: string | null) => (id ? catalog.teams.find((t) => t.id === id) ?? null : null);
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (players.data ?? []).filter((p) => !q || p.name.toLowerCase().includes(q) || (p.real_name ?? "").toLowerCase().includes(q));
-  }, [players.data, query]);
+    const found = (players.data ?? []).filter((p) => !q || p.name.toLowerCase().includes(q) || (p.real_name ?? "").toLowerCase().includes(q));
+    const by = SORTS[sort.key];
+    return [...found].sort((a, b) => (sort.desc ? by(b, a) : by(a, b)));
+  }, [players.data, query, sort]);
 
   return (
     <Screen>
@@ -61,12 +89,12 @@ export function PlayersScreen() {
                 <Table.Tr>
                   <Table.Th w={40} />
                   <Table.Th w={36} />
-                  <Table.Th>Player</Table.Th>
+                  <SortHeader label="Player" k="name" sort={sort} onSort={onSort} />
                   <Table.Th>Team</Table.Th>
                   <Table.Th>2026</Table.Th>
-                  <Table.Th className="num">OVR</Table.Th>
-                  <Table.Th className="num">POT</Table.Th>
-                  <Table.Th className="num">Salary</Table.Th>
+                  <SortHeader label="OVR" k="overall" sort={sort} onSort={onSort} num />
+                  <SortHeader label="POT" k="potential" sort={sort} onSort={onSort} num />
+                  <SortHeader label="Salary" k="salary" sort={sort} onSort={onSort} num />
                   <Table.Th>Signatures</Table.Th>
                 </Table.Tr>
               </Table.Thead>

@@ -1,4 +1,4 @@
-import { Badge, Box, Button, Grid, Group, Paper, Progress, SimpleGrid, Stack, Table, Text } from "@mantine/core";
+import { Badge, Box, Button, Grid, Group, Paper, Progress, SimpleGrid, Stack, Text, Tooltip } from "@mantine/core";
 import { IconBinoculars } from "@tabler/icons-react";
 import { Link, useParams } from "react-router-dom";
 
@@ -118,21 +118,12 @@ export function PlayerScreen() {
         </Group>
       </Paper>
 
-      {career.phase !== "draft" && d.team && (
-        <Box mb="lg">
-          <TransferPanel player={d} />
-        </Box>
-      )}
-      {career.phase !== "draft" && d.team !== career.team.id && (
-        <Box mb="lg">
-          <ScoutPanel player={d} />
-        </Box>
-      )}
-      {(career.phase !== "draft" || d.team === career.team.id) && (
-        <Box mb="lg">
-          <ContractPanel player={d} />
-        </Box>
-      )}
+      {/* The decisions about the player, side by side: a bid or the transfer list, the scout report, the contract. */}
+      <Box className={classes.panels}>
+        {career.phase !== "draft" && d.team && <TransferPanel player={d} />}
+        {career.phase !== "draft" && d.team !== career.team.id && <ScoutPanel player={d} />}
+        {(career.phase !== "draft" || d.team === career.team.id) && <ContractPanel player={d} />}
+      </Box>
 
       <Grid gap="lg">
         <Grid.Col span={{ base: 12, lg: 5 }}>
@@ -238,33 +229,30 @@ export function PlayerScreen() {
 
         <Grid.Col span={{ base: 12, lg: 7 }}>
           <Stack gap="lg">
-            <Section title="Champion pool" right={<Text fz="xs" c="dimmed">mastery · meta on patch {career.patch}</Text>} pad={false}>
-              <Table verticalSpacing={5}>
-                <Table.Tbody>
-                  {d.pool.map((c) => (
-                    <Table.Tr key={c.champion}>
-                      <Table.Td w={46}>
-                        <ChampIcon id={c.champion} size={36} />
-                      </Table.Td>
-                      <Table.Td fw={600} fz="sm">
-                        {catalog.champion[c.champion]?.name ?? c.champion}
-                      </Table.Td>
-                      <Table.Td className="num" c="dimmed" fz="sm">
-                        {c.games} games
-                      </Table.Td>
-                      <Table.Td className="num" c="dimmed" fz="sm">
-                        {c.winrate !== null ? `${c.winrate}%` : ""}
-                      </Table.Td>
-                      <Table.Td w={140}>
-                        <Progress value={c.mastery} color="gold" size="sm" radius="xl" />
-                      </Table.Td>
-                      <Table.Td className={c.meta >= 0 ? "num gain" : "num loss"} fw={700} fz="sm">
-                        {signed(c.meta, 1)}
-                      </Table.Td>
-                    </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
+            <Section title="Champion pool" right={<Text fz="xs" c="dimmed">mastery · meta on patch {career.patch}</Text>}>
+              <SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }} spacing="xs">
+                {d.pool.map((c) => (
+                  <Group key={c.champion} gap="sm" wrap="nowrap" className={classes.poolItem}>
+                    <ChampIcon id={c.champion} size={38} />
+                    <Stack gap={3} miw={0} style={{ flex: 1 }}>
+                      <Group justify="space-between" wrap="nowrap" gap={6}>
+                        <Text fw={700} fz="sm" truncate>
+                          {catalog.champion[c.champion]?.name ?? c.champion}
+                        </Text>
+                        <Tooltip label="Meta power on this patch">
+                          <Text fz="xs" fw={700} className={c.meta >= 0 ? "gain" : "loss"}>
+                            {signed(c.meta, 1)}
+                          </Text>
+                        </Tooltip>
+                      </Group>
+                      <Progress value={c.mastery} color="gold" size="xs" radius="xl" />
+                      <Text fz={11} c="dimmed">
+                        {c.games ? `${c.games} games${c.winrate !== null ? ` · ${c.winrate}% won` : ""}` : "learned in training"} · mastery {c.mastery}
+                      </Text>
+                    </Stack>
+                  </Group>
+                ))}
+              </SimpleGrid>
             </Section>
 
             <Section title="2026 season" right={<Text fz="xs" c="dimmed">all competitions</Text>}>

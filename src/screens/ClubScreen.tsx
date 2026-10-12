@@ -1,4 +1,4 @@
-import { Alert, Badge, Grid, Group, List, Progress, Stack, Table, Text } from "@mantine/core";
+import { Alert, Badge, Grid, Group, List, Progress, SimpleGrid, Stack, Table, Text } from "@mantine/core";
 import { IconAlertTriangle, IconCheck, IconClock, IconX } from "@tabler/icons-react";
 
 import { api } from "../api/client";
@@ -74,41 +74,42 @@ function Club({ b }: { b: BoardView }) {
               )}
             </Section>
 
-            <Section title={`Objectives for ${b.season}`}>
-              {b.objectives.length === 0 ? (
-                <Empty>No objectives this season.</Empty>
-              ) : (
-                <Stack gap="sm">
-                  {b.objectives.map((o) => (
-                    <Group key={o.id} justify="space-between" wrap="nowrap" gap="md">
-                      <Group gap="sm" wrap="nowrap">
-                        <StatusIcon status={o.status} />
-                        <Stack gap={0}>
-                          <Text fw={700}>{o.text}</Text>
-                          <Text fz="xs" c="dimmed">
-                            {o.result || o.progress || "Not decided yet"}
-                            {o.target !== o.proposed && (o.kind === "worlds" ? o.target > o.proposed : o.target < o.proposed)
-                              ? " · you promised more"
-                              : o.target !== o.proposed
-                                ? " · you asked for less"
-                                : ""}
-                          </Text>
-                        </Stack>
+            <SimpleGrid cols={{ base: 1, xl: b.bonuses.length > 0 ? 2 : 1 }} spacing="lg">
+              <Section title={`Objectives for ${b.season}`}>
+                {b.objectives.length === 0 ? (
+                  <Empty>No objectives this season.</Empty>
+                ) : (
+                  <Stack gap="sm">
+                    {b.objectives.map((o) => (
+                      <Group key={o.id} justify="space-between" wrap="nowrap" gap="md">
+                        <Group gap="sm" wrap="nowrap">
+                          <StatusIcon status={o.status} />
+                          <Stack gap={0}>
+                            <Text fw={700}>{o.text}</Text>
+                            <Text fz="xs" c="dimmed">
+                              {o.result || o.progress || "Not decided yet"}
+                              {o.target !== o.proposed && (o.kind === "worlds" ? o.target > o.proposed : o.target < o.proposed)
+                                ? " · you promised more"
+                                : o.target !== o.proposed
+                                  ? " · you asked for less"
+                                  : ""}
+                            </Text>
+                          </Stack>
+                        </Group>
+                        <Badge variant="light" color={o.status === "met" ? "teal" : o.status === "failed" ? "red" : "gray"}>
+                          {o.status}
+                        </Badge>
                       </Group>
-                      <Badge variant="light" color={o.status === "met" ? "teal" : o.status === "failed" ? "red" : "gray"}>
-                        {o.status}
-                      </Badge>
-                    </Group>
-                  ))}
-                </Stack>
-              )}
-            </Section>
-
-            {b.bonuses.length > 0 && (
-              <Section title="Bonuses" right={<Text fz="xs" c="dimmed">rewarded, never demanded</Text>}>
-                <BonusList bonuses={b.bonuses} />
+                    ))}
+                  </Stack>
+                )}
               </Section>
-            )}
+              {b.bonuses.length > 0 && (
+                <Section title="Bonuses" right={<Text fz="xs" c="dimmed">rewarded, never demanded</Text>}>
+                  <BonusList bonuses={b.bonuses} />
+                </Section>
+              )}
+            </SimpleGrid>
 
             <Section title="The board's reviews">
               {b.history.length === 0 ? (

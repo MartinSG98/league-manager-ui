@@ -18,7 +18,7 @@ export function MatchDetailScreen() {
   const view = useApi(() => api.match(career.id, match!), [career.id, match, revision]);
   if (!view.data) return <Loading />;
   return (
-    <Screen wide>
+    <Screen>
       <SeriesReport match={view.data} />
     </Screen>
   );

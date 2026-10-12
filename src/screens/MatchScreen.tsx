@@ -50,7 +50,7 @@ export function MatchScreen() {
   const hideLast = view.phase === "result" && revealed !== gameKey;
 
   return (
-    <Screen wide>
+    <Screen>
       <SeriesHeader view={view} hideLast={hideLast} />
       {view.phase === "lineup" && <LineupStage view={view} onFinished={setFinished} />}
       {(view.phase === "draft" || view.phase === "ready") && <ChampSelectStage view={view} onFinished={setFinished} />}
@@ -969,7 +969,7 @@ function FinishedSeries({ matchId }: { matchId: string }) {
   if (!match.data) return <Loading />;
   const won = match.data.winner === career.team.id;
   return (
-    <Screen wide>
+    <Screen>
       <Paper p="xl" mb="lg" className={cx(classes.verdict, won ? classes.won : classes.lost)}>
         <Stack align="center" gap="xs">
           <Text className="eyebrow">Series over</Text>

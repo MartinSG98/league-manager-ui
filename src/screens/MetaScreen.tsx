@@ -1,4 +1,4 @@
-import { Badge, Grid, Group, Paper, SegmentedControl, Stack, Text, Tooltip } from "@mantine/core";
+import { Accordion, Badge, Grid, Group, Paper, ScrollArea, SegmentedControl, Stack, Text, Tooltip } from "@mantine/core";
 import { useState } from "react";
 
 import { api } from "../api/client";
@@ -74,25 +74,44 @@ export function MetaScreen() {
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 4 }}>
-          <Section title="Patch notes" pad={false}>
+          <Section title="Patch notes" pad={false} right={m.history.length > 1 && <Text fz="xs" c="dimmed">older patches fold away</Text>}>
             {m.history.length === 0 && <Empty>The first patch of the season lands on January 6th.</Empty>}
-            {m.history.map((p) => (
-              <Stack key={p.version} gap={6} p="md" style={{ borderBottom: "1px solid var(--line)" }}>
-                <Text className="eyebrow">{longDate(p.day)}</Text>
-                <Text fw={800}>{p.headline}</Text>
-                {p.changes.map((c) => (
-                  <Group key={c.champion} gap="sm" wrap="nowrap">
-                    <ChampIcon id={c.champion} size={26} />
-                    <Text fz="sm" style={{ flex: 1 }}>
-                      {c.note}
-                    </Text>
-                    <Badge size="sm" variant="light" color={c.delta > 0 ? "teal" : "red"}>
-                      {c.delta > 0 ? "buff" : "nerf"}
-                    </Badge>
-                  </Group>
-                ))}
-              </Stack>
-            ))}
+            {/* The latest patch is open; the season's earlier ones fold into one line each. */}
+            <ScrollArea.Autosize mah="calc(100vh - 230px)" type="auto">
+              <Accordion multiple defaultValue={m.history[0] ? [m.history[0].version] : []} chevronPosition="right">
+                {m.history.map((p) => {
+                  const buffs = p.changes.filter((c) => c.delta > 0).length;
+                  return (
+                    <Accordion.Item key={p.version} value={p.version}>
+                      <Accordion.Control>
+                        <Stack gap={2}>
+                          <Text className="eyebrow">{longDate(p.day)}</Text>
+                          <Text fw={800}>{p.headline}</Text>
+                          <Text fz="xs" c="dimmed">
+                            {buffs} buff{buffs === 1 ? "" : "s"} · {p.changes.length - buffs} nerf{p.changes.length - buffs === 1 ? "" : "s"}
+                          </Text>
+                        </Stack>
+                      </Accordion.Control>
+                      <Accordion.Panel>
+                        <Stack gap={6}>
+                          {p.changes.map((c) => (
+                            <Group key={c.champion} gap="sm" wrap="nowrap">
+                              <ChampIcon id={c.champion} size={26} />
+                              <Text fz="sm" style={{ flex: 1 }}>
+                                {c.note}
+                              </Text>
+                              <Badge size="sm" variant="light" color={c.delta > 0 ? "teal" : "red"}>
+                                {c.delta > 0 ? "buff" : "nerf"}
+                              </Badge>
+                            </Group>
+                          ))}
+                        </Stack>
+                      </Accordion.Panel>
+                    </Accordion.Item>
+                  );
+                })}
+              </Accordion>
+            </ScrollArea.Autosize>
             <Text fz="xs" c="dimmed" p="md">
               {m.games} pro games played on this patch. {catalog.champions.length} champions in the game.
             </Text>

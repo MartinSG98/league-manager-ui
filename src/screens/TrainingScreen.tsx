@@ -28,7 +28,7 @@ export function TrainingScreen() {
 function Training({ view }: { view: TrainingView }) {
   const { career } = useCareer();
   return (
-    <Screen wide>
+    <Screen>
       <PageHeader
         icon={<IconBarbell size={40} color="var(--gold-bright)" />}
         eyebrow={`Week of ${longDate(career.day)}`}

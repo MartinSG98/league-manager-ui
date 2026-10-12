@@ -33,6 +33,15 @@ function Squad({ squad }: { squad: SquadView }) {
   const starters = ROLES.map((r) => squad.players.find((p) => p.id === squad.lineup[r]) ?? null);
   const bench = squad.players.filter((p) => !Object.values(squad.lineup).includes(p.id));
   const ordered = [...starters.filter((p): p is PlayerDetail => !!p), ...bench];
+  // Your staff sit in the side column; another club's, with no tactics to show, get a row of their own.
+  const staff = (
+    <Section title="Staff">
+      <SimpleGrid cols={{ base: 1, md: squad.is_mine ? 1 : 2 }} spacing="sm">
+        <StaffCard person={squad.staff.coach} kind="coach" />
+        <StaffCard person={squad.staff.analyst} kind="analyst" />
+      </SimpleGrid>
+    </Section>
+  );
 
   return (
     <Screen>
@@ -57,83 +66,87 @@ function Squad({ squad }: { squad: SquadView }) {
 
       <Grid gap="lg" mt="lg">
         <Grid.Col span={{ base: 12, xl: 8 }}>
-          <Section title={`Players · ${squad.players.length}`} pad={false}>
-            <ScrollArea type="auto">
-              <Table verticalSpacing={6}>
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th w={34} />
-                    <Table.Th>Player</Table.Th>
-                    <Table.Th className="num">OVR</Table.Th>
-                    <Table.Th className="num">POT</Table.Th>
-                    {Object.entries(ATTRIBUTE_NAMES).map(([key, name]) => (
-                      <Table.Th key={key} className="num">
-                        <Tooltip label={name}>
-                          <span>{name.slice(0, 4)}</span>
-                        </Tooltip>
-                      </Table.Th>
-                    ))}
-                    <Table.Th>Form</Table.Th>
-                    <Table.Th>Morale</Table.Th>
-                    <Table.Th className="num">Salary</Table.Th>
-                    <Table.Th className="num">To</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {ordered.map((p) => (
-                    <Table.Tr key={p.id} className={cx(bench.includes(p) && "dim")} style={{ cursor: "pointer" }} onClick={() => navigate(`/career/${career.id}/player/${p.id}`)}>
-                      <Table.Td>
-                        <RoleIcon role={p.role} />
-                      </Table.Td>
-                      <Table.Td>
-                        <Group gap="sm" wrap="nowrap">
-                          <PlayerPhoto photo={p.photo} name={p.name} size={30} />
-                          <Text fw={700} fz="sm">
-                            {p.name}
-                          </Text>
-                          {squad.listed.includes(p.id) && (
-                            <Badge size="xs" color="orange" variant="light">
-                              listed
-                            </Badge>
-                          )}
-                          {p.status
-                            .filter((s) => s !== "Sharp")
-                            .map((s) => (
-                              <Badge key={s} size="xs" color="red" variant="light">
-                                {s}
-                              </Badge>
-                            ))}
-                        </Group>
-                      </Table.Td>
-                      <Table.Td className="num">
-                        <Ovr value={p.overall} />
-                      </Table.Td>
-                      <Table.Td className="num" c="dimmed">
-                        {p.potential}
-                      </Table.Td>
-                      {Object.keys(ATTRIBUTE_NAMES).map((a) => (
-                        <Table.Td key={a} className={cx("num", `band-${attributeBand(p.attributes[a])}`)} fw={700} fz="sm">
-                          {p.attributes[a]}
-                        </Table.Td>
+          <Stack gap="lg">
+            <Section title={`Players · ${squad.players.length}`} pad={false}>
+              <ScrollArea type="auto">
+                <Table verticalSpacing={6}>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th w={34} />
+                      <Table.Th>Player</Table.Th>
+                      <Table.Th className="num">OVR</Table.Th>
+                      <Table.Th className="num">POT</Table.Th>
+                      {Object.entries(ATTRIBUTE_NAMES).map(([key, name]) => (
+                        <Table.Th key={key} className="num">
+                          <Tooltip label={name}>
+                            <span>{name.slice(0, 4)}</span>
+                          </Tooltip>
+                        </Table.Th>
                       ))}
-                      <Table.Td>
-                        <FormArrow value={p.form} />
-                      </Table.Td>
-                      <Table.Td>
-                        <Meter value={p.morale} color={p.morale >= 60 ? "teal" : "red"} label={`Morale ${p.morale}`} />
-                      </Table.Td>
-                      <Table.Td className="num" fz="sm">
-                        {money(p.salary)}
-                      </Table.Td>
-                      <Table.Td className="num" c="dimmed" fz="sm">
-                        {p.contract_until ?? "—"}
-                      </Table.Td>
+                      <Table.Th>Form</Table.Th>
+                      <Table.Th>Morale</Table.Th>
+                      <Table.Th className="num">Salary</Table.Th>
+                      <Table.Th className="num">To</Table.Th>
                     </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
-            </ScrollArea>
-          </Section>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {ordered.map((p) => (
+                      <Table.Tr key={p.id} className={cx(bench.includes(p) && "dim")} style={{ cursor: "pointer" }} onClick={() => navigate(`/career/${career.id}/player/${p.id}`)}>
+                        <Table.Td>
+                          <RoleIcon role={p.role} />
+                        </Table.Td>
+                        <Table.Td>
+                          <Group gap="sm" wrap="nowrap">
+                            <PlayerPhoto photo={p.photo} name={p.name} size={30} />
+                            <Text fw={700} fz="sm">
+                              {p.name}
+                            </Text>
+                            {squad.listed.includes(p.id) && (
+                              <Badge size="xs" color="orange" variant="light">
+                                listed
+                              </Badge>
+                            )}
+                            {p.status
+                              .filter((s) => s !== "Sharp")
+                              .map((s) => (
+                                <Badge key={s} size="xs" color="red" variant="light">
+                                  {s}
+                                </Badge>
+                              ))}
+                          </Group>
+                        </Table.Td>
+                        <Table.Td className="num">
+                          <Ovr value={p.overall} />
+                        </Table.Td>
+                        <Table.Td className="num" c="dimmed">
+                          {p.potential}
+                        </Table.Td>
+                        {Object.keys(ATTRIBUTE_NAMES).map((a) => (
+                          <Table.Td key={a} className={cx("num", `band-${attributeBand(p.attributes[a])}`)} fw={700} fz="sm">
+                            {p.attributes[a]}
+                          </Table.Td>
+                        ))}
+                        <Table.Td>
+                          <FormArrow value={p.form} />
+                        </Table.Td>
+                        <Table.Td>
+                          <Meter value={p.morale} color={p.morale >= 60 ? "teal" : "red"} label={`Morale ${p.morale}`} />
+                        </Table.Td>
+                        <Table.Td className="num" fz="sm">
+                          {money(p.salary)}
+                        </Table.Td>
+                        <Table.Td className="num" c="dimmed" fz="sm">
+                          {p.contract_until ?? "—"}
+                        </Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </ScrollArea>
+            </Section>
+            {squad.is_mine && <TacticsPanel tactics={squad.tactics} />}
+            {squad.is_mine && bench.length > 0 && <LineupPanel squad={squad} />}
+          </Stack>
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, xl: 4 }}>
@@ -145,16 +158,10 @@ function Squad({ squad }: { squad: SquadView }) {
                 ))}
               </List>
             </Section>
-            <Section title="Staff">
-              <Stack gap="sm">
-                <StaffCard person={squad.staff.coach} kind="coach" />
-                <StaffCard person={squad.staff.analyst} kind="analyst" />
-              </Stack>
-            </Section>
-            {squad.is_mine && <TacticsPanel tactics={squad.tactics} />}
-            {squad.is_mine && bench.length > 0 && <LineupPanel squad={squad} />}
+            {squad.is_mine && staff}
           </Stack>
         </Grid.Col>
+        {!squad.is_mine && <Grid.Col span={12}>{staff}</Grid.Col>}
       </Grid>
     </Screen>
   );

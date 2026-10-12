@@ -28,3 +28,30 @@
 .inboxRow[data-active] {
   background: rgba(200, 170, 110, 0.1);
 }
+
+/* The player page's decision panels: as many side by side as fit. */
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+  margin-bottom: var(--mantine-spacing-lg);
+}
+
+.panels:empty {
+  display: none;
+}
+
+.poolItem {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+/* A competition's header row in a table of matches. */
+.groupRow td {
+  padding-top: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  border-top: 1px solid var(--line);
+}

@@ -1,10 +1,11 @@
-import { Alert, Badge, Button, Grid, Group, Paper, Stack, Table, Text, UnstyledButton } from "@mantine/core";
-import { IconArrowRight, IconTransfer, IconUserSearch } from "@tabler/icons-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Alert, Badge, Button, Grid, Group, Paper, Stack, Table, Tabs, Text, UnstyledButton } from "@mantine/core";
+import { IconArrowRight, IconStar, IconTransfer, IconUserSearch } from "@tabler/icons-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { TransferOfferRow, TransfersView } from "../api/types";
 import { PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
+import { ShortlistTable } from "../components/ShortlistTable";
 import { Conversation, IncomingOffer, OfferStatus } from "../components/TransferActions";
 import { Empty, Loading, Ovr, PageHeader, Screen, Section } from "../components/Ui";
 import { longDate, money, shortDate } from "../lib/format";
@@ -21,6 +22,8 @@ export function TransfersScreen() {
 function Transfers({ view }: { view: TransfersView }) {
   const { career } = useCareer();
   const base = `/career/${career.id}`;
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") === "shortlist" ? "shortlist" : "window";
   const openIncoming = view.incoming.filter((o) => o.status === "open");
   const pastIncoming = view.incoming.filter((o) => o.status !== "open");
   return (
@@ -49,103 +52,125 @@ function Transfers({ view }: { view: TransfersView }) {
           </Group>
         }
       />
-      {!view.open && (
-        <Alert color="gray" variant="light" mb="lg">
-          Players under contract can only be bought and sold in the off-season, from the day after the Worlds final to December 15th. Free
-          agents can be signed any time from their player page.
-        </Alert>
+      <Tabs value={tab} onChange={(v) => setParams(v === "shortlist" ? { tab: "shortlist" } : {}, { replace: true })} mb="lg">
+        <Tabs.List>
+          <Tabs.Tab value="window" leftSection={<IconTransfer size={14} />}>
+            Window
+          </Tabs.Tab>
+          <Tabs.Tab
+            value="shortlist"
+            leftSection={<IconStar size={14} />}
+            rightSection={career.shortlist.length ? <Badge size="xs" variant="light" color="gold">{career.shortlist.length}</Badge> : undefined}
+          >
+            Shortlist
+          </Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
+      {tab === "shortlist" ? (
+        <Section title="Shortlist" right={<Text fz="xs" c="dimmed">the analyst's latest verdict on each player</Text>} pad={false}>
+          <ShortlistTable />
+        </Section>
+      ) : (
+        <>
+          {!view.open && (
+            <Alert color="gray" variant="light" mb="lg">
+              Players under contract can only be bought and sold in the off-season, from the day after the Worlds final to January 16th. Free
+              agents can be signed any time from their player page.
+            </Alert>
+          )}
+          {view.open && view.free_agency && (
+            <Alert color="gold" variant="light" mb="lg">
+              Contracts that end this season run out on {longDate(view.free_agency)}. Until then you can still extend your own players.
+            </Alert>
+          )}
+          <Grid gap="lg">
+            <Grid.Col span={{ base: 12, lg: 6 }}>
+              <Stack gap="lg">
+                {view.conversations.length > 0 && (
+                  <Section title="Players who want to talk">
+                    <Stack gap="lg">
+                      {view.conversations.map((t) => (
+                        <Conversation key={t.id} talk={t} />
+                      ))}
+                    </Stack>
+                  </Section>
+                )}
+                <Section title={`Bids for your players${openIncoming.length ? ` · ${openIncoming.length} open` : ""}`}>
+                  {view.incoming.length === 0 ? (
+                    <Empty>No club has bid for one of your players{view.open ? " yet" : ""}.</Empty>
+                  ) : (
+                    <Stack gap="md">
+                      {[...openIncoming, ...pastIncoming].map((o) => (
+                        <Group key={o.id} gap="md" wrap="nowrap" align="flex-start">
+                          <TeamLogo team={o.buyer_team} size={36} />
+                          <IncomingOffer offer={o} />
+                        </Group>
+                      ))}
+                    </Stack>
+                  )}
+                </Section>
+                <Section title="Your transfer list" pad={false}>
+                  {view.listed.length === 0 ? (
+                    <Empty>Put a player on the list from their player page and other clubs know you would sell.</Empty>
+                  ) : (
+                    view.listed.map((p) => <PlayerLine key={p.id} id={p.id} name={p.name} photo={p.photo} role={p.role} overall={p.overall} right={money(p.salary)} />)
+                  )}
+                </Section>
+              </Stack>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, lg: 6 }}>
+              <Stack gap="lg">
+                <Section title="Your bids" pad={false}>
+                  {view.outgoing.length === 0 ? (
+                    <Empty>Bid for a player from their page: find them under Scouting.</Empty>
+                  ) : (
+                    view.outgoing.map((o) => <OutgoingBid key={o.id} offer={o} />)
+                  )}
+                </Section>
+                <Section title="Moves this window" pad={false}>
+                  {view.moves.length === 0 ? (
+                    <Empty>Nobody has moved yet.</Empty>
+                  ) : (
+                    <Table verticalSpacing={5}>
+                      <Table.Tbody>
+                        {view.moves.slice(0, 40).map((m) => (
+                          <Table.Tr key={`${m.day}-${m.player}`}>
+                            <Table.Td c="dimmed" fz="xs" w={60}>
+                              {shortDate(m.day)}
+                            </Table.Td>
+                            <Table.Td>
+                              <Group gap={6} wrap="nowrap">
+                                <RoleIcon role={m.player_row.role} size={14} />
+                                <Link to={`${base}/player/${m.player}`} className="link">
+                                  <Text fz="sm" fw={700}>
+                                    {m.player_row.name}
+                                  </Text>
+                                </Link>
+                                <Ovr value={m.player_row.overall} size="sm" />
+                              </Group>
+                            </Table.Td>
+                            <Table.Td>
+                              <Group gap={6} wrap="nowrap">
+                                {m.from_team ? <TeamLogo team={m.from_team} size={20} /> : <Badge size="xs" variant="outline" color="gray">FA</Badge>}
+                                <IconArrowRight size={12} />
+                                <TeamLogo team={m.to_team} size={20} />
+                                <Text fz="xs">{m.to_team.tag}</Text>
+                              </Group>
+                            </Table.Td>
+                            <Table.Td ta="right" fz="sm" fw={600}>
+                              {m.fee ? money(m.fee) : "free"}
+                            </Table.Td>
+                          </Table.Tr>
+                        ))}
+                      </Table.Tbody>
+                    </Table>
+                  )}
+                </Section>
+              </Stack>
+            </Grid.Col>
+          </Grid>
+        </>
       )}
-      {view.open && view.free_agency && (
-        <Alert color="gold" variant="light" mb="lg">
-          Contracts that end this season run out on {longDate(view.free_agency)}. Until then you can still extend your own players.
-        </Alert>
-      )}
-      <Grid gap="lg">
-        <Grid.Col span={{ base: 12, lg: 6 }}>
-          <Stack gap="lg">
-            {view.conversations.length > 0 && (
-              <Section title="Players who want to talk">
-                <Stack gap="lg">
-                  {view.conversations.map((t) => (
-                    <Conversation key={t.id} talk={t} />
-                  ))}
-                </Stack>
-              </Section>
-            )}
-            <Section title={`Bids for your players${openIncoming.length ? ` · ${openIncoming.length} open` : ""}`}>
-              {view.incoming.length === 0 ? (
-                <Empty>No club has bid for one of your players{view.open ? " yet" : ""}.</Empty>
-              ) : (
-                <Stack gap="md">
-                  {[...openIncoming, ...pastIncoming].map((o) => (
-                    <Group key={o.id} gap="md" wrap="nowrap" align="flex-start">
-                      <TeamLogo team={o.buyer_team} size={36} />
-                      <IncomingOffer offer={o} />
-                    </Group>
-                  ))}
-                </Stack>
-              )}
-            </Section>
-            <Section title="Your transfer list" pad={false}>
-              {view.listed.length === 0 ? (
-                <Empty>Put a player on the list from their player page and other clubs know you would sell.</Empty>
-              ) : (
-                view.listed.map((p) => <PlayerLine key={p.id} id={p.id} name={p.name} photo={p.photo} role={p.role} overall={p.overall} right={money(p.salary)} />)
-              )}
-            </Section>
-          </Stack>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, lg: 6 }}>
-          <Stack gap="lg">
-            <Section title="Your bids" pad={false}>
-              {view.outgoing.length === 0 ? (
-                <Empty>Bid for a player from their page: find them under Scouting.</Empty>
-              ) : (
-                view.outgoing.map((o) => <OutgoingBid key={o.id} offer={o} />)
-              )}
-            </Section>
-            <Section title="Moves this window" pad={false}>
-              {view.moves.length === 0 ? (
-                <Empty>Nobody has moved yet.</Empty>
-              ) : (
-                <Table verticalSpacing={5}>
-                  <Table.Tbody>
-                    {view.moves.slice(0, 40).map((m) => (
-                      <Table.Tr key={`${m.day}-${m.player}`}>
-                        <Table.Td c="dimmed" fz="xs" w={60}>
-                          {shortDate(m.day)}
-                        </Table.Td>
-                        <Table.Td>
-                          <Group gap={6} wrap="nowrap">
-                            <RoleIcon role={m.player_row.role} size={14} />
-                            <Link to={`${base}/player/${m.player}`} className="link">
-                              <Text fz="sm" fw={700}>
-                                {m.player_row.name}
-                              </Text>
-                            </Link>
-                            <Ovr value={m.player_row.overall} size="sm" />
-                          </Group>
-                        </Table.Td>
-                        <Table.Td>
-                          <Group gap={6} wrap="nowrap">
-                            {m.from_team ? <TeamLogo team={m.from_team} size={20} /> : <Badge size="xs" variant="outline" color="gray">FA</Badge>}
-                            <IconArrowRight size={12} />
-                            <TeamLogo team={m.to_team} size={20} />
-                            <Text fz="xs">{m.to_team.tag}</Text>
-                          </Group>
-                        </Table.Td>
-                        <Table.Td ta="right" fz="sm" fw={600}>
-                          {m.fee ? money(m.fee) : "free"}
-                        </Table.Td>
-                      </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                </Table>
-              )}
-            </Section>
-          </Stack>
-        </Grid.Col>
-      </Grid>
     </Screen>
   );
 }

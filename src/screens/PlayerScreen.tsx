@@ -1,12 +1,16 @@
-import { Badge, Box, Grid, Group, Paper, Progress, SimpleGrid, Stack, Table, Text } from "@mantine/core";
+import { Badge, Box, Button, Grid, Group, Paper, Progress, SimpleGrid, Stack, Text, Tooltip } from "@mantine/core";
+import { IconBinoculars } from "@tabler/icons-react";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
+import type { PlayerDetail } from "../api/types";
 import { ContractPanel } from "../components/ContractPanel";
+import { PlayerReport } from "../components/PlayerReport";
+import { ShortlistButton } from "../components/ShortlistButton";
 import { TransferPanel } from "../components/TransferPanel";
 import { ChampIcon, PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
 import { AttrBar, Empty, FormArrow, Loading, Meter, Ovr, Screen, Section } from "../components/Ui";
-import { ATTRIBUTE_NAMES, flag, money, ROLE_NAMES, signed } from "../lib/format";
+import { ATTRIBUTE_NAMES, flag, longDate, money, ROLE_NAMES, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
@@ -114,16 +118,12 @@ export function PlayerScreen() {
         </Group>
       </Paper>
 
-      {career.phase !== "draft" && d.team && (
-        <Box mb="lg">
-          <TransferPanel player={d} />
-        </Box>
-      )}
-      {(career.phase !== "draft" || d.team === career.team.id) && (
-        <Box mb="lg">
-          <ContractPanel player={d} />
-        </Box>
-      )}
+      {/* The decisions about the player, side by side: a bid or the transfer list, the scout report, the contract. */}
+      <Box className={classes.panels}>
+        {career.phase !== "draft" && d.team && <TransferPanel player={d} />}
+        {career.phase !== "draft" && d.team !== career.team.id && <ScoutPanel player={d} />}
+        {(career.phase !== "draft" || d.team === career.team.id) && <ContractPanel player={d} />}
+      </Box>
 
       <Grid gap="lg">
         <Grid.Col span={{ base: 12, lg: 5 }}>
@@ -229,33 +229,30 @@ export function PlayerScreen() {
 
         <Grid.Col span={{ base: 12, lg: 7 }}>
           <Stack gap="lg">
-            <Section title="Champion pool" right={<Text fz="xs" c="dimmed">mastery · meta on patch {career.patch}</Text>} pad={false}>
-              <Table verticalSpacing={5}>
-                <Table.Tbody>
-                  {d.pool.map((c) => (
-                    <Table.Tr key={c.champion}>
-                      <Table.Td w={46}>
-                        <ChampIcon id={c.champion} size={36} />
-                      </Table.Td>
-                      <Table.Td fw={600} fz="sm">
-                        {catalog.champion[c.champion]?.name ?? c.champion}
-                      </Table.Td>
-                      <Table.Td className="num" c="dimmed" fz="sm">
-                        {c.games} games
-                      </Table.Td>
-                      <Table.Td className="num" c="dimmed" fz="sm">
-                        {c.winrate !== null ? `${c.winrate}%` : ""}
-                      </Table.Td>
-                      <Table.Td w={140}>
-                        <Progress value={c.mastery} color="gold" size="sm" radius="xl" />
-                      </Table.Td>
-                      <Table.Td className={c.meta >= 0 ? "num gain" : "num loss"} fw={700} fz="sm">
-                        {signed(c.meta, 1)}
-                      </Table.Td>
-                    </Table.Tr>
-                  ))}
-                </Table.Tbody>
-              </Table>
+            <Section title="Champion pool" right={<Text fz="xs" c="dimmed">mastery · meta on patch {career.patch}</Text>}>
+              <SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }} spacing="xs">
+                {d.pool.map((c) => (
+                  <Group key={c.champion} gap="sm" wrap="nowrap" className={classes.poolItem}>
+                    <ChampIcon id={c.champion} size={38} />
+                    <Stack gap={3} miw={0} style={{ flex: 1 }}>
+                      <Group justify="space-between" wrap="nowrap" gap={6}>
+                        <Text fw={700} fz="sm" truncate>
+                          {catalog.champion[c.champion]?.name ?? c.champion}
+                        </Text>
+                        <Tooltip label="Meta power on this patch">
+                          <Text fz="xs" fw={700} className={c.meta >= 0 ? "gain" : "loss"}>
+                            {signed(c.meta, 1)}
+                          </Text>
+                        </Tooltip>
+                      </Group>
+                      <Progress value={c.mastery} color="gold" size="xs" radius="xl" />
+                      <Text fz={11} c="dimmed">
+                        {c.games ? `${c.games} games${c.winrate !== null ? ` · ${c.winrate}% won` : ""}` : "learned in training"} · mastery {c.mastery}
+                      </Text>
+                    </Stack>
+                  </Group>
+                ))}
+              </SimpleGrid>
             </Section>
 
             <Section title="2026 season" right={<Text fz="xs" c="dimmed">all competitions</Text>}>
@@ -284,5 +281,37 @@ function Mini({ label, value }: { label: string; value: string }) {
         {value}
       </Text>
     </Stack>
+  );
+}
+
+
+/** The shortlist button and the analyst's latest report on the player. */
+function ScoutPanel({ player: d }: { player: PlayerDetail }) {
+  const { act, busy } = useCareer();
+  const entry = d.shortlist;
+  return (
+    <Section title="Scout report" right={<ShortlistButton player={d.id} />}>
+      {!entry ? (
+        <Empty>Add {d.name} to your shortlist and the analyst goes to watch them, then sends a report.</Empty>
+      ) : (
+        <Stack gap="md">
+          {entry.report && <PlayerReport report={entry.report} />}
+          {entry.due ? (
+            <Text fz="sm" c="dimmed">
+              The analyst is watching {d.name}: {entry.report ? "a new" : "the"} report is due on {longDate(entry.due)}.
+            </Text>
+          ) : (
+            <Group>
+              <Button variant="light" leftSection={<IconBinoculars size={16} />} disabled={busy} onClick={() => act({ type: "scout_player", player: d.id })}>
+                Ask for a new report
+              </Button>
+              <Text fz="xs" c="dimmed">
+                Every new report narrows the potential estimate.
+              </Text>
+            </Group>
+          )}
+        </Stack>
+      )}
+    </Section>
   );
 }

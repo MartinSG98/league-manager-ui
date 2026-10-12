@@ -5,7 +5,7 @@ import type { ReviewReport as Report } from "../api/types";
 import { useCareer } from "../state/career";
 
 /** How big a problem an area is in the analyst's read, 0 (fine) to 1 or more (costs us games). */
-function problemColor(score: number): string {
+export function problemColor(score: number): string {
   if (score >= 0.45) return "red";
   if (score >= 0.15) return "orange";
   return "teal";

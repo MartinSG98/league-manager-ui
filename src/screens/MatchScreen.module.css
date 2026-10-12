@@ -4,9 +4,8 @@
   align-items: center;
   gap: 18px;
   padding: 16px 22px;
-  background:
-    linear-gradient(90deg, rgba(78, 156, 255, 0.12), transparent 30%, transparent 70%, rgba(255, 90, 95, 0.12)),
-    #0d1320;
+  /* Home and away, not blue and red: the sides change from game to game. */
+  background: radial-gradient(ellipse 40% 140% at 50% 0%, rgba(200, 170, 110, 0.1), transparent 70%), #0d1320;
 }
 
 /* ---------- champion select ---------- */
@@ -27,6 +26,17 @@
 .column {
   position: sticky;
   top: 84px;
+}
+
+/* The middle column is as tall as the pick columns at least, and the champion grid takes what
+   the rest of it leaves. */
+.selectMiddle {
+  align-self: stretch;
+}
+
+.gridScroll {
+  flex: 1 1 0;
+  min-height: 420px;
 }
 
 .pickSlot {

@@ -3,9 +3,9 @@ import { IconArrowRight, IconCheck, IconClock, IconSwords, IconTransfer, IconWan
 import { Link } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { CompetitionRow, SquadView } from "../api/types";
+import type { CompetitionRow, MatchSummary, SquadView } from "../api/types";
 import { MatchCard } from "../components/MatchCard";
-import { PlayerPhoto, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
+import { LeagueLogo, PlayerPhoto, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
 import { Stars } from "../components/Stars";
 import { StandingsTable } from "../components/StandingsTable";
 import { Empty, Loading, Ovr, Screen, Section } from "../components/Ui";
@@ -101,20 +101,23 @@ export function HomeScreen() {
 
       <Grid gap="lg">
         <Grid.Col span={{ base: 12, lg: 7 }}>
-          <Section
-            title={current ? current.name : "Standings"}
-            pad={false}
-            right={
-              current && (
-                <Button component={Link} to={`${base}/competitions/${current.id}`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
-                  Full view
-                </Button>
-              )
-            }
-          >
-            {!table.data && (career.phase === "draft" ? <Empty>The schedule is made after the draft.</Empty> : <Loading />)}
-            {stage && <StandingsTable stage={stage} mine={career.team.id} careerId={career.id} />}
-          </Section>
+          <Stack gap="lg">
+            <Section
+              title={current ? current.name : "Standings"}
+              pad={false}
+              right={
+                current && (
+                  <Button component={Link} to={`${base}/competitions/${current.id}`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
+                    Full view
+                  </Button>
+                )
+              }
+            >
+              {!table.data && (career.phase === "draft" ? <Empty>The schedule is made after the draft.</Empty> : <Loading />)}
+              {stage && <StandingsTable stage={stage} mine={career.team.id} careerId={career.id} />}
+            </Section>
+            {career.phase === "season" && <Fixtures />}
+          </Stack>
         </Grid.Col>
 
         <Grid.Col span={{ base: 12, lg: 5 }}>
@@ -216,7 +219,7 @@ export function HomeScreen() {
               }
             >
               {career.inbox.slice(0, 7).map((m) => (
-                <UnstyledButton key={m.id} component={Link} to={`${base}/inbox`} className={classes.inboxRow}>
+                <UnstyledButton key={m.id} component={Link} to={`${base}/inbox?m=${m.id}`} className={classes.inboxRow}>
                   <Badge size="xs" variant={m.read ? "outline" : "filled"} color={m.kind === "patch" ? "hextech" : "gold"} w={64}>
                     {m.kind}
                   </Badge>
@@ -239,5 +242,79 @@ export function HomeScreen() {
         </Grid.Col>
       </Grid>
     </Screen>
+  );
+}
+
+/** The last results and the next matches, with the next one marked. */
+function Fixtures() {
+  const { career, revision } = useCareer();
+  const schedule = useApi(() => api.schedule(career.id), [career.id, revision]);
+  const base = `/career/${career.id}`;
+  if (!schedule.data) return null;
+  const played = schedule.data.filter((m) => m.winner);
+  const upcoming = schedule.data.filter((m) => !m.winner);
+  const rows = [...played.slice(-3), ...upcoming.slice(0, 4)];
+  return (
+    <Section
+      title="Fixtures"
+      pad={false}
+      right={
+        <Button component={Link} to={`${base}/schedule`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
+          Schedule
+        </Button>
+      }
+    >
+      {rows.length === 0 ? (
+        <Empty>No matches scheduled.</Empty>
+      ) : (
+        rows.map((m) => <FixtureRow key={m.id} m={m} next={m.id === upcoming[0]?.id} />)
+      )}
+    </Section>
+  );
+}
+
+function FixtureRow({ m, next }: { m: MatchSummary; next: boolean }) {
+  const { career } = useCareer();
+  const me = career.team.id;
+  const home = m.home?.id === me;
+  const opponent = home ? m.away : m.home;
+  const [us, them] = home ? m.score : [m.score[1], m.score[0]];
+  const won = m.winner === me;
+  const body = (
+    <Group gap="md" wrap="nowrap" className={classes.inboxRow} data-active={next || undefined}>
+      <Text fz="xs" c="dimmed" w={48}>
+        {shortDate(m.day)}
+      </Text>
+      <LeagueLogo logo={m.competition_logo} name={m.competition_name} size={18} />
+      <Text fz="xs" c="dimmed" w={150} truncate>
+        {m.label}
+      </Text>
+      <Group gap={8} wrap="nowrap" style={{ flex: 1 }} miw={0}>
+        <TeamLogo team={opponent} size={24} />
+        <Text fz="sm" fw={600} truncate>
+          {home ? "vs" : "at"} {opponent?.name ?? "TBD"}
+        </Text>
+      </Group>
+      {m.winner ? (
+        <Badge color={won ? "teal" : "red"} variant="light">
+          {won ? "W" : "L"} {us}-{them}
+        </Badge>
+      ) : next ? (
+        <Badge color="gold" variant="filled">
+          next · Bo{m.best_of}
+        </Badge>
+      ) : (
+        <Text fz="xs" c="dimmed">
+          Bo{m.best_of}
+        </Text>
+      )}
+    </Group>
+  );
+  return m.games ? (
+    <UnstyledButton component={Link} to={`/career/${career.id}/matches/${m.id}`} w="100%">
+      {body}
+    </UnstyledButton>
+  ) : (
+    body
   );
 }

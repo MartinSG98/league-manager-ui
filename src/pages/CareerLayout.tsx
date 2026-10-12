@@ -6,6 +6,7 @@ import {
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { BoardMeeting } from "../components/BoardMeeting";
+import { DrawPrompt } from "../components/DrawPrompt";
 import { JobOffers } from "../components/JobOffers";
 import { LeagueLogo, TeamLogo } from "../components/Media";
 import { Stars } from "../components/Stars";
@@ -163,7 +164,13 @@ export function CareerLayout() {
 
       <AppShell.Main className={classes.main}>
         <Outlet />
-        {career.board.sacked ? <JobOffers /> : career.board.meeting && <BoardMeeting />}
+        {career.board.sacked ? (
+          <JobOffers />
+        ) : career.board.meeting ? (
+          <BoardMeeting />
+        ) : (
+          career.draw && !location.pathname.endsWith("/match") && <DrawPrompt draw={career.draw} />
+        )}
       </AppShell.Main>
     </AppShell>
   );

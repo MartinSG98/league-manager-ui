@@ -1,0 +1,79 @@
+.column {
+  width: 168px;
+  flex: none;
+}
+
+.columnHead {
+  min-height: 20px;
+}
+
+.pool,
+.decided {
+  background: #0a0f19;
+}
+
+.drawing {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 18px rgba(200, 170, 110, 0.25);
+}
+
+.through {
+  border-color: rgba(18, 184, 134, 0.45);
+  background: linear-gradient(180deg, rgba(18, 184, 134, 0.1), transparent 70%), #0a0f19;
+}
+
+.out {
+  border-color: rgba(250, 82, 82, 0.4);
+  background: linear-gradient(180deg, rgba(250, 82, 82, 0.08), transparent 70%), #0a0f19;
+}
+
+.tie {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.tie[data-link] {
+  cursor: pointer;
+}
+
+.tie[data-link]:hover {
+  border-color: var(--gold);
+}
+
+.side {
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.lost {
+  opacity: 0.45;
+}
+
+.mine {
+  background: rgba(200, 170, 110, 0.14);
+}
+
+.drawPanel {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(200, 170, 110, 0.12), transparent 60%), #0d1320;
+}
+
+.pot {
+  min-height: 34px;
+}
+
+.reveal {
+  animation: reveal 450ms ease-out;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

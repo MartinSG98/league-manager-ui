@@ -164,6 +164,7 @@ export interface PlayerDetail extends PlayerRow {
   /** Thriving, Developing, Slow, Stagnating, Burned out or Not assessed. */
   development: string;
   market: PlayerMarket;
+  shortlist: ShortlistEntry | null;
   attributes: Record<string, number>;
   aggression: number;
   leadership: number;
@@ -181,15 +182,26 @@ export interface InboxMessage {
   day: string;
   kind:
     | "news" | "draft" | "match" | "patch" | "board" | "contract" | "finance" | "scouting" | "staff" | "transfer" | "player"
-    | "training";
+    | "training" | "draw";
   subject: string;
   body: string;
   read: boolean;
-  report: ScoutingReport | ReviewReport | null;
+  report: ScoutingReport | ReviewReport | PlayerReport | null;
   /** A bid for one of your players that this message is about. */
   offer: number | null;
   /** A talk a player asked for. */
   conversation: number | null;
+  /** A Swiss draw: the competition and the round drawn. */
+  competition: string | null;
+  round: number | null;
+}
+
+/** A Swiss round drawn and not played yet, while its message is unread. */
+export interface PendingDraw {
+  message: number;
+  competition: string;
+  name: string;
+  round: number;
 }
 
 /** The analyst's read of the team's recent games, with the areas to work on. */
@@ -203,8 +215,63 @@ export interface ReviewReport {
   areas: { area: string; label: string; line: string; score: number; level: number }[];
 }
 
-export function isReview(report: ScoutingReport | ReviewReport | null): report is ReviewReport {
+export function isReview(report: InboxMessage["report"]): report is ReviewReport {
   return !!report && (report as ReviewReport).kind === "review";
+}
+
+export function isPlayerReport(report: InboxMessage["report"]): report is PlayerReport {
+  return !!report && (report as PlayerReport).kind === "player";
+}
+
+export type ReportGrade = "A+" | "A" | "B" | "C" | "D";
+
+/** The analyst's report on a shortlisted player. */
+export interface PlayerReport {
+  kind: "player";
+  /** How many reports there have been on this player, this one included. */
+  number: number;
+  day: string;
+  player: string;
+  name: string;
+  photo: string | null;
+  role: Role;
+  team: string | null;
+  analyst: string | null;
+  confidence: "high" | "fair" | "rough";
+  overall: number;
+  /** The range the analyst puts the player's real potential in. */
+  potential: [number, number];
+  peaked: boolean;
+  strengths: string[];
+  weaknesses: string[];
+  champions: [string, number][];
+  form: { games: number; wins: number; kda: number; rating: number } | null;
+  fit: string;
+  starter: { id: string; name: string; overall: number } | null;
+  interest: "keen" | "open" | "reluctant" | "refuses";
+  interest_text: string;
+  contract: { until: number; salary: number } | null;
+  value: number;
+  asking: number | null;
+  wage: number;
+  grade: ReportGrade;
+  verdict: string;
+  notes: string[];
+}
+
+export interface ShortlistEntry {
+  added: string;
+  /** When the analyst's next report lands; null when nobody is watching. */
+  due: string | null;
+  reports: number;
+  report: PlayerReport | null;
+}
+
+export interface ShortlistRow extends PlayerRow {
+  shortlist: ShortlistEntry;
+  value: number;
+  asking: number | null;
+  interest: PlayerReport["interest"];
 }
 
 /** The analyst's report on the next opponent. What is filled in depends on `level` (1-4). */
@@ -252,6 +319,8 @@ export interface MatchSummary {
   /** Double elimination only: which bracket the match is in, and its column. */
   bracket: "upper" | "lower" | "final" | null;
   round: number;
+  /** Swiss only: the wins and losses of the pool the match was drawn from. */
+  pool?: [number, number];
 }
 
 export interface LiveSummary {
@@ -282,6 +351,9 @@ export interface CareerView {
   unread: number;
   inbox: InboxMessage[];
   season_over: boolean;
+  draw: PendingDraw | null;
+  /** The players on the shortlist. */
+  shortlist: string[];
   board: {
     confidence: number;
     security: string;
@@ -492,6 +564,8 @@ export interface StageView {
   advance: number;
   tables: { name: string | null; rows: StandingRow[] }[];
   matches: MatchSummary[];
+  /** Swiss only: wins to go through, and defeats to go out. */
+  swiss_wins: number | null;
 }
 
 export interface CompetitionView {
@@ -884,4 +958,6 @@ export type Action =
   | { type: "withdraw_bid"; offer: number }
   | { type: "respond_offer"; offer: number; response: "accept" | "reject" | "negotiate" }
   | { type: "transfer_list"; player: string; listed: boolean }
+  | { type: "shortlist"; player: string; on: boolean }
+  | { type: "scout_player"; player: string }
   | { type: "talk"; conversation: number; choice: TalkChoice };

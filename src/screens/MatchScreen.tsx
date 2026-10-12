@@ -312,7 +312,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
       <BanRow view={view} />
       <Box className={classes.selectBody}>
         <PickColumn side="blue" view={view} unavailable={taken} />
-        <Stack gap="md" miw={0}>
+        <Stack gap="md" miw={0} className={classes.selectMiddle}>
           {view.phase === "ready" ? (
             <Paper p="xl" className={classes.ready}>
               <Text className="eyebrow" ta="center">
@@ -426,7 +426,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                 </Section>
               )}
 
-              <Section pad={false}>
+              <Section pad={false} fill>
                 <Group gap="sm" p="sm" style={{ borderBottom: "1px solid var(--line)" }}>
                   <SegmentedControl
                     size="xs"
@@ -452,7 +452,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                     </Group>
                   )}
                 </Group>
-                <ScrollArea h={400}>
+                <ScrollArea className={classes.gridScroll}>
                   <Box className={classes.grid}>
                     {champs.map((c) => {
                       const off = taken.has(c.id);
@@ -859,6 +859,8 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
       barons: [count(["baron"], "blue"), count(["baron"], "red")],
     };
   }, [events, reached]);
+  const gold = data.timeline!.gold;
+  const goldLead = gold[timeline.done ? gold.length - 1 : Math.min(minute, gold.length - 1)] ?? 0;
   const record = data.game;
   const seriesOver = Math.max(...view.match.score) >= Math.floor(view.match.best_of / 2) + 1;
   const blueTeam = view.blue.team;
@@ -885,6 +887,9 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
             <Text fz="xs" c="dimmed">
               🗼 {counts.towers[0]}-{counts.towers[1]} · 🐉 {counts.dragons[0]}-{counts.dragons[1]} · 👾 {counts.barons[0]}-{counts.barons[1]}
             </Text>
+            <Text fz="lg" fw={800} mt={10} className={goldLead > 0 ? "side-blue" : goldLead < 0 ? "side-red" : undefined} c={goldLead === 0 ? "dimmed" : undefined}>
+              {goldLead === 0 ? "even" : `+${(Math.abs(goldLead) / 1000).toFixed(1)}k`}
+            </Text>
           </Stack>
           <Text className={cx(classes.bigKills, "side-red")}>{current?.score[1] ?? 0}</Text>
           <Group gap="sm" wrap="nowrap" justify="flex-end">
@@ -894,7 +899,7 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
             <TeamLogo team={redTeam} size={48} />
           </Group>
         </Box>
-        <GoldGraph gold={data.timeline!.gold} upTo={timeline.done ? undefined : minute} height={140} />
+        <GoldGraph gold={gold} upTo={timeline.done ? undefined : minute} height={140} lead={false} />
         <Group justify="space-between" mt="xs">
           <SegmentedControl size="xs" value={String(speed)} onChange={changeSpeed} data={SPEEDS.map((v) => ({ value: String(v), label: `${v}×` }))} />
           {!timeline.done && (

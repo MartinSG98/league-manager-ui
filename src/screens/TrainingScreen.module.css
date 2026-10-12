@@ -24,7 +24,48 @@
   background: rgba(200, 170, 110, 0.09);
 }
 
-.drilling {
-  border-color: var(--gold);
+/* Lists of team areas and set plays: one row each. */
+
+.note {
+  border-bottom: 1px solid var(--line);
+}
+
+.row {
+  display: grid;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(34, 44, 66, 0.6);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.rowOn {
   background: rgba(200, 170, 110, 0.06);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.areaRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 100px;
+}
+
+.playRow {
+  grid-template-columns: minmax(0, 1fr) 130px 64px;
+  padding: 9px 16px;
+}
+
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 50%;
+}
+
+@media (max-width: 700px) {
+  .areaRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

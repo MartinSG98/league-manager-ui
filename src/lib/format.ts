@@ -28,7 +28,7 @@ export const STAFF_ATTRIBUTES: Record<string, { name: string; hint: string }> = 
   drafting: { name: "Drafting", hint: "How well the coach reads champion select: the arrows, scores and suggestions you see" },
   motivation: { name: "Motivation", hint: "Morale after defeats, morale recovery and how fast a new lineup gels" },
   teaching: { name: "Teaching", hint: "How fast players learn champions, on stage and in weekly practice" },
-  scouting: { name: "Scouting", hint: "How much the report on the next opponent reveals" },
+  scouting: { name: "Scouting", hint: "How much the report on the next opponent reveals, and how fast and sharp the reports on shortlisted players are" },
   meta: { name: "Meta reading", hint: "How early and how well the patch preview reads the next balance changes" },
 };
 

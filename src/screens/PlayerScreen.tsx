@@ -1,12 +1,16 @@
-import { Badge, Box, Grid, Group, Paper, Progress, SimpleGrid, Stack, Table, Text } from "@mantine/core";
+import { Badge, Box, Button, Grid, Group, Paper, Progress, SimpleGrid, Stack, Table, Text } from "@mantine/core";
+import { IconBinoculars } from "@tabler/icons-react";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
+import type { PlayerDetail } from "../api/types";
 import { ContractPanel } from "../components/ContractPanel";
+import { PlayerReport } from "../components/PlayerReport";
+import { ShortlistButton } from "../components/ShortlistButton";
 import { TransferPanel } from "../components/TransferPanel";
 import { ChampIcon, PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
 import { AttrBar, Empty, FormArrow, Loading, Meter, Ovr, Screen, Section } from "../components/Ui";
-import { ATTRIBUTE_NAMES, flag, money, ROLE_NAMES, signed } from "../lib/format";
+import { ATTRIBUTE_NAMES, flag, longDate, money, ROLE_NAMES, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
@@ -117,6 +121,11 @@ export function PlayerScreen() {
       {career.phase !== "draft" && d.team && (
         <Box mb="lg">
           <TransferPanel player={d} />
+        </Box>
+      )}
+      {career.phase !== "draft" && d.team !== career.team.id && (
+        <Box mb="lg">
+          <ScoutPanel player={d} />
         </Box>
       )}
       {(career.phase !== "draft" || d.team === career.team.id) && (
@@ -284,5 +293,37 @@ function Mini({ label, value }: { label: string; value: string }) {
         {value}
       </Text>
     </Stack>
+  );
+}
+
+
+/** The shortlist button and the analyst's latest report on the player. */
+function ScoutPanel({ player: d }: { player: PlayerDetail }) {
+  const { act, busy } = useCareer();
+  const entry = d.shortlist;
+  return (
+    <Section title="Scout report" right={<ShortlistButton player={d.id} />}>
+      {!entry ? (
+        <Empty>Add {d.name} to your shortlist and the analyst goes to watch them, then sends a report.</Empty>
+      ) : (
+        <Stack gap="md">
+          {entry.report && <PlayerReport report={entry.report} />}
+          {entry.due ? (
+            <Text fz="sm" c="dimmed">
+              The analyst is watching {d.name}: {entry.report ? "a new" : "the"} report is due on {longDate(entry.due)}.
+            </Text>
+          ) : (
+            <Group>
+              <Button variant="light" leftSection={<IconBinoculars size={16} />} disabled={busy} onClick={() => act({ type: "scout_player", player: d.id })}>
+                Ask for a new report
+              </Button>
+              <Text fz="xs" c="dimmed">
+                Every new report narrows the potential estimate.
+              </Text>
+            </Group>
+          )}
+        </Stack>
+      )}
+    </Section>
   );
 }

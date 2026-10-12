@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { Role } from "../api/types";
 import { ChampIcon, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
+import { ShortlistButton } from "../components/ShortlistButton";
 import { Loading, Ovr, PageHeader, Screen, Section } from "../components/Ui";
 import { cx, flag, money, ROLES } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -58,6 +59,7 @@ export function PlayersScreen() {
             <Table stickyHeader verticalSpacing={5}>
               <Table.Thead>
                 <Table.Tr>
+                  <Table.Th w={40} />
                   <Table.Th w={36} />
                   <Table.Th>Player</Table.Th>
                   <Table.Th>Team</Table.Th>
@@ -74,6 +76,7 @@ export function PlayersScreen() {
                   const league = catalog.league[p.league];
                   return (
                     <Table.Tr key={p.id} className={cx(p.team === career.team.id && "mine")} style={{ cursor: "pointer" }} onClick={() => navigate(`/career/${career.id}/player/${p.id}`)}>
+                      <Table.Td>{p.team !== career.team.id && <ShortlistButton player={p.id} compact />}</Table.Td>
                       <Table.Td>
                         <RoleIcon role={p.role} />
                       </Table.Td>

@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../api/client";
-import { isReview, type InboxMessage } from "../api/types";
+import { isPlayerReport, isReview, type InboxMessage } from "../api/types";
+import { PlayerReport } from "../components/PlayerReport";
 import { ReviewReport } from "../components/ReviewReport";
 import { ScoutingReport } from "../components/ScoutingReport";
 import { Conversation, IncomingOffer } from "../components/TransferActions";
@@ -78,7 +79,9 @@ export function InboxScreen() {
                 <Title order={2} className="display" fz={30}>
                   {open.subject}
                 </Title>
-                {isReview(open.report) ? (
+                {isPlayerReport(open.report) ? (
+                  <PlayerReport report={open.report} header />
+                ) : isReview(open.report) ? (
                   <ReviewReport report={open.report} />
                 ) : open.report ? (
                   <ScoutingReport report={open.report} />

@@ -103,10 +103,10 @@ export function Empty({ children }: { children: ReactNode }) {
   );
 }
 
-/** Page padding and width for every screen inside a career. */
-export function Screen({ children }: { children: ReactNode }) {
+/** Page padding and width for every screen inside a career. `wide` uses the whole window. */
+export function Screen({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   return (
-    <Box px={{ base: "md", md: "xl" }} py="lg" maw={1600}>
+    <Box px={{ base: "md", md: "xl" }} py="lg" maw={wide ? undefined : 1600}>
       {children}
     </Box>
   );

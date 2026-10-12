@@ -50,7 +50,7 @@ export function MatchScreen() {
   const hideLast = view.phase === "result" && revealed !== gameKey;
 
   return (
-    <Screen>
+    <Screen wide>
       <SeriesHeader view={view} hideLast={hideLast} />
       {view.phase === "lineup" && <LineupStage view={view} onFinished={setFinished} />}
       {(view.phase === "draft" || view.phase === "ready") && <ChampSelectStage view={view} onFinished={setFinished} />}

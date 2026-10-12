@@ -116,6 +116,8 @@ export interface PlayerRow {
   sharpness: number;
   /** Burned out, Exhausted, Tired, Complacent, Sharp, Unsettled. */
   status: string[];
+  /** One of the rookie classes the game made up, from the first off-season on. */
+  rookie: boolean;
 }
 
 export interface PoolChampion {

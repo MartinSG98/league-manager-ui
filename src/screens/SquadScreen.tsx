@@ -101,7 +101,12 @@ function Squad({ squad }: { squad: SquadView }) {
                             <Text fw={700} fz="sm">
                               {p.name}
                             </Text>
-                            {squad.listed.includes(p.id) && (
+                            {p.rookie && (
+                            <Badge size="xs" color="lime" variant="light">
+                              rookie
+                            </Badge>
+                          )}
+                          {squad.listed.includes(p.id) && (
                               <Badge size="xs" color="orange" variant="light">
                                 listed
                               </Badge>

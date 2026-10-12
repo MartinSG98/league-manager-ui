@@ -1,4 +1,4 @@
-import { Group, ScrollArea, SegmentedControl, Select, Stack, Switch, Table, Text, TextInput, UnstyledButton } from "@mantine/core";
+import { Badge, Group, ScrollArea, SegmentedControl, Select, Stack, Switch, Table, Text, TextInput, UnstyledButton } from "@mantine/core";
 import { IconChevronDown, IconChevronUp, IconSearch } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -44,12 +44,13 @@ export function PlayersScreen() {
   const [region, setRegion] = useState<string | null>(career.region);
   const [role, setRole] = useState<Role | "ALL">("ALL");
   const [freeAgents, setFreeAgents] = useState(false);
+  const [rookiesOnly, setRookiesOnly] = useState(false);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "overall", desc: true });
   const onSort = (key: SortKey) => setSort((s) => ({ key, desc: s.key === key ? !s.desc : key !== "name" }));
   const players = useApi(
-    () => api.players(career.id, { region: region ?? undefined, role: role === "ALL" ? undefined : role, freeAgents, limit: 400 }),
-    [career.id, revision, region, role, freeAgents],
+    () => api.players(career.id, { region: region ?? undefined, role: role === "ALL" ? undefined : role, freeAgents, rookies: rookiesOnly, limit: 400 }),
+    [career.id, revision, region, role, freeAgents, rookiesOnly],
   );
   const teamOf = (id: string | null) => (id ? catalog.teams.find((t) => t.id === id) ?? null : null);
   const rows = useMemo(() => {
@@ -79,6 +80,7 @@ export function PlayersScreen() {
           />
           <TextInput placeholder="Search" leftSection={<IconSearch size={14} />} value={query} onChange={(e) => setQuery(e.currentTarget.value)} />
           <Switch label="Free agents only" checked={freeAgents} onChange={(e) => setFreeAgents(e.currentTarget.checked)} />
+          <Switch label="Rookies only" checked={rookiesOnly} onChange={(e) => setRookiesOnly(e.currentTarget.checked)} />
         </Group>
         {!players.data ? (
           <Loading />
@@ -112,9 +114,16 @@ export function PlayersScreen() {
                         <Group gap="sm" wrap="nowrap">
                           <PlayerPhoto photo={p.photo} name={p.name} size={34} />
                           <Stack gap={0}>
-                            <Text fw={700} fz="sm">
-                              {p.name}
-                            </Text>
+                            <Group gap={6} wrap="nowrap">
+                              <Text fw={700} fz="sm">
+                                {p.name}
+                              </Text>
+                              {p.rookie && (
+                                <Badge size="xs" color="lime" variant="light">
+                                  rookie
+                                </Badge>
+                              )}
+                            </Group>
                             <Text fz={11} c="dimmed">
                               {flag(p.country)} {p.real_name ?? p.country ?? ""}
                             </Text>

@@ -1,12 +1,13 @@
 import { Badge, Box, Grid, Group, Paper, ScrollArea, Stack, Tabs, Text } from "@mantine/core";
 import { IconTrophy } from "@tabler/icons-react";
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { MatchSummary, StageView, TeamRef } from "../api/types";
 import { LeagueLogo, TeamLogo } from "../components/Media";
 import { StandingsTable } from "../components/StandingsTable";
+import { SwissStage } from "../components/SwissStage";
 import { Empty, Loading, PageHeader, Screen, Section } from "../components/Ui";
 import { cx, money, ordinal, shortDate } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -18,9 +19,12 @@ export function CompetitionScreen() {
   const { career, revision } = useCareer();
   const view = useApi(() => api.competition(career.id, comp!), [career.id, comp, revision]);
   const [stageId, setStageId] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams();
+  const draw = Number(params.get("draw")) || null;
   if (!view.data) return <Loading />;
   const c = view.data;
-  const stage = c.stages.find((s) => s.id === stageId) ?? c.stages[c.stages.length - 1];
+  const swiss = c.stages.find((s) => s.kind === "swiss");
+  const stage = (draw && swiss) || c.stages.find((s) => s.id === stageId) || c.stages[c.stages.length - 1];
 
   return (
     <Screen>
@@ -49,7 +53,14 @@ export function CompetitionScreen() {
         </Group>
       )}
 
-      <Tabs value={stage.id} onChange={setStageId} mb="md">
+      <Tabs
+        value={stage.id}
+        onChange={(id) => {
+          setStageId(id);
+          if (draw) setParams({}, { replace: true });
+        }}
+        mb="md"
+      >
         <Tabs.List>
           {c.stages.map((s) => (
             <Tabs.Tab key={s.id} value={s.id} rightSection={s.finished ? undefined : <Badge size="xs" color="hextech">live</Badge>}>
@@ -59,24 +70,43 @@ export function CompetitionScreen() {
         </Tabs.List>
       </Tabs>
 
-      <Grid gap="lg">
-        <Grid.Col span={{ base: 12, xl: 8 }}>
-          <Section title={stage.name} right={<Text fz="xs" c="dimmed">Bo{stage.best_of}{stage.advance ? ` · top ${stage.advance} advance` : ""}</Text>} pad={false}>
-            {stage.kind === "single_elim" ? (
-              <Bracket stage={stage} />
-            ) : stage.kind === "double_elim" ? (
-              <DoubleBracket stage={stage} />
-            ) : (
-              <StandingsTable stage={stage} mine={career.team.id} careerId={career.id} />
-            )}
-          </Section>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, xl: 4 }}>
-          <Section title="Results" pad={false}>
-            <ResultsList matches={stage.matches} />
-          </Section>
-        </Grid.Col>
-      </Grid>
+      {stage.kind === "swiss" ? (
+        <Section
+          title={stage.name}
+          right={
+            <Text fz="xs" c="dimmed">
+              {stage.swiss_wins} wins go through, {stage.swiss_wins} defeats go out · Bo3 when a team can go through or out
+            </Text>
+          }
+          pad={false}
+        >
+          <SwissStage
+            stage={stage}
+            draw={draw}
+            onWatch={(round) => setParams({ draw: String(round) }, { replace: true })}
+            onDrawDone={() => setParams({}, { replace: true })}
+          />
+        </Section>
+      ) : (
+        <Grid gap="lg">
+          <Grid.Col span={{ base: 12, xl: 8 }}>
+            <Section title={stage.name} right={<Text fz="xs" c="dimmed">Bo{stage.best_of}{stage.advance ? ` · top ${stage.advance} advance` : ""}</Text>} pad={false}>
+              {stage.kind === "single_elim" ? (
+                <Bracket stage={stage} />
+              ) : stage.kind === "double_elim" ? (
+                <DoubleBracket stage={stage} />
+              ) : (
+                <StandingsTable stage={stage} mine={career.team.id} careerId={career.id} />
+              )}
+            </Section>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, xl: 4 }}>
+            <Section title="Results" pad={false}>
+              <ResultsList matches={stage.matches} />
+            </Section>
+          </Grid.Col>
+        </Grid>
+      )}
     </Screen>
   );
 }

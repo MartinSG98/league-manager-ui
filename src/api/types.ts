@@ -181,7 +181,7 @@ export interface InboxMessage {
   day: string;
   kind:
     | "news" | "draft" | "match" | "patch" | "board" | "contract" | "finance" | "scouting" | "staff" | "transfer" | "player"
-    | "training";
+    | "training" | "draw";
   subject: string;
   body: string;
   read: boolean;
@@ -190,6 +190,17 @@ export interface InboxMessage {
   offer: number | null;
   /** A talk a player asked for. */
   conversation: number | null;
+  /** A Swiss draw: the competition and the round drawn. */
+  competition: string | null;
+  round: number | null;
+}
+
+/** A Swiss round drawn and not played yet, while its message is unread. */
+export interface PendingDraw {
+  message: number;
+  competition: string;
+  name: string;
+  round: number;
 }
 
 /** The analyst's read of the team's recent games, with the areas to work on. */
@@ -252,6 +263,8 @@ export interface MatchSummary {
   /** Double elimination only: which bracket the match is in, and its column. */
   bracket: "upper" | "lower" | "final" | null;
   round: number;
+  /** Swiss only: the wins and losses of the pool the match was drawn from. */
+  pool?: [number, number];
 }
 
 export interface LiveSummary {
@@ -282,6 +295,7 @@ export interface CareerView {
   unread: number;
   inbox: InboxMessage[];
   season_over: boolean;
+  draw: PendingDraw | null;
   board: {
     confidence: number;
     security: string;
@@ -492,6 +506,8 @@ export interface StageView {
   advance: number;
   tables: { name: string | null; rows: StandingRow[] }[];
   matches: MatchSummary[];
+  /** Swiss only: wins to go through, and defeats to go out. */
+  swiss_wins: number | null;
 }
 
 export interface CompetitionView {

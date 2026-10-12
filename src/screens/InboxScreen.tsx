@@ -1,6 +1,7 @@
-import { Badge, Button, Grid, Stack, Text, Title, UnstyledButton } from "@mantine/core";
-import { IconChecks } from "@tabler/icons-react";
+import { Badge, Button, Grid, Group, Stack, Text, Title, UnstyledButton } from "@mantine/core";
+import { IconChecks, IconArrowsShuffle } from "@tabler/icons-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import { api } from "../api/client";
 import { isReview, type InboxMessage } from "../api/types";
@@ -26,6 +27,7 @@ const KIND_COLOR: Record<string, string> = {
   transfer: "orange",
   player: "pink",
   training: "lime",
+  draw: "cyan",
 };
 
 export function InboxScreen() {
@@ -86,6 +88,18 @@ export function InboxScreen() {
                   </Text>
                 )}
                 {(open.offer !== null || open.conversation !== null) && <MessageActions message={open} />}
+                {open.kind === "draw" && open.competition && (
+                  <Group>
+                    <Button
+                      component={Link}
+                      to={`/career/${career.id}/competitions/${open.competition}?draw=${open.round}`}
+                      variant="light"
+                      leftSection={<IconArrowsShuffle size={16} />}
+                    >
+                      Watch the draw
+                    </Button>
+                  </Group>
+                )}
               </Stack>
             ) : (
               <Empty>Pick a message.</Empty>

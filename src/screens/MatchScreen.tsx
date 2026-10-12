@@ -312,7 +312,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
       <BanRow view={view} />
       <Box className={classes.selectBody}>
         <PickColumn side="blue" view={view} unavailable={taken} />
-        <Stack gap="md" miw={0}>
+        <Stack gap="md" miw={0} className={classes.selectMiddle}>
           {view.phase === "ready" ? (
             <Paper p="xl" className={classes.ready}>
               <Text className="eyebrow" ta="center">
@@ -426,7 +426,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                 </Section>
               )}
 
-              <Section pad={false}>
+              <Section pad={false} fill>
                 <Group gap="sm" p="sm" style={{ borderBottom: "1px solid var(--line)" }}>
                   <SegmentedControl
                     size="xs"
@@ -452,7 +452,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                     </Group>
                   )}
                 </Group>
-                <ScrollArea h={400}>
+                <ScrollArea className={classes.gridScroll}>
                   <Box className={classes.grid}>
                     {champs.map((c) => {
                       const off = taken.has(c.id);
@@ -964,7 +964,7 @@ function FinishedSeries({ matchId }: { matchId: string }) {
   if (!match.data) return <Loading />;
   const won = match.data.winner === career.team.id;
   return (
-    <Screen>
+    <Screen wide>
       <Paper p="xl" mb="lg" className={cx(classes.verdict, won ? classes.won : classes.lost)}>
         <Stack align="center" gap="xs">
           <Text className="eyebrow">Series over</Text>

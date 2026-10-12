@@ -3,6 +3,13 @@
   background: linear-gradient(180deg, #111827, #0c121e);
 }
 
+.fill {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .sectionHead {
   padding: 10px 16px;
   border-bottom: 1px solid var(--line);

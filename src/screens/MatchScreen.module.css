@@ -28,6 +28,17 @@
   top: 84px;
 }
 
+/* The middle column is as tall as the pick columns at least, and the champion grid takes what
+   the rest of it leaves. */
+.selectMiddle {
+  align-self: stretch;
+}
+
+.gridScroll {
+  flex: 1 1 0;
+  min-height: 420px;
+}
+
 .pickSlot {
   position: relative;
   height: 116px;

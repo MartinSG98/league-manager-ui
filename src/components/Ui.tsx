@@ -6,17 +6,19 @@ import classes from "./Ui.module.css";
 
 const BAND_COLOR = { elite: "#3ee08f", good: "#a4d65e", decent: "#f0c64a", weak: "#ff8a5c" } as const;
 
-/** A card with a small uppercase title bar. */
-export function Section({ title, right, children, pad = true, className }: { title?: ReactNode; right?: ReactNode; children: ReactNode; pad?: boolean; className?: string }) {
+/** A card with a small uppercase title bar. With `fill` it grows to the height its flex column leaves it. */
+export function Section({ title, right, children, pad = true, fill = false, className }: { title?: ReactNode; right?: ReactNode; children: ReactNode; pad?: boolean; fill?: boolean; className?: string }) {
   return (
-    <Paper className={cx(classes.section, className)}>
+    <Paper className={cx(classes.section, fill && classes.fill, className)}>
       {(title || right) && (
         <Group justify="space-between" className={classes.sectionHead} wrap="nowrap">
           <Text className="eyebrow">{title}</Text>
           {right}
         </Group>
       )}
-      <Box p={pad ? "md" : 0}>{children}</Box>
+      <Box p={pad ? "md" : 0} className={fill ? classes.fill : undefined}>
+        {children}
+      </Box>
     </Paper>
   );
 }

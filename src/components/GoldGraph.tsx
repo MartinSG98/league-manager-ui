@@ -1,8 +1,9 @@
 import { useElementSize } from "@mantine/hooks";
 
 /** Gold difference (blue minus red) per minute. Above the line blue is ahead, below red is. It
- * fills the width it is given, drawn at that width so the labels keep their size. */
-export function GoldGraph({ gold, upTo, height = 150 }: { gold: number[]; upTo?: number; height?: number }) {
+ * fills the width it is given, drawn at that width so the labels keep their size. `lead` writes the
+ * latest difference in the top right corner. */
+export function GoldGraph({ gold, upTo, height = 150, lead = true }: { gold: number[]; upTo?: number; height?: number; lead?: boolean }) {
   const { ref, width: measured } = useElementSize();
   const width = Math.max(300, Math.round(measured) || 600);
   const shown = upTo === undefined ? gold : gold.slice(0, Math.max(1, upTo + 1));
@@ -42,10 +43,12 @@ export function GoldGraph({ gold, upTo, height = 150 }: { gold: number[]; upTo?:
         <text x={6} y={height - 18} fill="var(--side-red)" fontSize="11" fontWeight="700">
           RED
         </text>
-        <text x={width - 6} y={14} textAnchor="end" fill={last >= 0 ? "var(--side-blue)" : "var(--side-red)"} fontSize="12" fontWeight="800">
-          {last >= 0 ? "+" : "−"}
-          {(Math.abs(last) / 1000).toFixed(1)}k
-        </text>
+        {lead && (
+          <text x={width - 6} y={14} textAnchor="end" fill={last >= 0 ? "var(--side-blue)" : "var(--side-red)"} fontSize="12" fontWeight="800">
+            {last >= 0 ? "+" : "−"}
+            {(Math.abs(last) / 1000).toFixed(1)}k
+          </text>
+        )}
       </svg>
     </div>
   );

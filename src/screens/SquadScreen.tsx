@@ -106,6 +106,11 @@ function Squad({ squad }: { squad: SquadView }) {
                               rookie
                             </Badge>
                           )}
+                          {p.retiring && (
+                            <Badge size="xs" color="orange" variant="light">
+                              last season
+                            </Badge>
+                          )}
                           {squad.listed.includes(p.id) && (
                               <Badge size="xs" color="orange" variant="light">
                                 listed

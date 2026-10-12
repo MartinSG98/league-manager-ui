@@ -123,6 +123,11 @@ export function PlayersScreen() {
                                   rookie
                                 </Badge>
                               )}
+                              {p.retiring && (
+                                <Badge size="xs" color="orange" variant="light">
+                                  retires after {p.retiring}
+                                </Badge>
+                              )}
                             </Group>
                             <Text fz={11} c="dimmed">
                               {flag(p.country)} {p.real_name ?? p.country ?? ""}

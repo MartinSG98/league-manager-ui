@@ -67,6 +67,16 @@ export function PlayerScreen() {
             <Group gap="xs">
               <RoleIcon role={d.role} size={20} />
               <Text className="eyebrow">{ROLE_NAMES[d.role]}</Text>
+              {d.retired && (
+                <Badge size="sm" color="gray" variant="light">
+                  retired
+                </Badge>
+              )}
+              {d.retiring && (
+                <Badge size="sm" color="orange" variant="light">
+                  retires after the {d.retiring} season
+                </Badge>
+              )}
               {d.rookie ? (
                 <Group gap={6}>
                   <Badge size="sm" color="lime" variant="light">

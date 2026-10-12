@@ -118,6 +118,9 @@ export interface PlayerRow {
   status: string[];
   /** One of the rookie classes the game made up, from the first off-season on. */
   rookie: boolean;
+  /** The season the player has said will be their last. */
+  retiring: number | null;
+  retired: boolean;
 }
 
 export interface PoolChampion {

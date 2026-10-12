@@ -108,9 +108,10 @@ export function GameReport({ game, teams }: { game: GameRecord; teams: Record<st
 }
 
 function SideHead({ team, side, won }: { team: TeamRef | null; side: Side; won: boolean }) {
+  // Red sits at the right edge with its logo outermost, mirroring blue.
   return (
-    <Group gap="sm" justify={side === "red" ? "flex-end" : "flex-start"} wrap="nowrap" style={{ flexDirection: side === "red" ? "row-reverse" : "row" }}>
-      <TeamLogo team={team} size={56} />
+    <Group gap="sm" justify={side === "red" ? "flex-end" : "flex-start"} wrap="nowrap">
+      {side === "blue" && <TeamLogo team={team} size={56} />}
       <Stack gap={2} align={side === "red" ? "flex-end" : "flex-start"}>
         <Text fw={800} fz="lg">
           {team?.name}
@@ -126,6 +127,7 @@ function SideHead({ team, side, won }: { team: TeamRef | null; side: Side; won: 
           )}
         </Group>
       </Stack>
+      {side === "red" && <TeamLogo team={team} size={56} />}
     </Group>
   );
 }

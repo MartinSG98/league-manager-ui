@@ -1,14 +1,14 @@
-import { Badge, Box, Button, Grid, Group, Paper, Progress, ScrollArea, Select, SimpleGrid, Stack, Table, Text, Tooltip, UnstyledButton } from "@mantine/core";
-import { IconBarbell, IconCheck, IconPlayerStop, IconTarget } from "@tabler/icons-react";
+import { Badge, Box, Button, Grid, Group, Progress, ScrollArea, Select, SimpleGrid, Stack, Table, Text, Tooltip, UnstyledButton } from "@mantine/core";
+import { IconBarbell, IconCheck, IconPlayerStop, IconTarget, IconTargetArrow } from "@tabler/icons-react";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { Load, SetPlayInfo, TrainingPlayer, TrainingView } from "../api/types";
+import type { Load, TrainingPlayer, TrainingView } from "../api/types";
 import { ChampIcon, PlayerPhoto, RoleIcon } from "../components/Media";
-import { ReviewReport } from "../components/ReviewReport";
-import { Empty, Loading, Meter, Ovr, PageHeader, Screen, Section } from "../components/Ui";
-import { ATTRIBUTE_NAMES, attributeBand, cx, longDate } from "../lib/format";
+import { problemColor } from "../components/ReviewReport";
+import { Loading, Meter, Ovr, PageHeader, Screen, Section } from "../components/Ui";
+import { ATTRIBUTE_NAMES, attributeBand, cx, longDate, shortDate } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import { useCatalog } from "../state/catalog";
@@ -28,7 +28,7 @@ export function TrainingScreen() {
 function Training({ view }: { view: TrainingView }) {
   const { career } = useCareer();
   return (
-    <Screen>
+    <Screen wide>
       <PageHeader
         icon={<IconBarbell size={40} color="var(--gold-bright)" />}
         eyebrow={`Week of ${longDate(career.day)}`}
@@ -41,36 +41,28 @@ function Training({ view }: { view: TrainingView }) {
           )
         }
       />
-      <Grid gap="lg">
-        <Grid.Col span={{ base: 12, xl: 7 }}>
-          <Stack gap="lg">
-            <LoadPicker view={view} />
-            <FocusPicker view={view} />
+      <Stack gap="lg">
+        <LoadPicker view={view} />
+        <PlayersTable view={view} />
+        <Grid gap="lg">
+          <Grid.Col span={{ base: 12, xl: 7 }}>
+            <TeamAreas view={view} />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, xl: 5 }}>
             <SetPlays view={view} />
-          </Stack>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, xl: 5 }}>
-          <Section title="Analyst review" right={view.review && <Text fz="xs" c="dimmed">{view.review.day}</Text>}>
-            {view.review ? (
-              <ReviewReport report={view.review} focus={view.focus} />
-            ) : (
-              <Empty>The analyst writes a review after every six games the team plays.</Empty>
-            )}
-          </Section>
-        </Grid.Col>
-        <Grid.Col span={12}>
-          <PlayersTable view={view} />
-        </Grid.Col>
-      </Grid>
+          </Grid.Col>
+        </Grid>
+      </Stack>
     </Screen>
   );
 }
 
+/** The week's scrim load, side by side, with what each does to fatigue, sharpness and progress. */
 function LoadPicker({ view }: { view: TrainingView }) {
   const { act, busy } = useCareer();
   return (
-    <Section title="Scrim load" right={<Text fz="xs" c="dimmed">{view.advice}</Text>}>
-      <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="sm">
+    <Section title="Scrim load this week" right={<Text fz="xs" c="dimmed">{view.advice}</Text>}>
+      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm">
         {view.loads.map((l) => (
           <UnstyledButton
             key={l.id}
@@ -79,8 +71,11 @@ function LoadPicker({ view }: { view: TrainingView }) {
             onClick={() => act({ type: "set_training", load: l.id as Load })}
           >
             <Stack gap={4}>
-              <Group justify="space-between" wrap="wrap" gap={4}>
-                <Text fw={800}>{l.name}</Text>
+              <Group justify="space-between" wrap="nowrap" gap={4}>
+                <Group gap={6} wrap="nowrap">
+                  {view.load === l.id && <IconCheck size={16} color="var(--gold-bright)" />}
+                  <Text fw={800}>{l.name}</Text>
+                </Group>
                 {view.recommended === l.id && (
                   <Badge size="xs" color="gold" variant="light">
                     advised
@@ -90,139 +85,172 @@ function LoadPicker({ view }: { view: TrainingView }) {
               <Text fz="xs" c="dimmed" lh={1.35}>
                 {l.text}
               </Text>
-              <Stack gap={0} mt={4}>
-                <Text fz="xs" className={l.fatigue > 0 ? "loss" : undefined}>
-                  +{l.fatigue} fatigue a week
-                </Text>
-                <Text fz="xs" className={l.sharpness >= 0 ? "gain" : "loss"}>
-                  {l.sharpness >= 0 ? "+" : ""}
-                  {l.sharpness} sharpness
-                </Text>
-                <Text fz="xs">×{l.gain} progress</Text>
-              </Stack>
+              <Group gap="md" mt={4} wrap="wrap">
+                <Stat value={`+${l.fatigue}`} label="fatigue" tone={l.fatigue > 0 ? "loss" : undefined} />
+                <Stat value={`${l.sharpness >= 0 ? "+" : ""}${l.sharpness}`} label="sharpness" tone={l.sharpness >= 0 ? "gain" : "loss"} />
+                <Stat value={`×${l.gain}`} label="progress" />
+              </Group>
             </Stack>
           </UnstyledButton>
         ))}
       </SimpleGrid>
       <Text fz="xs" c="dimmed" mt="sm">
-        Rest takes 28 fatigue off a week, and every game on stage adds 4. From {view.thresholds.burnout} fatigue a player may burn out
-        for three weeks; under {view.thresholds.complacent} sharpness they get complacent.
+        A week. Rest takes 28 fatigue off, and every game on stage adds 4. From {view.thresholds.burnout} fatigue a player may burn out for
+        three weeks; under {view.thresholds.complacent} sharpness they get complacent.
       </Text>
     </Section>
   );
 }
 
-function FocusPicker({ view }: { view: TrainingView }) {
+function Stat({ value, label, tone }: { value: string; label: string; tone?: "gain" | "loss" }) {
+  return (
+    <Text fz="xs" c="dimmed">
+      <Text span fw={800} fz="sm" className={tone} c={tone ? undefined : "gray.2"}>
+        {value}
+      </Text>{" "}
+      {label}
+    </Text>
+  );
+}
+
+/** The five team areas with the analyst's read of each, and which ones the scrims focus on. */
+function TeamAreas({ view }: { view: TrainingView }) {
   const { act, busy } = useCareer();
+  const review = view.review;
+  const read = new Map((review?.areas ?? []).map((a) => [a.area, a]));
+  const recommend = review?.recommend ?? [];
+  const applied = recommend.length > 0 && recommend.length === view.focus.length && recommend.every((a) => view.focus.includes(a));
+
   function toggle(area: string) {
     const on = view.focus.includes(area);
     const next = on ? view.focus.filter((a) => a !== area) : [...view.focus, area].slice(-2);
     act({ type: "set_training", focus: next });
   }
+
   return (
-    <Section title="Team focus" right={<Text fz="xs" c="dimmed">one area trains at full speed, two at 60% each</Text>}>
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="sm">
-        {view.areas.map((a) => {
-          const on = view.focus.includes(a.id);
-          const band = attributeBand(a.level);
-          return (
-            <UnstyledButton key={a.id} className={cx(classes.option, on && classes.active)} disabled={busy} onClick={() => toggle(a.id)}>
-              <Stack gap={6}>
-                <Group justify="space-between" wrap="nowrap">
-                  <Text fw={800}>{a.label}</Text>
-                  {on ? <IconTarget size={16} color="var(--gold-bright)" /> : <Text fz="xs" c="dimmed">focus</Text>}
-                </Group>
-                <Group gap="xs" wrap="nowrap">
-                  <Progress value={(a.level / 20) * 100} color={BAND_COLOR[band]} size="sm" radius="xl" style={{ flex: 1 }} />
-                  <Text fw={800} fz="sm" style={{ color: BAND_COLOR[band] }}>
-                    {a.level.toFixed(1)}
+    <Section
+      title="Team areas"
+      pad={false}
+      right={
+        recommend.length > 0 && (
+          <Button
+            size="compact-xs"
+            variant={applied ? "default" : "light"}
+            leftSection={<IconTargetArrow size={14} />}
+            disabled={busy || applied}
+            onClick={() => act({ type: "set_training", focus: recommend })}
+          >
+            {applied ? "The analyst's picks are in focus" : "Focus what the analyst says"}
+          </Button>
+        )
+      }
+    >
+      <Text fz="xs" c="dimmed" px="md" py="xs" className={classes.note}>
+        One area in focus trains at full speed, two at 60% each.{" "}
+        {review
+          ? `${review.analyst ?? "Your staff"} watched the last ${review.games} games (${shortDate(review.day)}).`
+          : "The analyst reviews the team after every six games."}
+      </Text>
+      {view.areas.map((a) => {
+        const on = view.focus.includes(a.id);
+        const band = attributeBand(a.level);
+        const r = read.get(a.id);
+        return (
+          <Box key={a.id} className={cx(classes.row, classes.areaRow, on && classes.rowOn)}>
+            <Stack gap={2} miw={0}>
+              <Group gap={6} wrap="nowrap">
+                <Text fw={800}>{a.label}</Text>
+                {recommend.includes(a.id) && (
+                  <Badge size="xs" color="gold" variant="filled">
+                    work on this
+                  </Badge>
+                )}
+              </Group>
+              <Text fz="xs" c="dimmed" lh={1.35}>
+                {a.effect}
+              </Text>
+            </Stack>
+            <Stack gap={6} miw={0}>
+              <Group gap="xs" wrap="nowrap">
+                <Progress value={(a.level / 20) * 100} color={BAND_COLOR[band]} size="sm" radius="xl" style={{ flex: 1 }} />
+                <Text fw={800} fz="sm" w={34} ta="right" style={{ color: BAND_COLOR[band] }}>
+                  {a.level.toFixed(1)}
+                </Text>
+              </Group>
+              {r && (
+                <Group gap={8} wrap="nowrap" align="flex-start">
+                  <Box className={classes.dot} style={{ background: `var(--mantine-color-${problemColor(r.score)}-5)` }} />
+                  <Text fz="xs" c="gray.4" lh={1.35}>
+                    {r.line}
                   </Text>
                 </Group>
-                <Text fz="xs" c="dimmed" lh={1.35}>
-                  {a.effect}
-                </Text>
-              </Stack>
-            </UnstyledButton>
-          );
-        })}
-      </SimpleGrid>
+              )}
+            </Stack>
+            <Button
+              size="xs"
+              variant={on ? "filled" : "default"}
+              color={on ? "gold" : undefined}
+              leftSection={<IconTarget size={14} />}
+              disabled={busy}
+              onClick={() => toggle(a.id)}
+            >
+              {on ? "In focus" : "Focus"}
+            </Button>
+          </Box>
+        );
+      })}
     </Section>
   );
 }
 
+/** Set plays as a list: what each does, how far the team has learned it, and the one in drills. */
 function SetPlays({ view }: { view: TrainingView }) {
   const { act, busy } = useCareer();
+  const drilling = view.plays.find((p) => p.id === view.drilling);
   return (
-    <Section title="Set plays" right={<Text fz="xs" c="dimmed">drill one at a time · usable from {view.usable_from}% · once a series</Text>}>
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="sm">
-        {view.plays.map((p) => (
-          <PlayCard
-            key={p.id}
-            play={p}
-            drilling={view.drilling === p.id}
-            usableFrom={view.usable_from}
-            busy={busy}
-            onDrill={() => act({ type: "set_training", play: p.id })}
-            onStop={() => act({ type: "set_training", clear_play: true })}
-          />
-        ))}
-      </SimpleGrid>
-    </Section>
-  );
-}
-
-function PlayCard({ play, drilling, usableFrom, busy, onDrill, onStop }: { play: SetPlayInfo; drilling: boolean; usableFrom: number; busy: boolean; onDrill: () => void; onStop: () => void }) {
-  const known = play.learned >= 100;
-  const usable = play.learned >= usableFrom;
-  return (
-    <Paper p="sm" withBorder className={cx(drilling && classes.drilling)}>
-      <Stack gap={6} h="100%">
-        <Group justify="space-between" wrap="nowrap" align="flex-start">
-          <Stack gap={0}>
-            <Text fw={800}>{play.name}</Text>
-            <Text fz="xs" c="dimmed">
-              {play.phase} · minute {play.minute} · {play.area_label}
-            </Text>
-          </Stack>
-          {known ? (
-            <Badge size="sm" color="teal" variant="light" leftSection={<IconCheck size={10} />}>
-              known
-            </Badge>
-          ) : drilling ? (
-            <Badge size="sm" color="gold">
-              drilling
-            </Badge>
-          ) : usable ? (
-            <Badge size="sm" color="orange" variant="light">
-              usable
-            </Badge>
-          ) : null}
-        </Group>
-        <Tooltip label={play.text} multiline w={260}>
-          <Text fz="xs" c="gray.4" lh={1.35}>
-            {play.effect}
-          </Text>
-        </Tooltip>
-        <Box mt="auto">
-          <Progress value={play.learned} color={known ? "teal" : usable ? "orange" : "gray"} size="sm" radius="xl" />
-          <Group justify="space-between" mt={6}>
-            <Text fz="xs" c="dimmed">
-              {play.learned}% · about {play.weeks} weeks from scratch
-            </Text>
-            {!known &&
-              (drilling ? (
-                <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconPlayerStop size={12} />} disabled={busy} onClick={onStop}>
-                  Stop
-                </Button>
-              ) : (
-                <Button size="compact-xs" variant="light" disabled={busy} onClick={onDrill}>
+    <Section title="Set plays" pad={false} right={<Text fz="xs" c="dimmed">usable from {view.usable_from}% · each once a series</Text>}>
+      <Text fz="xs" c="dimmed" px="md" py="xs" className={classes.note}>
+        One play in drills at a time. {drilling ? `Drilling ${drilling.name}.` : "Nothing in drills this week."}
+      </Text>
+      {view.plays.map((p) => {
+        const known = p.learned >= 100;
+        const usable = p.learned >= view.usable_from;
+        const on = view.drilling === p.id;
+        return (
+          <Box key={p.id} className={cx(classes.row, classes.playRow, on && classes.rowOn)}>
+            <Stack gap={0} miw={0}>
+              <Text fw={700} fz="sm">
+                {p.name}
+              </Text>
+              <Tooltip label={p.text} multiline w={280}>
+                <Text fz="xs" c="dimmed" lh={1.35} lineClamp={1}>
+                  {p.phase} · minute {p.minute} · {p.effect}
+                </Text>
+              </Tooltip>
+            </Stack>
+            <Stack gap={4}>
+              <Progress value={p.learned} color={known ? "teal" : usable ? "orange" : "gray"} size="sm" radius="xl" />
+              <Text fz={11} c={known ? "teal.4" : usable ? "orange.4" : "dimmed"}>
+                {known ? "known" : `${p.learned}%${usable ? " · usable" : ""}`}
+              </Text>
+            </Stack>
+            {known ? (
+              <IconCheck size={18} color="var(--mantine-color-teal-5)" style={{ justifySelf: "end" }} />
+            ) : on ? (
+              <Button size="compact-xs" variant="subtle" color="gray" leftSection={<IconPlayerStop size={12} />} disabled={busy} onClick={() => act({ type: "set_training", clear_play: true })}>
+                Stop
+              </Button>
+            ) : (
+              <Tooltip label={`About ${p.weeks} weeks from scratch`}>
+                <Button size="compact-xs" variant="light" disabled={busy} onClick={() => act({ type: "set_training", play: p.id })}>
                   Drill
                 </Button>
-              ))}
-          </Group>
-        </Box>
-      </Stack>
-    </Paper>
+              </Tooltip>
+            )}
+          </Box>
+        );
+      })}
+    </Section>
   );
 }
 
@@ -241,7 +269,7 @@ function PlayersTable({ view }: { view: TrainingView }) {
   }
 
   return (
-    <Section title={`Players · ${view.players.length}`} right={<Text fz="xs" c="dimmed">their own work on top of the team's scrims</Text>} pad={false}>
+    <Section title={`Players · ${view.players.length}`} right={<Text fz="xs" c="dimmed">condition, and their own work on top of the team's scrims</Text>} pad={false}>
       <ScrollArea type="auto">
         <Table verticalSpacing={6} miw={1050}>
           <Table.Thead>

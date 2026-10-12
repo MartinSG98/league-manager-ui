@@ -25,14 +25,15 @@ export function ContractPanel({ player }: { player: PlayerDetail }) {
     }
   }, [talks.data, salary]);
 
-  if (player.team && !mine) return null;
+  const bought = player.market.bid?.status === "agreed";
+  if (player.team && !mine && !bought) return null;
   const t = talks.data;
   if (!t) return null;
   const expiring = mine && player.contract_until !== null && player.contract_until <= career.season;
 
   return (
     <Section
-      title={mine ? "Contract" : "Sign this player"}
+      title={mine ? "Contract" : bought ? "Personal terms" : "Sign this player"}
       right={
         mine ? (
           <Text fz="sm" c="dimmed">

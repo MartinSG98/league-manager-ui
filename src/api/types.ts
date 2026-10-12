@@ -112,6 +112,10 @@ export interface PlayerRow {
   form: number;
   morale: number;
   fatigue: number;
+  /** 0-100, kept up by scrims; under 40 the player is complacent. */
+  sharpness: number;
+  /** Burned out, Exhausted, Tired, Complacent, Sharp, Unsettled. */
+  status: string[];
 }
 
 export interface PoolChampion {
@@ -135,7 +139,31 @@ export interface PlayerSeason {
   champions: [string, number][];
 }
 
+export interface PlayerTraining {
+  attribute: string | null;
+  champion: string | null;
+}
+
+/** Buying or selling this player, from the manager's side. */
+export interface PlayerMarket {
+  window_open: boolean;
+  value: number;
+  /** What their club wants; null for your own player or one not for sale. */
+  asking: number | null;
+  interest: "keen" | "open" | "reluctant" | "refuses";
+  interest_text: string;
+  listed: boolean;
+  bid_problem: string | null;
+  bid: TransferOffer | null;
+  promise: number | null;
+  unsettled: boolean;
+}
+
 export interface PlayerDetail extends PlayerRow {
+  training: PlayerTraining;
+  /** Thriving, Developing, Slow, Stagnating, Burned out or Not assessed. */
+  development: string;
+  market: PlayerMarket;
   attributes: Record<string, number>;
   aggression: number;
   leadership: number;
@@ -151,11 +179,32 @@ export interface PlayerDetail extends PlayerRow {
 export interface InboxMessage {
   id: number;
   day: string;
-  kind: "news" | "draft" | "match" | "patch" | "board" | "contract" | "finance" | "scouting" | "staff";
+  kind:
+    | "news" | "draft" | "match" | "patch" | "board" | "contract" | "finance" | "scouting" | "staff" | "transfer" | "player"
+    | "training";
   subject: string;
   body: string;
   read: boolean;
-  report: ScoutingReport | null;
+  report: ScoutingReport | ReviewReport | null;
+  /** A bid for one of your players that this message is about. */
+  offer: number | null;
+  /** A talk a player asked for. */
+  conversation: number | null;
+}
+
+/** The analyst's read of the team's recent games, with the areas to work on. */
+export interface ReviewReport {
+  kind: "review";
+  team: string;
+  games: number;
+  analyst: string | null;
+  skill: number;
+  recommend: string[];
+  areas: { area: string; label: string; line: string; score: number; level: number }[];
+}
+
+export function isReview(report: ScoutingReport | ReviewReport | null): report is ReviewReport {
+  return !!report && (report as ReviewReport).kind === "review";
 }
 
 /** The analyst's report on the next opponent. What is filled in depends on `level` (1-4). */
@@ -200,6 +249,9 @@ export interface MatchSummary {
   score: [number, number];
   winner: string | null;
   games: number;
+  /** Double elimination only: which bracket the match is in, and its column. */
+  bracket: "upper" | "lower" | "final" | null;
+  round: number;
 }
 
 export interface LiveSummary {
@@ -230,6 +282,49 @@ export interface CareerView {
   unread: number;
   inbox: InboxMessage[];
   season_over: boolean;
+  board: {
+    confidence: number;
+    security: string;
+    warned: boolean;
+    meeting: boolean;
+    sacked: boolean;
+    season: number;
+    objectives: { id: string; text: string; status: ObjectiveStatus; result: string }[];
+    bonuses: BoardBonus[];
+  };
+  reputation: Reputation;
+  /** Clubs that want you, after a sacking. */
+  job_offers: JobOffer[];
+  /** The transfer window, while it is open. */
+  window: { open: boolean; closes: string; free_agency: string } | null;
+  pending: { offers: number; talks: number };
+}
+
+export type ObjectiveStatus = "pending" | "met" | "failed";
+
+/** Rewarded but not demanded: qualifying for First Stand or MSI, or a deep run there. */
+export interface BoardBonus {
+  id: string;
+  text: string;
+  status: "pending" | "earned" | "missed";
+  confidence: number;
+  /** Thousands of USD the sponsors pay into the bank. */
+  payment: number;
+}
+
+export interface Reputation {
+  team: number;
+  team_stars: number;
+  manager: number;
+  manager_stars: number;
+}
+
+export interface JobOffer {
+  team: TeamRef;
+  stars: number;
+  budget: number;
+  strength: number;
+  league_name: string;
 }
 
 export interface SaveRow {
@@ -353,6 +448,11 @@ export interface SquadView {
   payroll: number;
   cash: number;
   prestige: number;
+  stars: number;
+  /** Team areas, 1-20. */
+  skills: Record<string, number>;
+  /** Your players on the transfer list. */
+  listed: string[];
   franchise: string | null;
   staff: TeamStaff;
 }
@@ -386,7 +486,7 @@ export interface StandingRow {
 export interface StageView {
   id: string;
   name: string;
-  kind: "round_robin" | "single_elim" | "swiss";
+  kind: "round_robin" | "single_elim" | "double_elim" | "swiss";
   finished: boolean;
   best_of: number;
   advance: number;
@@ -446,6 +546,13 @@ export interface GameRecord {
   players: PlayerLine[];
   mvp: string | null;
   detailed: boolean;
+  gold15: number;
+  leads: [number, number];
+  fights: [number, number];
+  throws: [number, number];
+  /** Team id to the set play it ran. */
+  plays: Record<string, string>;
+  play_results: Record<string, boolean>;
 }
 
 export interface MatchView extends MatchSummary {
@@ -542,6 +649,26 @@ export interface LiveView {
   compositions: Record<Side, { value: number; notes: string[] } | null>;
   bench: PlayerRow[];
   mastery: Record<string, Record<string, number>>;
+  /** After champion select: the set plays you can call. */
+  plays: PlayChoice | null;
+}
+
+export interface PlayChoice {
+  chosen: string | null;
+  options: {
+    id: string;
+    name: string;
+    phase: string;
+    minute: number;
+    effect: string;
+    text: string;
+    learned: number;
+    used: boolean;
+    chance: number;
+    fit: number;
+  }[];
+  used: string[];
+  opponent_used: string[];
 }
 
 // ---------- meta ----------
@@ -584,6 +711,143 @@ export interface NegotiationView {
   counter_years: number | null;
   message: string;
   roles_needed: Role[];
+  interest: PlayerMarket["interest"];
+  interest_text: string;
+}
+
+// ---------- training ----------
+
+export type Load = "light" | "normal" | "heavy" | "intense";
+
+export interface TrainingPlayer extends PlayerRow {
+  starter: boolean;
+  training: PlayerTraining;
+  development: string;
+  quality: number | null;
+  burnout: number;
+  attributes: Record<string, number>;
+  learning: { champion: string; mastery: number } | null;
+}
+
+export interface SetPlayInfo {
+  id: string;
+  name: string;
+  phase: string;
+  minute: number;
+  weeks: number;
+  area: string;
+  area_label: string;
+  style: "early" | "scaling" | "any";
+  text: string;
+  effect: string;
+  learned: number;
+}
+
+export interface TrainingView {
+  load: Load;
+  recommended: Load;
+  advice: string;
+  loads: { id: Load; name: string; text: string; fatigue: number; sharpness: number; gain: number }[];
+  focus: string[];
+  areas: { id: string; label: string; effect: string; level: number }[];
+  drilling: string | null;
+  plays: SetPlayInfo[];
+  usable_from: number;
+  players: TrainingPlayer[];
+  attributes: string[];
+  review: (ReviewReport & { day: string; subject: string }) | null;
+  coach: { name: string; attributes: Record<string, number> } | null;
+  thresholds: { burnout: number; complacent: number; champion_cap: number };
+}
+
+// ---------- the board ----------
+
+export interface BoardObjective {
+  id: string;
+  kind: "split" | "worlds";
+  split: number | null;
+  text: string;
+  status: ObjectiveStatus;
+  result: string;
+  target: number;
+  proposed: number;
+  progress: string | null;
+  /** During a meeting: what asking for less (-1), accepting (0) or promising more (1) means. */
+  options?: { stance: number; text: string; budget: number; possible: boolean }[];
+}
+
+export interface BoardView {
+  season: number;
+  confidence: number;
+  security: string;
+  warned: boolean;
+  meeting: boolean;
+  sacked: boolean;
+  joined: string | null;
+  objectives: BoardObjective[];
+  bonuses: BoardBonus[];
+  history: string[];
+  reputation: Reputation & { prestige: number };
+  finances: { budget: number; payroll: number; cash: number; sponsors_per_week: number; budget_step: number };
+  league_reputation: { team: TeamRef; reputation: number; stars: number }[];
+  job_offers: JobOffer[];
+  star_reach: number;
+  thresholds: { warning: number; safe: number };
+}
+
+// ---------- transfers ----------
+
+export type OfferStatus = "open" | "agreed" | "completed" | "rejected" | "withdrawn" | "expired" | "collapsed";
+
+export interface TransferOffer {
+  id: number;
+  player: string;
+  buyer: string;
+  seller: string;
+  fee: number;
+  day: string;
+  expires: string;
+  status: OfferStatus;
+  counter: number | null;
+  rounds: number;
+  note: string;
+}
+
+export interface TransferOfferRow extends TransferOffer {
+  player_row: PlayerRow;
+  buyer_team: TeamRef;
+  seller_team: TeamRef;
+  value: number;
+}
+
+export type TalkChoice = "vital" | "promise" | "final";
+
+export interface ConversationRow {
+  id: number;
+  player: string;
+  topic: "rejected_bid" | "broken_promise";
+  team: string | null;
+  day: string;
+  expires: string;
+  resolved: boolean;
+  outcome: string;
+  player_row: PlayerRow;
+  team_ref: TeamRef | null;
+  choices: Partial<Record<TalkChoice, string>>;
+}
+
+export interface TransfersView {
+  open: boolean;
+  closes: string | null;
+  free_agency: string | null;
+  cash: number;
+  budget: number;
+  room: number;
+  incoming: TransferOfferRow[];
+  outgoing: TransferOfferRow[];
+  listed: PlayerRow[];
+  moves: { day: string; player: string; from: string | null; to: string; fee: number; player_row: PlayerRow; from_team: TeamRef | null; to_team: TeamRef }[];
+  conversations: ConversationRow[];
 }
 
 // ---------- actions ----------
@@ -610,4 +874,14 @@ export type Action =
   | { type: "offer"; player: string; salary: number; years: number }
   | { type: "accept_counter"; player: string }
   | { type: "release"; player: string }
-  | { type: "next_season" };
+  | { type: "next_season" }
+  | { type: "board_meeting"; stances: Record<string, number> }
+  | { type: "accept_job"; team: string }
+  | { type: "set_training"; load?: Load; focus?: string[]; play?: string; clear_play?: boolean }
+  | { type: "set_player_training"; player: string; attribute: string | null; champion: string | null }
+  | { type: "set_play"; play: string | null }
+  | { type: "transfer_bid"; player: string; fee: number }
+  | { type: "withdraw_bid"; offer: number }
+  | { type: "respond_offer"; offer: number; response: "accept" | "reject" | "negotiate" }
+  | { type: "transfer_list"; player: string; listed: boolean }
+  | { type: "talk"; conversation: number; choice: TalkChoice };

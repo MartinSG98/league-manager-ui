@@ -2,9 +2,14 @@ import { Badge, Button, Grid, Stack, Text, Title, UnstyledButton } from "@mantin
 import { IconChecks } from "@tabler/icons-react";
 import { useState } from "react";
 
+import { api } from "../api/client";
+import { isReview, type InboxMessage } from "../api/types";
+import { ReviewReport } from "../components/ReviewReport";
 import { ScoutingReport } from "../components/ScoutingReport";
+import { Conversation, IncomingOffer } from "../components/TransferActions";
 import { Empty, PageHeader, Screen, Section } from "../components/Ui";
 import { longDate, shortDate } from "../lib/format";
+import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import classes from "./Screens.module.css";
 
@@ -18,6 +23,9 @@ const KIND_COLOR: Record<string, string> = {
   finance: "yellow",
   scouting: "red",
   staff: "teal",
+  transfer: "orange",
+  player: "pink",
+  training: "lime",
 };
 
 export function InboxScreen() {
@@ -68,13 +76,16 @@ export function InboxScreen() {
                 <Title order={2} className="display" fz={30}>
                   {open.subject}
                 </Title>
-                {open.report ? (
+                {isReview(open.report) ? (
+                  <ReviewReport report={open.report} />
+                ) : open.report ? (
                   <ScoutingReport report={open.report} />
                 ) : (
                   <Text c="gray.4" style={{ whiteSpace: "pre-line", lineHeight: 1.7 }}>
                     {open.body}
                   </Text>
                 )}
+                {(open.offer !== null || open.conversation !== null) && <MessageActions message={open} />}
               </Stack>
             ) : (
               <Empty>Pick a message.</Empty>
@@ -84,4 +95,16 @@ export function InboxScreen() {
       </Grid>
     </Screen>
   );
+}
+
+/** The decision a transfer message asks for, while it is still open. */
+function MessageActions({ message }: { message: InboxMessage }) {
+  const { career, revision } = useCareer();
+  const view = useApi(() => api.transfers(career.id), [career.id, revision]);
+  if (!view.data) return null;
+  const offer = view.data.incoming.find((o) => o.id === message.offer);
+  const talk = view.data.conversations.find((c) => c.id === message.conversation);
+  if (talk) return <Conversation talk={talk} />;
+  if (offer) return <IncomingOffer offer={offer} />;
+  return null;
 }

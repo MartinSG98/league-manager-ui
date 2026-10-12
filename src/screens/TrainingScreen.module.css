@@ -1,0 +1,30 @@
+/* Choices on the training screen: loads, team areas, the set play being drilled. */
+
+.option {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.015);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.option:hover:not(:disabled) {
+  border-color: rgba(200, 170, 110, 0.5);
+}
+
+.option:disabled {
+  cursor: progress;
+}
+
+.active {
+  border-color: var(--gold);
+  background: rgba(200, 170, 110, 0.09);
+}
+
+.drilling {
+  border-color: var(--gold);
+  background: rgba(200, 170, 110, 0.06);
+}

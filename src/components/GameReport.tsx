@@ -7,7 +7,12 @@ import { useCareer } from "../state/career";
 import classes from "./GameReport.module.css";
 import { ChampIcon, PlayerPhoto, TeamLogo } from "./Media";
 
-/** Final scoreboard of one game: objectives, picks and bans, every player's line. */
+const PLAY_NAMES: Record<string, string> = {
+  invade: "a level 1 invade", fnatic_bush: "the Fnatic bush", lane_swap: "a lane swap", grubs: "a Voidgrub setup", dive: "a tower dive",
+  drakes: "a dragon setup", pick: "a vision trap", baron_bait: "a Baron bait", split_push: "a 1-3-1 split push",
+};
+
+/** Final scoreboard of one game: objectives, picks and bans, set plays, every player's line. */
 export function GameReport({ game, teams }: { game: GameRecord; teams: Record<string, TeamRef | null> }) {
   const blue = teams[game.blue];
   const red = teams[game.red];
@@ -37,6 +42,23 @@ export function GameReport({ game, teams }: { game: GameRecord; teams: Record<st
         <Objective label="Drakes" blue={game.dragons[0]} red={game.dragons[1]} />
         <Objective label="Barons" blue={game.barons[0]} red={game.barons[1]} />
       </Group>
+
+      {Object.keys(game.plays ?? {}).length > 0 && (
+        <Group justify="center" gap="lg">
+          {Object.entries(game.plays).map(([team, play]) => (
+            <Text key={team} fz="sm" c="dimmed">
+              <b className={team === game.blue ? "side-blue" : "side-red"}>{teams[team]?.tag ?? team}</b> ran{" "}
+              <b>{PLAY_NAMES[play] ?? play}</b>
+              {team in game.play_results ? (game.play_results[team] ? " · it worked" : " · it backfired") : " · the game ended first"}
+            </Text>
+          ))}
+          {game.throws && game.throws[0] + game.throws[1] > 0 && (
+            <Text fz="sm" c="dimmed">
+              Fights thrown with a big lead: {game.throws[0]} - {game.throws[1]}
+            </Text>
+          )}
+        </Group>
+      )}
 
       <Group justify="space-between">
         <Group gap={4}>

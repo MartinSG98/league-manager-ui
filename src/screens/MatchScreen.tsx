@@ -11,7 +11,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { BoardChoice, BoardEntry, Champion, GameView, LiveView, Role, Side, SideView, Suggestion, TimelineEvent } from "../api/types";
+import type {
+  BoardChoice, BoardEntry, Champion, GameView, LiveView, PlayChoice, Role, Side, SideView, Suggestion, TimelineEvent,
+} from "../api/types";
 import { GameReport } from "../components/GameReport";
 import { GoldGraph } from "../components/GoldGraph";
 import { ChampIcon, ChampPortrait, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
@@ -342,6 +344,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                   );
                 })}
               </SimpleGrid>
+              {view.plays && <SetPlayPicker plays={view.plays} />}
               <Group justify="center" mt="xl">
                 <Button variant="default" leftSection={<IconPlayerTrackNext size={16} />} loading={busy} onClick={simSeries}>
                   Simulate the rest
@@ -528,6 +531,67 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
 }
 
 /** The score for the role the manager has chosen, which may be a flex pick's other role. */
+/** After champion select: which set play to call this game, if any. Each one runs once a series. */
+function SetPlayPicker({ plays }: { plays: PlayChoice }) {
+  const { act, busy } = useCareer();
+  const usable = plays.options.filter((o) => !o.used);
+  return (
+    <Stack gap="xs" mt="lg">
+      <Group justify="space-between">
+        <Text className="eyebrow">Set play</Text>
+        <Text fz="xs" c="dimmed">
+          {plays.used.length > 0 ? `Used this series: ${plays.options.filter((o) => o.used).map((o) => o.name).join(", ")}` : "Each play runs once a series"}
+        </Text>
+      </Group>
+      {plays.options.length === 0 ? (
+        <Text fz="sm" c="dimmed">
+          The team knows no set play well enough yet. Drill one on the training screen.
+        </Text>
+      ) : (
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xs">
+          <UnstyledButton className={cx(classes.playOption, plays.chosen === null && classes.playChosen)} disabled={busy} onClick={() => act({ type: "set_play", play: null })}>
+            <Text fw={700} fz="sm">
+              No set play
+            </Text>
+            <Text fz="xs" c="dimmed">
+              Keep them all for later in the series
+            </Text>
+          </UnstyledButton>
+          {plays.options.map((o) => (
+            <Tooltip key={o.id} label={o.text} multiline w={280} disabled={o.used}>
+              <UnstyledButton
+                className={cx(classes.playOption, plays.chosen === o.id && classes.playChosen)}
+                disabled={busy || o.used}
+                data-used={o.used || undefined}
+                onClick={() => act({ type: "set_play", play: o.id })}
+              >
+                <Group justify="space-between" wrap="nowrap" gap="xs">
+                  <Text fw={700} fz="sm">
+                    {o.name}
+                  </Text>
+                  <Text fz="sm" fw={800} className={o.chance >= 0.6 ? "gain" : o.chance < 0.45 ? "loss" : undefined}>
+                    {o.used ? "used" : `${Math.round(o.chance * 100)}%`}
+                  </Text>
+                </Group>
+                <Text fz="xs" c="dimmed">
+                  {o.phase} · min {o.minute} · {o.effect}
+                  {o.learned < 100 ? ` · ${o.learned}% learned` : ""}
+                  {o.fit > 0 ? " · suits the comp" : o.fit < 0 ? " · wrong comp for it" : ""}
+                </Text>
+              </UnstyledButton>
+            </Tooltip>
+          ))}
+        </SimpleGrid>
+      )}
+      {usable.length > 0 && plays.chosen && (
+        <Text fz="xs" c="dimmed" ta="center">
+          Your assistant's call is selected; change it or pick no play.
+        </Text>
+      )}
+    </Stack>
+  );
+}
+
 function choiceFor(entry: BoardEntry | undefined, role: Role | null): BoardChoice | null {
   if (!entry) return null;
   if (!role || entry.role === role) return entry;
@@ -766,7 +830,7 @@ function ResultStage({ view, onFinished, onRevealed }: { view: LiveView; onFinis
 
 const EVENT_ICON: Record<string, string> = {
   first_blood: "🩸", kill: "⚔", teamfight: "💥", dragon: "🐉", soul: "🐉", elder: "🐲", baron: "👾", herald: "🦀",
-  grubs: "🪲", tower: "🗼", inhibitor: "💠", nexus: "🏆", note: "•",
+  grubs: "🪲", tower: "🗼", inhibitor: "💠", nexus: "🏆", note: "•", play: "🎯", throw: "😱",
 };
 
 function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; data: GameView; busy: boolean; onNext: () => void; onRevealed: () => void }) {
@@ -844,7 +908,7 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
       {!timeline.done ? (
         <Paper p={0} className={classes.feed}>
           {shown.slice(0, 14).map((e, i) => (
-            <Group key={reached - i} gap="md" wrap="nowrap" className={cx(classes.event, i === 0 && classes.latest)}>
+            <Group key={reached - i} gap="md" wrap="nowrap" className={cx(classes.event, i === 0 && classes.latest, (e.kind === "play" || e.kind === "throw") && classes.special)}>
               <Text fz="xs" c="dimmed" w={44}>
                 {clock(e.t)}
               </Text>

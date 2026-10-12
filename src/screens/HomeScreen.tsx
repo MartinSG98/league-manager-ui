@@ -1,14 +1,15 @@
-import { Badge, Box, Button, Grid, Group, Paper, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
-import { IconArrowRight, IconSwords, IconWand } from "@tabler/icons-react";
+import { Badge, Box, Button, Grid, Group, Paper, Progress, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
+import { IconArrowRight, IconCheck, IconClock, IconSwords, IconTransfer, IconWand, IconX } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { CompetitionRow, SquadView } from "../api/types";
 import { MatchCard } from "../components/MatchCard";
 import { PlayerPhoto, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
+import { Stars } from "../components/Stars";
 import { StandingsTable } from "../components/StandingsTable";
 import { Empty, Loading, Ovr, Screen, Section } from "../components/Ui";
-import { money, ROLES, shortDate, signed } from "../lib/format";
+import { longDate, money, ROLES, shortDate, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import classes from "./Screens.module.css";
@@ -38,7 +39,7 @@ export function HomeScreen() {
   const current = comps.data ? currentCompetition(comps.data, career.league) : null;
   const table = useApi(() => (current ? api.competition(career.id, current.id) : Promise.resolve(null)), [career.id, revision, current?.id]);
   const squad = useApi(() => api.squad(career.id), [career.id, revision]);
-  const stage = table.data ? table.data.stages.find((s) => s.kind !== "single_elim") ?? null : null;
+  const stage = table.data ? table.data.stages.find((s) => s.kind === "round_robin" || s.kind === "swiss") ?? null : null;
 
   return (
     <Screen>
@@ -56,6 +57,22 @@ export function HomeScreen() {
               </Stack>
               <Button component={Link} to={`${base}/draft`} size="lg" leftSection={<IconWand size={18} />}>
                 Draft room
+              </Button>
+            </Group>
+          ) : career.window ? (
+            <Group justify="space-between" align="center" wrap="wrap">
+              <Stack gap={4}>
+                <Text className="eyebrow">Off-season {career.season}</Text>
+                <Text className="display" fz={40} lh={1}>
+                  The transfer window is open
+                </Text>
+                <Text c="gray.4">
+                  Until {longDate(career.window.closes)}. Contracts that end run out on {shortDate(career.window.free_agency)}.
+                  {career.pending.offers > 0 && ` ${career.pending.offers} bid${career.pending.offers > 1 ? "s" : ""} waiting for your answer.`}
+                </Text>
+              </Stack>
+              <Button component={Link} to={`${base}/transfers`} size="lg" leftSection={<IconTransfer size={18} />}>
+                Transfers
               </Button>
             </Group>
           ) : career.next_match ? (
@@ -141,6 +158,53 @@ export function HomeScreen() {
                 </Group>
               </Section>
             )}
+
+            <Section
+              title="The board"
+              right={
+                <Button component={Link} to={`${base}/club`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
+                  Club
+                </Button>
+              }
+            >
+              <Group justify="space-between" mb="xs">
+                <Badge variant="light" color={career.board.confidence >= 45 ? "teal" : career.board.confidence >= 22 ? "orange" : "red"}>
+                  {career.board.security}
+                </Badge>
+                <Stars value={career.reputation.team_stars} label={`Club reputation ${career.reputation.team}`} />
+              </Group>
+              <Progress value={career.board.confidence} color={career.board.confidence >= 45 ? "teal" : career.board.confidence >= 22 ? "orange" : "red"} size="sm" radius="xl" mb="sm" />
+              <Stack gap={4}>
+                {career.board.objectives.map((o) => (
+                  <Group key={o.id} gap={8} wrap="nowrap">
+                    {o.status === "met" ? (
+                      <IconCheck size={15} color="var(--mantine-color-teal-5)" />
+                    ) : o.status === "failed" ? (
+                      <IconX size={15} color="var(--mantine-color-red-5)" />
+                    ) : (
+                      <IconClock size={15} color="var(--mantine-color-gray-6)" />
+                    )}
+                    <Text fz="sm" c={o.status === "pending" ? undefined : "dimmed"} truncate>
+                      {o.text}
+                    </Text>
+                  </Group>
+                ))}
+                {career.board.bonuses
+                  .filter((x) => x.status !== "missed")
+                  .map((x) => (
+                    <Group key={x.id} gap={8} wrap="nowrap">
+                      {x.status === "earned" ? (
+                        <IconCheck size={15} color="var(--mantine-color-teal-5)" />
+                      ) : (
+                        <IconClock size={15} color="var(--mantine-color-gray-6)" />
+                      )}
+                      <Text fz="sm" c={x.status === "earned" ? "dimmed" : undefined} truncate>
+                        Bonus: {x.text}
+                      </Text>
+                    </Group>
+                  ))}
+              </Stack>
+            </Section>
 
             <Section
               title="Inbox"

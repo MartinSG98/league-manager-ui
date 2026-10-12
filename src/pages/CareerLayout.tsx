@@ -1,11 +1,14 @@
 import { AppShell, Badge, Box, Button, Group, NavLink, Stack, Text, Tooltip } from "@mantine/core";
 import {
-  IconArrowLeft, IconCalendar, IconChartBar, IconHome, IconMail, IconPlayerPlayFilled, IconSwords, IconTrophy,
-  IconUserSearch, IconUsersGroup, IconWand,
+  IconArrowLeft, IconBarbell, IconBuildingSkyscraper, IconCalendar, IconChartBar, IconHome, IconMail, IconPlayerPlayFilled,
+  IconSwords, IconTransfer, IconTrophy, IconUserSearch, IconUsersGroup, IconWand,
 } from "@tabler/icons-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
+import { BoardMeeting } from "../components/BoardMeeting";
+import { JobOffers } from "../components/JobOffers";
 import { LeagueLogo, TeamLogo } from "../components/Media";
+import { Stars } from "../components/Stars";
 import { Meter } from "../components/Ui";
 import { longDate, money } from "../lib/format";
 import { useCareer } from "../state/career";
@@ -17,23 +20,25 @@ export function CareerLayout() {
   const location = useLocation();
   const base = `/career/${career.id}`;
 
+  const pending = career.pending.offers + career.pending.talks;
+
   async function proceed() {
+    if (career.board.meeting || career.board.sacked) return;
     if (career.phase === "draft") return navigate(`${base}/draft`);
-    if (career.phase === "offseason") {
-      const result = await act({ type: "next_season" });
-      if (result) navigate(`${base}/draft`);
-      return;
-    }
     if (career.live) return navigate(`${base}/match`);
+    if (pending > 0) return navigate(`${base}/transfers`);
     const result = await act({ type: "advance" });
     if (result?.career.live) navigate(`${base}/match`);
+    else if (result && (result.career.pending.offers || result.career.pending.talks)) navigate(`${base}/transfers`);
   }
 
   let label = "Continue";
-  if (career.phase === "draft") label = career.draft?.my_turn ? "Your pick" : "Draft room";
+  if (career.board.sacked) label = "Choose a club";
+  else if (career.board.meeting) label = "Board meeting";
+  else if (career.phase === "draft") label = career.draft?.my_turn ? "Your pick" : "Draft room";
   else if (career.live) label = "Match day";
-  else if (career.phase === "offseason") label = `Start ${career.season + 1}`;
-  const urgent = !!career.live || !!career.draft?.my_turn;
+  else if (pending > 0) label = "Answer the offers";
+  const urgent = !!career.live || !!career.draft?.my_turn || pending > 0 || career.board.meeting;
 
   const items = [
     { to: base, label: "Home", icon: IconHome },
@@ -41,6 +46,14 @@ export function CareerLayout() {
     { to: `${base}/draft`, label: "Draft room", icon: IconWand, show: career.phase === "draft", badge: career.draft?.my_turn ? "!" : undefined },
     { to: `${base}/match`, label: "Match day", icon: IconSwords, show: !!career.live, badge: "LIVE" },
     { to: `${base}/squad`, label: "Squad", icon: IconUsersGroup },
+    { to: `${base}/training`, label: "Training", icon: IconBarbell, show: career.phase !== "draft" },
+    {
+      to: `${base}/transfers`,
+      label: "Transfers",
+      icon: IconTransfer,
+      badge: pending ? String(pending) : career.window ? "OPEN" : undefined,
+    },
+    { to: `${base}/club`, label: "Club", icon: IconBuildingSkyscraper, badge: career.board.warned ? "!" : undefined },
     { to: `${base}/schedule`, label: "Schedule", icon: IconCalendar },
     { to: `${base}/competitions`, label: "Competitions", icon: IconTrophy },
     { to: `${base}/players`, label: "Scouting", icon: IconUserSearch },
@@ -71,6 +84,15 @@ export function CareerLayout() {
               </Text>
             </Group>
           </Stack>
+          <Stack gap={4} visibleFrom="lg">
+            <Text className="eyebrow">Board</Text>
+            <Meter
+              value={career.board.confidence}
+              w={90}
+              color={career.board.confidence >= 45 ? "teal" : career.board.confidence >= 22 ? "orange" : "red"}
+              label={`${career.board.security} · confidence ${career.board.confidence}`}
+            />
+          </Stack>
           <Stack gap={0} visibleFrom="lg">
             <Text className="eyebrow">Bank</Text>
             <Text fw={700} className={career.cash < 0 ? "loss" : undefined}>
@@ -99,6 +121,7 @@ export function CareerLayout() {
             <Text fw={800} fz="lg" lh={1.15}>
               {career.team.name}
             </Text>
+            <Stars value={career.reputation.team_stars} size={13} label={`Club reputation ${career.reputation.team}`} />
             <Text fz="sm" c="dimmed">
               {career.manager}
             </Text>
@@ -118,7 +141,7 @@ export function CareerLayout() {
                     leftSection={<i.icon size={18} stroke={1.6} />}
                     rightSection={
                       i.badge !== undefined ? (
-                        <Badge size="sm" color={i.badge === "LIVE" ? "red" : "gold"} variant={i.badge === "LIVE" ? "filled" : "light"}>
+                        <Badge size="sm" color={i.badge === "LIVE" || i.badge === "!" ? "red" : "gold"} variant={i.badge === "LIVE" ? "filled" : "light"}>
                           {i.badge}
                         </Badge>
                       ) : undefined
@@ -140,6 +163,7 @@ export function CareerLayout() {
 
       <AppShell.Main className={classes.main}>
         <Outlet />
+        {career.board.sacked ? <JobOffers /> : career.board.meeting && <BoardMeeting />}
       </AppShell.Main>
     </AppShell>
   );

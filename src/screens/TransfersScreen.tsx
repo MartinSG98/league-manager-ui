@@ -51,7 +51,7 @@ function Transfers({ view }: { view: TransfersView }) {
       />
       {!view.open && (
         <Alert color="gray" variant="light" mb="lg">
-          Players under contract can only be bought and sold in the off-season, from the day after the Worlds final to December 15th. Free
+          Players under contract can only be bought and sold in the off-season, from the day after the Worlds final to January 16th. Free
           agents can be signed any time from their player page.
         </Alert>
       )}

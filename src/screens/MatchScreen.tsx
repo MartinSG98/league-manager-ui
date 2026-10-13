@@ -38,11 +38,20 @@ const STYLE_TEXT: Record<Tactics["style"], string> = { early: "early game", bala
 const OBJECTIVE_TEXT: Record<Tactics["objectives"], string> = { dragons: "dragons first", balanced: "no objective first", barons: "grubs and Baron first" };
 const tacticsLine = (t: Tactics) => `${STYLE_TEXT[t.style]} · jungle ${t.lane} · ${OBJECTIVE_TEXT[t.objectives]}`;
 
+/** The series score in side order (blue first). During a game's playback, as it stood before that game, so nothing is given away. */
+function seriesBySide(view: LiveView, beforeThisGame = false): [number, number] {
+  const m = view.match;
+  const blue = view.blue.team.id;
+  const score: [number, number] = m.home?.id === blue ? [m.score[0], m.score[1]] : [m.score[1], m.score[0]];
+  const last = m.game_list[m.game_list.length - 1];
+  if (beforeThisGame && last && last.number === view.game) score[last.winner === blue ? 0 : 1] -= 1;
+  return score;
+}
+
 export function MatchScreen() {
   const { career, revision } = useCareer();
   const live = useApi(() => api.live(career.id), [career.id, revision]);
   const [finished, setFinished] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState<string | null>(null);
 
   if (!career.live) {
     if (finished) return <FinishedSeries matchId={finished} />;
@@ -54,17 +63,14 @@ export function MatchScreen() {
   }
   if (!live.data) return <Loading text="Walking onto the stage…" />;
   const view = live.data;
-  const gameKey = `${view.match.id}-${view.game}`;
-  // While a game plays back, the series score must not give its result away.
-  const hideLast = view.phase === "result" && revealed !== gameKey;
 
   return (
     <>
-      <MatchBar view={view} hideLast={hideLast} />
+      <MatchBar view={view} />
       <Screen>
         {view.phase === "lineup" && <LineupStage view={view} onFinished={setFinished} />}
         {(view.phase === "draft" || view.phase === "ready") && <ChampSelectStage view={view} onFinished={setFinished} />}
-        {view.phase === "result" && <ResultStage view={view} onFinished={setFinished} onRevealed={() => setRevealed(gameKey)} />}
+        {view.phase === "result" && <ResultStage view={view} onFinished={setFinished} />}
       </Screen>
     </>
   );
@@ -72,12 +78,10 @@ export function MatchScreen() {
 
 // ---------- the bar that stands in for the office's header on match day ----------
 
-function MatchBar({ view, hideLast }: { view: LiveView; hideLast: boolean }) {
+/** Where you are: back to the office, and which match and game this is. The series score sits in each stage's own card. */
+function MatchBar({ view }: { view: LiveView }) {
   const { career } = useCareer();
   const m = view.match;
-  const last = m.game_list[m.game_list.length - 1];
-  const score: [number, number] = [...m.score];
-  if (hideLast && last) score[last.winner === m.home?.id ? 0 : 1] -= 1;
   return (
     <div className={classes.matchBar}>
       <Button component={Link} to={`/career/${career.id}`} variant="subtle" color="gray" size="sm" leftSection={<IconArrowLeft size={16} />}>
@@ -89,23 +93,6 @@ function MatchBar({ view, hideLast }: { view: LiveView; hideLast: boolean }) {
           {m.competition_name} · {m.label} · game {view.game} · best of {m.best_of}
           {m.fearless && " · fearless"}
         </Text>
-      </Group>
-      <Group gap="sm" wrap="nowrap">
-        <TeamLogo team={m.home} size={30} />
-        <Text fw={800} visibleFrom="sm">
-          {m.home?.tag}
-        </Text>
-        <span className={classes.barScore}>
-          {score[0]}{" "}
-          <Text span c="dimmed" inherit>
-            :
-          </Text>{" "}
-          {score[1]}
-        </span>
-        <Text fw={800} visibleFrom="sm">
-          {m.away?.tag}
-        </Text>
-        <TeamLogo team={m.away} size={30} />
       </Group>
     </div>
   );
@@ -140,9 +127,24 @@ function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: st
         <div className={classes.faceoff}>
           <TapeTeam sv={ours} side={ourSide} ours />
           <Stack gap={10}>
-            <Text className="display" fz={26} c="dark.3" ta="center">
-              VS
-            </Text>
+            {view.match.best_of > 1 ? (
+              <Stack gap={0} align="center">
+                <Text className="display" fz={46} lh={1}>
+                  {seriesBySide(view)[ourSide === "blue" ? 0 : 1]}{" "}
+                  <Text span c="dimmed" inherit>
+                    :
+                  </Text>{" "}
+                  {seriesBySide(view)[ourSide === "blue" ? 1 : 0]}
+                </Text>
+                <Text fz={11} fw={700} c="dimmed" tt="uppercase" lts="0.12em">
+                  series · game {view.game}
+                </Text>
+              </Stack>
+            ) : (
+              <Text className="display" fz={26} c="dark.3" ta="center">
+                VS
+              </Text>
+            )}
             <Compare label="Strength" ours={ours.strength.toFixed(1)} theirs={theirs.strength.toFixed(1)} share={strengthShare} ourSide={ourSide} />
             <Compare label="Chemistry" ours={signed(ours.chemistry.score, 1)} theirs={signed(theirs.chemistry.score, 1)} share={chemShare} ourSide={ourSide} />
           </Stack>
@@ -844,16 +846,31 @@ function BanRow({ view }: { view: LiveView }) {
           </Text>
           {slots("blue", s.blue_bans)}
         </Group>
-        {s.locked.length > 0 && (
-          <Group gap={3} wrap="nowrap" visibleFrom="lg">
-            <Text className="eyebrow" mr={4}>
-              Fearless
-            </Text>
-            {s.locked.slice(0, 20).map((c) => (
-              <ChampIcon key={c} id={c} size={22} dim />
-            ))}
-          </Group>
-        )}
+        <Group gap="lg" wrap="nowrap">
+          {view.match.best_of > 1 && (
+            <Group gap={8} wrap="nowrap">
+              <TeamLogo team={view.blue.team} size={26} />
+              <Text className="display" fz={26} lh={1}>
+                {seriesBySide(view)[0]}{" "}
+                <Text span c="dimmed" inherit>
+                  :
+                </Text>{" "}
+                {seriesBySide(view)[1]}
+              </Text>
+              <TeamLogo team={view.red.team} size={26} />
+            </Group>
+          )}
+          {s.locked.length > 0 && (
+            <Group gap={3} wrap="nowrap" visibleFrom="lg">
+              <Text className="eyebrow" mr={4}>
+                Fearless
+              </Text>
+              {s.locked.slice(0, 20).map((c) => (
+                <ChampIcon key={c} id={c} size={22} dim />
+              ))}
+            </Group>
+          )}
+        </Group>
         <Group gap={6} wrap="nowrap">
           {slots("red", s.red_bans)}
           <Text className="eyebrow side-red" ml={4}>
@@ -1120,8 +1137,8 @@ const KINDS: Record<string, { label: string; icon: GameIconKind; tone: string; k
   nexus: { label: "Nexus", icon: "nexus", tone: "#f0e6d2", key: true },
   play: { label: "Set play", icon: "play", tone: "#c8aa6e", key: true },
   throw: { label: "Throw", icon: "throw", tone: "#ff8a5c", key: true },
-  // The caster's call on a fight: quoted under the moment it belongs to, listed with everything else.
-  highlight: { label: "Caster", icon: "fight", tone: "#f0e6d2" },
+  // The caster's call on a fight: the headline of the moment it belongs to, and a key line of its own.
+  highlight: { label: "Caster", icon: "fight", tone: "#f0c64a", key: true },
   note: { label: "", icon: "fight", tone: "#8e99ae" },
 };
 const kindOf = (k: string) => KINDS[k] ?? KINDS.note;
@@ -1131,7 +1148,7 @@ function playName(e: TimelineEvent | undefined): string {
   return (e && /^Set play, ([^:]+):/.exec(e.text)?.[1]) || "set play";
 }
 
-function ResultStage({ view, onFinished, onRevealed }: { view: LiveView; onFinished: (id: string) => void; onRevealed: () => void }) {
+function ResultStage({ view, onFinished }: { view: LiveView; onFinished: (id: string) => void }) {
   const { career, act, busy } = useCareer();
   const game = useApi(() => api.game(career.id, view.match.id, view.game), [career.id, view.match.id, view.game]);
   if (!game.data?.timeline) return <Loading text="Loading the game…" />;
@@ -1141,7 +1158,6 @@ function ResultStage({ view, onFinished, onRevealed }: { view: LiveView; onFinis
       view={view}
       data={game.data}
       busy={busy}
-      onRevealed={onRevealed}
       onNext={async () => {
         const result = await act({ type: "next_game" });
         if (result && !result.career.live) onFinished(view.match.id);
@@ -1150,15 +1166,12 @@ function ResultStage({ view, onFinished, onRevealed }: { view: LiveView; onFinis
   );
 }
 
-function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; data: GameView; busy: boolean; onNext: () => void; onRevealed: () => void }) {
+function Playback({ view, data, busy, onNext }: { view: LiveView; data: GameView; busy: boolean; onNext: () => void }) {
   const events = data.timeline!.events;
   const end = events[events.length - 1]?.t ?? 0;
   const [speed, setSpeed] = useState(readSpeed());
   const [mode, setMode] = useState<"key" | "all">("key");
   const timeline = useGameClock(end, speed * GAME_SECONDS_PER_SECOND);
-  useEffect(() => {
-    if (timeline.done) onRevealed();
-  }, [timeline.done, onRevealed]);
   // Every event whose time the clock has reached is on screen.
   const reached = useMemo(() => {
     let n = 0;
@@ -1175,9 +1188,11 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
   const blueTeam = view.blue.team;
   const redTeam = view.red.team;
   const leader = goldLead > 0 ? blueTeam : goldLead < 0 ? redTeam : null;
-  const latestKey = [...upTo].reverse().find((e) => kindOf(e.kind).key);
+  const latestKey = [...upTo].reverse().find((e) => kindOf(e.kind).key && e.kind !== "highlight");
+  // The engine logs a caster's call a second or two before the fight it is about.
+  const call = latestKey ? [...upTo].reverse().find((e) => e.kind === "highlight" && latestKey.t - e.t >= 0 && latestKey.t - e.t <= 5) : undefined;
   const ourPlay = upTo.find((e) => e.kind === "play" && e.side === ourSide);
-  const shown = (mode === "key" ? upTo.filter((e) => kindOf(e.kind).key) : upTo).slice().reverse().slice(0, 16);
+  const shown = (mode === "key" ? upTo.filter((e) => kindOf(e.kind).key) : upTo).slice().reverse().slice(0, 12);
 
   function changeSpeed(next: string) {
     setSpeed(Number(next));
@@ -1201,6 +1216,11 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
           <Stack gap={0} align="center">
             <Text className={classes.clock}>{clock(Math.floor(timeline.t))}</Text>
             <span className={classes.leadChip}>{leader ? `${leader.tag} +${(Math.abs(goldLead) / 1000).toFixed(1)}k gold` : "Gold even"}</span>
+            {view.match.best_of > 1 && (
+              <Text fz="xs" fw={700} c="dimmed" mt={6} tt="uppercase" lts="0.1em">
+                Series {seriesBySide(view, true).join(" : ")} · game {view.game}
+              </Text>
+            )}
           </Stack>
           <ScoreSide team={redTeam} side="red" kills={current?.score[1] ?? 0} ours={ourSide === "red"} right />
         </div>
@@ -1213,38 +1233,32 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
         </div>
       </Paper>
 
+      <Moment event={latestKey} call={call} blue={blueTeam.tag} red={redTeam.tag} game={view.game} />
+
       <Box style={{ display: "flex", flexWrap: "wrap", gap: "var(--mantine-spacing-md)", alignItems: "flex-start" }}>
-        <Stack gap="md" style={{ flex: "3 1 560px", minWidth: 0 }}>
-          <Moment
-            event={latestKey}
-            call={latestKey && upTo.find((e) => e.kind === "highlight" && e.t === latestKey.t)}
-            blue={blueTeam.tag}
-            red={redTeam.tag}
-            game={view.game}
-          />
+        <Box style={{ flex: "3 1 560px", minWidth: 0 }}>
           <Section
-            title="Your gold lead"
+            title="Gold difference"
             right={
               <Group gap={12} fz={12} c="dimmed">
                 <Group gap={5}>
+                  <span className={classes.feedDot} style={{ background: "var(--side-blue)" }} />
+                  {blueTeam.tag}'s moment
+                </Group>
+                <Group gap={5}>
+                  <span className={classes.feedDot} style={{ background: "var(--side-red)" }} />
+                  {redTeam.tag}'s moment
+                </Group>
+                <Group gap={5}>
                   <span className={classes.feedDot} style={{ background: "var(--gold)" }} />
-                  your set play
-                </Group>
-                <Group gap={5}>
-                  <span className={classes.feedDot} style={{ background: "#e9edf4" }} />
-                  yours
-                </Group>
-                <Group gap={5}>
-                  <span className={classes.feedDot} style={{ background: "var(--worse)" }} />
-                  theirs
+                  set play
                 </Group>
               </Group>
             }
           >
-            <LeadGraph gold={gold} minute={minute} t={timeline.t} events={upTo} ourSide={ourSide} />
+            <SideGraph gold={gold} minute={minute} t={timeline.t} events={upTo} blue={blueTeam.tag} red={redTeam.tag} />
           </Section>
-          <Lineups record={data.game} view={view} />
-        </Stack>
+        </Box>
 
         <Stack gap="md" style={{ flex: "2 1 380px", minWidth: 0 }}>
           {ourPlay && <PlayCard event={ourPlay} t={timeline.t} worked={!!data.game.play_results[ourId]} />}
@@ -1371,19 +1385,21 @@ function ObjectiveSide({ side, events, right = false }: { side: Side; events: Ti
 /** The latest moment that matters, big enough to notice from across the room. */
 function Moment({ event, call, blue, red, game }: { event: TimelineEvent | undefined; call?: TimelineEvent; blue: string; red: string; game: number }) {
   const k = event ? kindOf(event.kind) : KINDS.note;
+  // The caster's call takes the headline; the plain account of the fight goes under it.
+  const tone = call ? "#f0c64a" : k.tone;
   return (
-    <Paper radius={14} className={classes.moment} style={{ "--tone": k.tone } as React.CSSProperties}>
+    <Paper radius={14} className={classes.moment} style={{ "--tone": tone } as React.CSSProperties}>
       <span className={classes.momentIcon}>
         <GameIcon kind={event ? k.icon : "fight"} size={30} />
       </span>
       <Box miw={0}>
-        <Text fz={12} fw={700} tt="uppercase" lts="0.14em" style={{ color: k.tone }}>
+        <Text fz={12} fw={700} tt="uppercase" lts="0.14em" style={{ color: tone }}>
           {event ? `${clock(event.t)} · ${k.label}` : `Game ${game}`}
         </Text>
-        <Text className={classes.momentTitle}>{event ? event.text : `${blue} and ${red} walk out`}</Text>
-        {call && (
-          <Text fz="md" fs="italic" c="gray.3" mt={4}>
-            “{call.text}”
+        <Text className={classes.momentTitle}>{call ? call.text : event ? event.text : `${blue} and ${red} walk out`}</Text>
+        {call && event && (
+          <Text fz="md" c="gray.3" mt={4}>
+            {event.text}
           </Text>
         )}
       </Box>
@@ -1413,35 +1429,33 @@ function PlayCard({ event, t, worked }: { event: TimelineEvent; t: number; worke
   );
 }
 
-/** Your gold lead minute by minute (above the line you are ahead), with the moments that moved it. */
-function LeadGraph({ gold, minute, t, events, ourSide, done = false }: { gold: number[]; minute: number; t: number; events: TimelineEvent[]; ourSide: Side; done?: boolean }) {
+/**
+ * Gold difference minute by minute in the sides' colours: above the line blue is ahead, below it
+ * red is. Key moments are dots in the colour of the side they went to, a set play in gold. Scaled
+ * to what has been played, so neither the axis nor the scale gives away how the game goes on.
+ */
+function SideGraph({ gold, minute, t, events, blue, red, height = 300 }: { gold: number[]; minute: number; t: number; events: TimelineEvent[]; blue: string; red: string; height?: number }) {
   const { ref, width: measured } = useElementSize();
   const id = useId();
   const width = Math.max(320, Math.round(measured) || 700);
-  const height = 170;
-  const sign = ourSide === "blue" ? 1 : -1;
-  const series = (done ? gold : gold.slice(0, Math.max(1, minute + 1))).map((g) => g * sign);
-  // Scaled to what has been played, so neither the axis nor the scale gives away how the game goes on.
-  const minutes = done ? Math.max(gold.length - 1, 20) : Math.max(20, minute + 4);
+  const series = gold.slice(0, Math.max(1, minute + 1));
+  const minutes = Math.max(20, minute + 4);
   const peak = Math.max(3000, ...series.map((g) => Math.abs(g)));
-  const left = 40;
+  const left = 44;
   const right = 14;
-  const top = 12;
-  const bottom = 22;
+  const top = 14;
+  const bottom = 24;
   const x = (m: number) => left + (m / minutes) * (width - left - right);
   const mid = top + (height - top - bottom) / 2;
   const y = (g: number) => mid - (g / peak) * ((height - top - bottom) / 2);
   const line = series.map((g, m) => `${x(m).toFixed(1)},${y(g).toFixed(1)}`).join(" ");
   const area = `${x(0)},${mid} ${line} ${x(series.length - 1).toFixed(1)},${mid}`;
-  const leadAt = (seconds: number) => {
-    const m = Math.min(series.length - 1, Math.floor(seconds / 60));
-    return series[Math.max(0, m)] ?? 0;
-  };
-  const marks = events.filter((e) => kindOf(e.kind).key && e.kind !== "nexus");
-  const fmt = (g: number) => `${g > 0 ? "+" : g < 0 ? "−" : ""}${Math.round(Math.abs(g) / 1000)}k`;
+  const at = (seconds: number) => series[Math.max(0, Math.min(series.length - 1, Math.floor(seconds / 60)))] ?? 0;
+  const marks = events.filter((e) => kindOf(e.kind).key && e.kind !== "nexus" && e.kind !== "highlight");
+  const k = `${Math.round(peak / 1000)}k`;
   return (
     <div ref={ref}>
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} role="img" aria-label="Your gold lead over time">
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} role="img" aria-label="Gold difference over time: above the line blue is ahead, below it red">
         <defs>
           <clipPath id={`${id}-above`}>
             <rect x="0" y="0" width={width} height={mid} />
@@ -1450,7 +1464,7 @@ function LeadGraph({ gold, minute, t, events, ourSide, done = false }: { gold: n
             <rect x="0" y={mid} width={width} height={height - mid} />
           </clipPath>
         </defs>
-        {[10, 20, 30, 40].filter((m) => m <= minutes).map((m) => (
+        {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].filter((m) => m <= minutes).map((m) => (
           <g key={m}>
             <line x1={x(m)} x2={x(m)} y1={top} y2={height - bottom} stroke="var(--line-soft)" strokeDasharray="2 4" />
             <text x={x(m)} y={height - 6} textAnchor="middle" fill="#5e6982" fontSize="11">
@@ -1459,70 +1473,43 @@ function LeadGraph({ gold, minute, t, events, ourSide, done = false }: { gold: n
           </g>
         ))}
         <text x={left - 6} y={top + 4} textAnchor="end" fill="#5e6982" fontSize="11">
-          {fmt(peak)}
+          {k}
         </text>
         <text x={left - 6} y={mid + 4} textAnchor="end" fill="#5e6982" fontSize="11">
           even
         </text>
         <text x={left - 6} y={height - bottom + 2} textAnchor="end" fill="#5e6982" fontSize="11">
-          {fmt(-peak)}
+          {k}
         </text>
         <line x1={left} x2={width - right} y1={mid} y2={mid} stroke="#3a4560" strokeWidth="1.5" />
-        <polygon points={area} style={{ fill: "color-mix(in srgb, var(--team) 26%, transparent)" }} clipPath={`url(#${id}-above)`} />
-        <polygon points={area} style={{ fill: "rgba(255, 138, 92, 0.2)" }} clipPath={`url(#${id}-below)`} />
-        <polyline points={line} fill="none" style={{ stroke: "var(--team)" }} strokeWidth="2.5" strokeLinejoin="round" />
-        {marks.map((e, i) => {
-          const fill = e.kind === "play" && e.side === ourSide ? "var(--gold)" : e.side === ourSide ? "#e9edf4" : e.side ? "var(--worse)" : "#8e99ae";
-          return (
-            <circle key={i} cx={x(e.t / 60)} cy={y(leadAt(e.t))} r={e.kind === "play" || e.kind === "baron" ? 6 : 4.5} style={{ fill }} stroke="#070a12" strokeWidth="2">
-              <title>{`${clock(e.t)} ${e.text}`}</title>
-            </circle>
-          );
-        })}
-        {!done && (
-          <>
-            <line x1={x(t / 60)} x2={x(t / 60)} y1={top} y2={height - bottom} stroke="#e9edf4" strokeWidth="1" strokeDasharray="3 3" />
-            <text x={x(t / 60)} y={top - 2} textAnchor="middle" fill="#e9edf4" fontSize="10" fontWeight="700">
-              now
-            </text>
-          </>
-        )}
+        <polygon points={area} style={{ fill: "color-mix(in srgb, var(--side-blue) 30%, transparent)" }} clipPath={`url(#${id}-above)`} />
+        <polygon points={area} style={{ fill: "color-mix(in srgb, var(--side-red) 30%, transparent)" }} clipPath={`url(#${id}-below)`} />
+        <polyline points={line} fill="none" style={{ stroke: "var(--gold)" }} strokeWidth="2.5" strokeLinejoin="round" />
+        <text x={left + 8} y={top + 14} fill="var(--side-blue)" fontSize="12" fontWeight="800">
+          {blue} AHEAD
+        </text>
+        <text x={left + 8} y={height - bottom - 8} fill="var(--side-red)" fontSize="12" fontWeight="800">
+          {red} AHEAD
+        </text>
+        {marks.map((e, i) => (
+          <circle
+            key={i}
+            cx={x(e.t / 60)}
+            cy={y(at(e.t))}
+            r={e.kind === "play" || e.kind === "baron" ? 6 : 4.5}
+            style={{ fill: e.kind === "play" ? "var(--gold)" : e.side === "blue" ? "var(--side-blue)" : e.side === "red" ? "var(--side-red)" : "#8e99ae" }}
+            stroke="#070a12"
+            strokeWidth="2"
+          >
+            <title>{`${clock(e.t)} ${e.text}`}</title>
+          </circle>
+        ))}
+        <line x1={x(t / 60)} x2={x(t / 60)} y1={top} y2={height - bottom} stroke="#e9edf4" strokeWidth="1" strokeDasharray="3 3" />
+        <text x={x(t / 60)} y={top - 3} textAnchor="middle" fill="#e9edf4" fontSize="10" fontWeight="700">
+          now
+        </text>
       </svg>
     </div>
-  );
-}
-
-/** Who plays what, both sides. */
-function Lineups({ record, view }: { record: GameRecord; view: LiveView }) {
-  const catalog = useCatalog();
-  const order = (team: string) =>
-    record.players.filter((p) => p.team === team).sort((a, b) => ROLES.indexOf(a.role) - ROLES.indexOf(b.role));
-  return (
-    <Box style={{ display: "flex", flexWrap: "wrap", gap: "var(--mantine-spacing-md)" }}>
-      {(["blue", "red"] as Side[]).map((side) => {
-        const team = view[side].team;
-        return (
-          <Paper key={side} radius={12} px="md" py="sm" style={{ flex: "1 1 280px", minWidth: 0 }}>
-            <Text fz={11} fw={700} tt="uppercase" lts="0.14em" mb={6} style={{ color: sideColor(side) }}>
-              {team.tag}
-            </Text>
-            <Group gap="sm">
-              {order(team.id).map((p) => (
-                <Group key={p.player} gap={6} wrap="nowrap">
-                  <ChampIcon id={p.champion} size={24} />
-                  <Text fz="sm" c="gray.4">
-                    {p.name} ·{" "}
-                    <Text span fw={700} c="gray.0">
-                      {catalog.champion[p.champion]?.name ?? p.champion}
-                    </Text>
-                  </Text>
-                </Group>
-              ))}
-            </Group>
-          </Paper>
-        );
-      })}
-    </Box>
   );
 }
 

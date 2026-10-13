@@ -14,14 +14,6 @@
   border-bottom: 1px solid var(--line);
 }
 
-.barScore {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
 /* ---------- before the draft: the tale of the tape ---------- */
 
 .tape {

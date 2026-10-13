@@ -110,7 +110,7 @@ After the players come a round for an assistant coach and a round for an analyst
 
 ## Match day
 
-While a series is live, the match screen takes the whole window. The office's top bar and menu step aside for a slim bar with the competition, the game and the series score; **Office** goes back.
+While a series is live, the match screen takes the whole window. The office's top bar and menu step aside for a slim bar with the competition and the game; **Office** goes back. In a series the score sits in each stage's own card: in place of the VS before the draft, between the bans in champion select, and under the clock during a game (as it stood before that game).
 
 1. **The tale of the tape.** The two fives role by role:
    - overall and form, with a bar for the edge in each lane
@@ -131,8 +131,8 @@ While a series is live, the match screen takes the whole window. The office's to
    - **Set play.** After the draft you call one of the set plays your team knows, or none. Each shows how likely it is to work with this composition against this opponent. The assistant's call is selected to begin with, and plays already run in the series are greyed out.
 3. **The game.** A running game clock plays the game back:
    - **Scoreboard.** Kills, the clock, who leads in gold, and each side's towers, drakes by type, Herald, grubs and Baron.
-   - **The latest moment.** A banner for the last key moment, with the caster's call when a fight gets one.
-   - **Gold lead.** Your lead minute by minute, with your set play and the moments that moved it marked. It is scaled to what has been played, so it gives nothing away.
+   - **The latest moment.** A banner for the last key moment. When a fight gets a caster's call ("TRIPLE KILL for…"), the call is the headline and the fight's result sits under it.
+   - **Gold difference.** Minute by minute in the sides' colours: above the line blue is ahead, below it red. Key moments are dots in the colour of the side they went to, a set play in gold. It is scaled to what has been played, so it gives nothing away.
    - **Set play.** A card for your set play shows whether it worked once it has had time to play out.
    - **Feed.** It lists the key moments, or everything on request.
 

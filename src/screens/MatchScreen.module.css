@@ -159,7 +159,7 @@
 /* The two teams' columns grow with the window, so the picks stay in proportion to the grid. */
 .selectBody {
   display: grid;
-  grid-template-columns: minmax(300px, 21%) minmax(0, 1fr) minmax(300px, 21%);
+  grid-template-columns: minmax(270px, 17%) minmax(0, 1fr) minmax(270px, 17%);
   gap: 18px;
   align-items: start;
 }
@@ -181,7 +181,7 @@
 
 .pickSlot {
   position: relative;
-  height: 148px;
+  height: 124px;
   overflow: hidden;
   border-radius: 10px;
   border: 1px solid var(--line);
@@ -230,14 +230,14 @@
 
 .pickInfo {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: 12px;
+  left: 14px;
+  right: 14px;
+  bottom: 10px;
 }
 
 .pickChamp {
   font-family: var(--font-display);
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 800;
   line-height: 1.05;
   text-transform: uppercase;
@@ -486,22 +486,33 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
+  --obj: var(--side-blue);
+}
+
+.objSide[data-side="red"] {
+  --obj: var(--side-red);
 }
 
 .objSide[data-right] {
   justify-content: flex-end;
 }
 
+/* The icon always in the side's colour, so it reads at a glance; a count of nothing only dims the number. */
 .obj {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+  font-size: 16px;
   font-weight: 700;
 }
 
+.obj svg {
+  color: var(--obj);
+}
+
 .obj[data-none] {
-  color: var(--text-4);
+  color: var(--text-3);
 }
 
 .drakeType {
@@ -530,24 +541,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
   padding: 18px 24px;
   text-align: center;
   --tone: #8e99ae;
   border-color: color-mix(in srgb, var(--tone) 45%, transparent);
   background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 18%, transparent), color-mix(in srgb, var(--tone) 4%, transparent)), var(--surface);
-}
-
-.momentIcon {
-  width: 56px;
-  height: 56px;
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  color: var(--tone);
-  background: color-mix(in srgb, var(--tone) 22%, transparent);
 }
 
 .momentTitle {

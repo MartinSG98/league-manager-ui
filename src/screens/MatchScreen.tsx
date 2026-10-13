@@ -16,7 +16,7 @@ import type {
   BoardChoice, BoardEntry, Champion, GameRecord, GameView, LiveView, PlayChoice, PlayerLine, Role, ScoutingReport as ScoutReport, Side, SideView,
   Suggestion, Tactics, TimelineEvent,
 } from "../api/types";
-import { GameIcon, type GameIconKind } from "../components/GameIcons";
+import { GameIcon } from "../components/GameIcons";
 import { GameReport } from "../components/GameReport";
 import { ChampIcon, ChampPortrait, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
 import { PlayerHoverCard } from "../components/PlayerHoverCard";
@@ -1104,11 +1104,11 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
   return (
     <Stack gap={8} className={classes.column}>
       <Group gap="sm" justify={red ? "flex-end" : "flex-start"} wrap="nowrap">
-        {!red && <TeamLogo team={sv.team} size={42} />}
-        <Text fw={800} className={`display side-${side}`} fz={22}>
+        {!red && <TeamLogo team={sv.team} size={34} />}
+        <Text fw={800} className={`display side-${side}`} fz={20}>
           {ours ? "You" : sv.team.tag} · {side}
         </Text>
-        {red && <TeamLogo team={sv.team} size={42} />}
+        {red && <TeamLogo team={sv.team} size={34} />}
       </Group>
       {sv.lineup.map((p) => {
         const champ = picks[p.slot];
@@ -1118,11 +1118,11 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
               {champ && <ChampPortrait id={champ} className={classes.pickArt} />}
               <Box className={classes.pickShade} />
               <Group className={classes.pickInfo} gap={12} wrap="nowrap" justify={red ? "flex-end" : "flex-start"}>
-                {!red && <PlayerPhoto photo={p.photo} name={p.name} size={56} />}
+                {!red && <PlayerPhoto photo={p.photo} name={p.name} size={46} />}
                 <Stack gap={2} align={red ? "flex-end" : "flex-start"} miw={0}>
                   <Group gap={6} wrap="nowrap">
-                    <RoleIcon role={p.slot} size={18} />
-                    <Text fw={800} fz="lg" truncate>
+                    <RoleIcon role={p.slot} size={16} />
+                    <Text fw={800} fz="md" truncate>
                       {p.name}
                     </Text>
                   </Group>
@@ -1136,7 +1136,7 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
                     </Text>
                   )}
                 </Stack>
-                {red && <PlayerPhoto photo={p.photo} name={p.name} size={56} />}
+                {red && <PlayerPhoto photo={p.photo} name={p.name} size={46} />}
               </Group>
             </Box>
           </PlayerHoverCard>
@@ -1154,25 +1154,25 @@ const GAME_SECONDS_PER_SECOND = 9;
 // How long a caster's call holds the moment banner, in real seconds, at any speed.
 const CALL_SECONDS = 6;
 
-/** What each kind of event is called, its icon and its colour. Key events are the ones worth stopping for. */
-const KINDS: Record<string, { label: string; icon: GameIconKind; tone: string; key?: boolean }> = {
-  first_blood: { label: "First blood", icon: "blood", tone: "#e9edf4", key: true },
-  kill: { label: "Kill", icon: "fight", tone: "#8e99ae" },
-  teamfight: { label: "Fight", icon: "fight", tone: "#e9edf4", key: true },
-  dragon: { label: "Drake", icon: "dragon", tone: "#0ac8b9", key: true },
-  soul: { label: "Soul", icon: "dragon", tone: "#0ac8b9", key: true },
-  elder: { label: "Elder", icon: "dragon", tone: "#f0c64a", key: true },
-  baron: { label: "Baron", icon: "baron", tone: "#a98bff", key: true },
-  herald: { label: "Herald", icon: "herald", tone: "#0ac8b9", key: true },
-  grubs: { label: "Grubs", icon: "herald", tone: "#8e99ae" },
-  tower: { label: "Tower", icon: "tower", tone: "#8e99ae" },
-  inhibitor: { label: "Inhibitor", icon: "inhibitor", tone: "#e9edf4", key: true },
-  nexus: { label: "Nexus", icon: "nexus", tone: "#f0e6d2", key: true },
-  play: { label: "Set play", icon: "play", tone: "#c8aa6e", key: true },
-  throw: { label: "Throw", icon: "throw", tone: "#ff8a5c", key: true },
+/** What each kind of event is called and its colour. Key events are the ones worth stopping for. */
+const KINDS: Record<string, { label: string; tone: string; key?: boolean }> = {
+  first_blood: { label: "First blood", tone: "#e9edf4", key: true },
+  kill: { label: "Kill", tone: "#8e99ae" },
+  teamfight: { label: "Fight", tone: "#e9edf4", key: true },
+  dragon: { label: "Drake", tone: "#0ac8b9", key: true },
+  soul: { label: "Soul", tone: "#0ac8b9", key: true },
+  elder: { label: "Elder", tone: "#f0c64a", key: true },
+  baron: { label: "Baron", tone: "#a98bff", key: true },
+  herald: { label: "Herald", tone: "#0ac8b9", key: true },
+  grubs: { label: "Grubs", tone: "#8e99ae" },
+  tower: { label: "Tower", tone: "#8e99ae" },
+  inhibitor: { label: "Inhibitor", tone: "#e9edf4", key: true },
+  nexus: { label: "Nexus", tone: "#f0e6d2", key: true },
+  play: { label: "Set play", tone: "#c8aa6e", key: true },
+  throw: { label: "Throw", tone: "#ff8a5c", key: true },
   // The caster's call on a fight: the headline of the moment it belongs to, and a key line of its own.
-  highlight: { label: "Caster", icon: "fight", tone: "#f0c64a", key: true },
-  note: { label: "", icon: "fight", tone: "#8e99ae" },
+  highlight: { label: "Caster", tone: "#f0c64a", key: true },
+  note: { label: "", tone: "#8e99ae" },
 };
 const kindOf = (k: string) => KINDS[k] ?? KINDS.note;
 
@@ -1253,7 +1253,7 @@ function Playback({ view, data, busy, onNext }: { view: LiveView; data: GameView
 
       <Paper radius={14} p="md" className={classes.scoreboard}>
         <div className={classes.scoreRow}>
-          <ScoreSide team={blueTeam} side="blue" kills={current?.score[0] ?? 0} ours={ourSide === "blue"} />
+          <ScoreSide team={blueTeam} side="blue" kills={current?.score[0] ?? 0} />
           <Stack gap={0} align="center">
             <Text className={classes.clock}>{clock(Math.floor(timeline.t))}</Text>
             <span className={classes.leadChip}>{leader ? `${leader.tag} +${(Math.abs(goldLead) / 1000).toFixed(1)}k gold` : "Gold even"}</span>
@@ -1263,7 +1263,7 @@ function Playback({ view, data, busy, onNext }: { view: LiveView; data: GameView
               </Text>
             )}
           </Stack>
-          <ScoreSide team={redTeam} side="red" kills={current?.score[1] ?? 0} ours={ourSide === "red"} right />
+          <ScoreSide team={redTeam} side="red" kills={current?.score[1] ?? 0} right />
         </div>
         <div className={classes.objectives}>
           <ObjectiveSide side="blue" events={upTo} />
@@ -1353,16 +1353,13 @@ function Playback({ view, data, busy, onNext }: { view: LiveView; data: GameView
   );
 }
 
-function ScoreSide({ team, side, kills, ours, right = false }: { team: SideView["team"]; side: Side; kills: number; ours: boolean; right?: boolean }) {
+function ScoreSide({ team, side, kills, right = false }: { team: SideView["team"]; side: Side; kills: number; right?: boolean }) {
   return (
     <div className={classes.scoreSide} data-right={right || undefined}>
       <TeamLogo team={team} size={52} />
       <Stack gap={0} miw={0} align={right ? "flex-end" : "flex-start"}>
         <Text className="display" fz={22} lh={1.1} truncate style={{ color: sideColor(side) }}>
           {team.name}
-        </Text>
-        <Text fz="xs" c="dimmed">
-          {side} side{ours ? " · you" : ""}
         </Text>
       </Stack>
       <Text className={classes.bigKills} style={{ color: sideColor(side) }}>
@@ -1385,11 +1382,11 @@ function ObjectiveSide({ side, events, right = false }: { side: Side; events: Ti
   const inhibitors = count("inhibitor");
   const items = [
     <span key="t" className={classes.obj} data-none={towers === 0 || undefined}>
-      <GameIcon kind="tower" label="Towers" />
+      <GameIcon kind="tower" size={20} label="Towers" />
       {towers}
     </span>,
     <span key="d" className={classes.obj} data-none={drakes.length === 0 || undefined}>
-      <GameIcon kind="dragon" label="Drakes" />
+      <GameIcon kind="dragon" size={20} label="Drakes" />
       {drakes.length}
     </span>,
     types.length > 0 && (
@@ -1399,13 +1396,13 @@ function ObjectiveSide({ side, events, right = false }: { side: Side; events: Ti
     ),
     (heralds > 0 || grubs > 0) && (
       <span key="h" className={classes.obj}>
-        <GameIcon kind="herald" label="Rift Herald and Voidgrubs" />
+        <GameIcon kind="herald" size={20} label="Rift Herald and Voidgrubs" />
         {[heralds && `Herald${heralds > 1 ? ` ×${heralds}` : ""}`, grubs && `grubs ×${grubs}`].filter(Boolean).join(" · ")}
       </span>
     ),
     inhibitors > 0 && (
       <span key="i" className={classes.obj}>
-        <GameIcon kind="inhibitor" label="Inhibitors" />
+        <GameIcon kind="inhibitor" size={20} label="Inhibitors" />
         {inhibitors}
       </span>
     ),
@@ -1417,7 +1414,7 @@ function ObjectiveSide({ side, events, right = false }: { side: Side; events: Ti
     ),
   ].filter(Boolean);
   return (
-    <div className={classes.objSide} data-right={right || undefined}>
+    <div className={classes.objSide} data-side={side} data-right={right || undefined}>
       {right ? items.reverse() : items}
     </div>
   );
@@ -1431,9 +1428,6 @@ function Moment({ event, call, fight, blue, red, game }: { event: TimelineEvent 
   if (call) {
     return (
       <Paper radius={14} className={classes.moment} style={{ "--tone": "#f0c64a" } as React.CSSProperties}>
-        <span className={classes.momentIcon}>
-          <GameIcon kind="fight" size={30} />
-        </span>
         <Box miw={0}>
           <Text fz={12} fw={700} tt="uppercase" lts="0.14em" style={{ color: "#f0c64a" }}>
             {clock(call.t)} · Caster
@@ -1453,9 +1447,6 @@ function Moment({ event, call, fight, blue, red, game }: { event: TimelineEvent 
   const k = event ? kindOf(event.kind) : KINDS.note;
   return (
     <Paper radius={14} className={classes.moment} style={{ "--tone": k.tone } as React.CSSProperties}>
-      <span className={classes.momentIcon}>
-        <GameIcon kind={event ? k.icon : "fight"} size={30} />
-      </span>
       <Box miw={0}>
         <Text fz={12} fw={700} tt="uppercase" lts="0.14em" style={{ color: k.tone }}>
           {event ? `${clock(event.t)} · ${k.label}` : `Game ${game}`}

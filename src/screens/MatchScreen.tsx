@@ -59,7 +59,7 @@ export function MatchScreen() {
     if (finished) return <FinishedSeries matchId={finished} />;
     return (
       <Screen>
-        <Empty>No match today. {career.next_match ? "Press Continue to go to the next match day." : ""}</Empty>
+        <Empty>No match today. {career.next_match ? "Continue moves a day at a time until match day." : ""}</Empty>
       </Screen>
     );
   }

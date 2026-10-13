@@ -79,8 +79,9 @@ The menu groups the screens into team, club and league.
 The **Continue** button in the top bar always does the next sensible thing, and its second line says where that leads:
 - During the draft, it opens the draft room.
 - On match day, it goes to the stage.
-- During the season, it simulates until your next match.
-- In the off-season, it moves through the transfer window and stops when a club bids for one of your players or a player wants to talk; when a decision is waiting it takes you to the transfers screen.
+- When a decision on a transfer is waiting, it takes you to the transfers screen.
+- With unread mail, it opens the oldest unread message, one per press.
+- Otherwise it moves the calendar one day, in the season and in the transfer window alike, as in Football Manager.
 
 Two things block the career until you deal with them, so they open over every screen: the **board meeting** about the season's objectives (when a job starts and every off-season) and, after a sacking, the **job offers**. Each offer can open the club's team page first: the offers then fold into a bar at the bottom, and the bar or Continue brings them back.
 

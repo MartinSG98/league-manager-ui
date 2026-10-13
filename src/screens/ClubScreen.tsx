@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import type { BoardView, ObjectiveStatus } from "../api/types";
 import { BonusList } from "../components/BonusList";
 import { BudgetAdjuster } from "../components/BudgetAdjuster";
+import { DebtAlert } from "../components/DebtAlert";
 import { TeamLogo } from "../components/Media";
 import { Stars } from "../components/Stars";
 import { Empty, Loading, PageHeader, Screen, Section } from "../components/Ui";
@@ -129,6 +130,7 @@ function Club({ b }: { b: BoardView }) {
         <Grid.Col span={{ base: 12, lg: 5 }}>
           <Stack gap="lg">
             <Section title="Finances" right={<BudgetAdjuster />}>
+              <DebtAlert mb="sm" />
               <Table verticalSpacing={6}>
                 <Table.Tbody>
                   <Row label="Salary budget" value={money(b.finances.budget)} />

@@ -528,6 +528,11 @@ export interface BudgetAdjust {
   /** The budget the board set, and how much of it was moved into the bank (negative: out of it). */
   set: number;
   moved: number;
+  /** Fees agreed and not paid yet, set aside in the bank. */
+  reserved: number;
+  /** The debt from which the board cuts wages, and when it last did. */
+  cut_at: number;
+  wage_cut: string | null;
 }
 
 export interface SquadView {

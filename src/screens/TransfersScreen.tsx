@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { TransferOfferRow, TransfersView } from "../api/types";
 import { BudgetAdjuster } from "../components/BudgetAdjuster";
+import { DebtAlert } from "../components/DebtAlert";
 import { PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
 import { ShortlistTable } from "../components/ShortlistTable";
 import { Conversation, IncomingOffer, OfferStatus } from "../components/TransferActions";
@@ -37,9 +38,14 @@ function Transfers({ view }: { view: TransfersView }) {
           <Group gap="xl">
             <Stack gap={0} align="flex-end">
               <Text className="eyebrow">Bank</Text>
-              <Text fw={800} fz="lg">
+              <Text fw={800} fz="lg" className={view.cash < 0 ? "loss" : undefined}>
                 {money(view.cash)}
               </Text>
+              {!!career.budget_adjust?.reserved && (
+                <Text fz={10} c="dimmed">
+                  {money(career.budget_adjust.reserved)} set aside
+                </Text>
+              )}
             </Stack>
             <Stack gap={0} align="flex-end">
               <Text className="eyebrow">Salary room</Text>
@@ -68,6 +74,7 @@ function Transfers({ view }: { view: TransfersView }) {
           </Tabs.Tab>
         </Tabs.List>
       </Tabs>
+      <DebtAlert mb="lg" />
       {tab === "shortlist" ? (
         <Section title="Shortlist" right={<Text fz="xs" c="dimmed">the analyst's latest verdict on each player</Text>} pad={false}>
           <ShortlistTable />

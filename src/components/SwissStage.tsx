@@ -91,7 +91,16 @@ export function SwissStage({
 
   return (
     <>
-      {draw !== null && order.length > 0 && <DrawPanel round={draw} order={order} shown={shown} onSkip={() => setShown(steps)} onDone={onDrawDone} />}
+      {draw !== null && order.length > 0 && (
+        <DrawPanel
+          round={draw}
+          order={order}
+          pots={draw === 1 ? (stage.pots ?? []) : []}
+          shown={shown}
+          onSkip={() => setShown(steps)}
+          onDone={onDrawDone}
+        />
+      )}
       <ScrollArea type="auto">
         <Group align="stretch" gap="md" p="md" wrap="nowrap">
           {columns.map((cells, played) => {
@@ -246,16 +255,19 @@ function Decided({ cell, teams }: { cell: Cell; teams: TeamRef[] }) {
   );
 }
 
-/** The draw itself: the pot being drawn from, and the pairing that just came out of it. */
+/** The draw itself: the pot being drawn from, and the pairing that just came out of it. The first
+ * round of a stage with seeding pots draws pot 1 against the last pot, pot 2 against the one before. */
 function DrawPanel({
   round,
   order,
+  pots,
   shown,
   onSkip,
   onDone,
 }: {
   round: number;
   order: MatchSummary[];
+  pots: TeamRef[][];
   shown: number;
   onSkip: () => void;
   onDone: () => void;
@@ -264,6 +276,56 @@ function DrawPanel({
   const next = order[Math.min(Math.floor(shown / 2), order.length - 1)];
   const last = shown > 0 ? order[Math.floor((shown - 1) / 2)] : null;
   const lastShown = last ? (shown - 1) % 2 === 1 : false;
+  const potOf = new Map(pots.flatMap((pot, i) => pot.map((t) => [t.id, i + 1] as const)));
+  const potsOf = (m: MatchSummary) => `Pot ${potOf.get(m.home?.id ?? "")} v Pot ${potOf.get(m.away?.id ?? "")}`;
+  if (pots.length) {
+    const from = done ? null : potOf.get((shown % 2 === 0 ? next.home : next.away)?.id ?? "");
+    const drawn = done ? new Set<string>() : drawnBy(order, shown);
+    return (
+      <Paper p="md" m="md" mb={0} className={classes.drawPanel}>
+        <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
+          <Stack gap={2}>
+            <Text className="eyebrow">Swiss round {round} draw</Text>
+            <Text fw={800} fz="xl">
+              {done ? "The draw is complete" : `${potsOf(next).replace(" v ", " against ")} · Bo${next.best_of}`}
+            </Text>
+            <Text fz="xs" c="dimmed">
+              Pot 1 meets pot {pots.length}, pot 2 meets pot {pots.length - 1}, and teams from the same region are kept apart.
+            </Text>
+          </Stack>
+          <DrawButton done={done} onSkip={onSkip} onDone={onDone} />
+        </Group>
+        <Group gap="xl" mt="md" wrap="wrap" align="center">
+          <Group gap="sm" wrap="wrap" align="stretch">
+            {pots.map((pot, i) => (
+              <Stack key={i} gap={6} className={cx(classes.potBox, from === i + 1 && classes.potActive)}>
+                <Text className="eyebrow">Pot {i + 1}</Text>
+                <Group gap={6} wrap="nowrap">
+                  {pot.map((t) => (
+                    <div key={t.id} className={cx(drawn.has(t.id) && classes.potDrawn)}>
+                      <TeamLogo team={t} size={30} />
+                    </div>
+                  ))}
+                </Group>
+              </Stack>
+            ))}
+          </Group>
+          {last && !done && (
+            <Stack gap={4} align="center">
+              <Text className="eyebrow">{potsOf(last)}</Text>
+              <Group gap="md" wrap="nowrap">
+                <DrawnTeam key={last.home?.id} team={last.home} />
+                <Text fw={800} c="dimmed">
+                  vs
+                </Text>
+                <DrawnTeam key={lastShown ? last.away?.id : "tbd"} team={lastShown ? last.away : null} />
+              </Group>
+            </Stack>
+          )}
+        </Group>
+      </Paper>
+    );
+  }
   const pot = done
     ? []
     : order
@@ -289,15 +351,7 @@ function DrawPanel({
             {round === 1 ? "Teams from the same region are kept apart." : "Teams with the same record meet, and nobody plays the same team twice."}
           </Text>
         </Stack>
-        {done ? (
-          <Button size="xs" onClick={onDone}>
-            Close
-          </Button>
-        ) : (
-          <Button size="xs" variant="default" leftSection={<IconPlayerTrackNext size={14} />} onClick={onSkip}>
-            Skip the draw
-          </Button>
-        )}
+        <DrawButton done={done} onSkip={onSkip} onDone={onDone} />
       </Group>
       {!done && (
         <Group gap="xl" mt="md" wrap="wrap" align="center">
@@ -326,6 +380,25 @@ function DrawPanel({
         </Group>
       )}
     </Paper>
+  );
+}
+
+/** Teams already out of the pots. */
+function drawnBy(order: MatchSummary[], shown: number): Set<string> {
+  return new Set(
+    order.flatMap((m, i) => [2 * i < shown ? m.home?.id : undefined, 2 * i + 1 < shown ? m.away?.id : undefined]).filter((id): id is string => !!id),
+  );
+}
+
+function DrawButton({ done, onSkip, onDone }: { done: boolean; onSkip: () => void; onDone: () => void }) {
+  return done ? (
+    <Button size="xs" onClick={onDone}>
+      Close
+    </Button>
+  ) : (
+    <Button size="xs" variant="default" leftSection={<IconPlayerTrackNext size={14} />} onClick={onSkip}>
+      Skip the draw
+    </Button>
   );
 }
 

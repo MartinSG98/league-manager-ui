@@ -63,6 +63,24 @@
   min-height: 34px;
 }
 
+.potBox {
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: #0a0f19;
+}
+
+.potActive {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 18px rgba(200, 170, 110, 0.25);
+}
+
+.potDrawn {
+  opacity: 0.2;
+  filter: grayscale(1);
+  transition: opacity 300ms ease-out;
+}
+
 .reveal {
   animation: reveal 450ms ease-out;
 }

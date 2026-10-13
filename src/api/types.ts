@@ -571,6 +571,8 @@ export interface StageView {
   matches: MatchSummary[];
   /** Swiss only: wins to go through, and defeats to go out. */
   swiss_wins: number | null;
+  /** Swiss only: the seeding pots the first round is drawn from, best first. Empty without pots. */
+  pots: TeamRef[][];
 }
 
 export interface CompetitionView {

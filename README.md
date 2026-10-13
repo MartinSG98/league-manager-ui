@@ -22,7 +22,16 @@ The client starts on http://localhost:5190. It talks to the API at `VITE_API_URL
 
 ## Look and stack
 
-React 19, Vite 6, TypeScript and react-router. Components come from [Mantine](https://mantine.dev) 9, the same base as core-ui, with Tabler icons. The theme in `src/theme.ts` is a dark esports-broadcast palette: League's gold for actions and titles, hextech teal as the second accent, and the map's blue and red for sides. Headings use Barlow Condensed and text uses Inter. Screen-specific visuals live in CSS Modules next to their screens.
+React 19, Vite 6, TypeScript and react-router. Components come from [Mantine](https://mantine.dev) 9, the same base as core-ui, with Tabler icons. Screen-specific visuals live in CSS Modules next to their screens.
+
+The theme in `src/theme.ts` and `src/styles/global.css` is a dark esports-broadcast palette where every colour has one job:
+- League's gold for what you can act on
+- the club's own colour for who you are: your crest, your rows, the glow on the stage
+- hextech teal for what your staff tell you
+- green and orange only for what stands out against the rest
+- the map's blue and red only for sides
+
+Text is Barlow, and titles and big numbers are Barlow Condensed. Each screen has one stage for what it is about, cards for the jobs done there, and quiet rows for the rest. Detail sits behind a toggle or a hover instead of on the page. See [ADR 0009](docs/adr/0009-one-focus-per-screen.md).
 
 ## Art
 
@@ -40,13 +49,13 @@ Both public folders are git-ignored, about 42 MB together. Every image tries its
 |---|---|
 | `/` | Title over a champion splash: start a career or continue a saved one |
 | `/new` | Choose a league and a team, see the franchise player you keep and the 2026 roster you release |
-| `/career/:id` | Manager's office: next match (or the transfer window in the off-season), the current table, your five, the board's objectives, inbox |
+| `/career/:id` | Manager's office: the next match on a stage (both teams, the analyst's read from the scouting report, your run through the competition), or the transfer window in the off-season; **This week**, the things that need you; the race around the playoff line; your five; storylines picked from the results |
 | `/career/:id/draft` | Draft room: the team on the clock, pick order, the region's players and staff with photos and filters, your roster and budget, rivals |
-| `/career/:id/squad` | Starting five as portrait cards, attributes, form and morale, chemistry, staff, tactics, lineup |
+| `/career/:id/squad` | Starting five as portrait cards with each player's two best attributes and weak spot; a team profile of attributes, condition or contracts side by side, coloured only where a player stands two points above or below the five; chemistry, tactics, staff, lineup |
 | `/career/:id/team/:team` | Any other team's squad |
-| `/career/:id/player/:player` | Profile with photo and real name, transfer bid or transfer list, contract talks, attributes, condition and development, champion pool with mastery and meta, stats |
+| `/career/:id/player/:player` | Profile with photo and real name and a verdict from your analyst (or the shortlist report); condition and development; transfer bid or transfer list and contract talks; attributes as a radar against the team's five; four key numbers for this season or 2026, the rest on request; champion pool split into signature champions and the ones strong on this patch |
 | `/career/:id/players` | Scouting: every player by region and role, free agents |
-| `/career/:id/match` | Match day: lineups, champion select, the game played back minute by minute, the series result |
+| `/career/:id/match` | Match day, full window: the tale of the tape, champion select, the game played back minute by minute, each game's result and the series |
 | `/career/:id/matches/:match` | Series report: every game's picks, bans, scoreboard, gold graph and timeline |
 | `/career/:id/schedule` | Your matches and results |
 | `/career/:id/competitions` | Every competition of the season by split |
@@ -55,9 +64,19 @@ Both public folders are git-ignored, about 42 MB together. Every image tries its
 | `/career/:id/training` | Scrim load, team focus areas, set plays to drill, every player's condition and own training, the analyst's review |
 | `/career/:id/transfers` | The transfer window: bids for your players, your bids, players who want to talk, your transfer list, every move, the shortlist, and the budget slider |
 | `/career/:id/club` | Board confidence and job security, objectives, the board's reviews, reputation in stars, finances and the budget slider (salary budget against the bank, as in Football Manager) |
+| `/career/:id/jobs` | Job center: head coach jobs at clubs that sacked their coach, with your manager reputation; apply, or take or decline an offer |
 | `/career/:id/inbox` | News, scouting reports, analyst reviews, patch notes and previews, draft, contract and transfer messages, with the decisions they ask for |
 
-The **Continue** button in the top bar always does the next sensible thing:
+The top bar shows:
+- the date
+- the season as a track of its splits and international events: where you finished, and how far the current one has run
+- the payroll
+- the board's mood
+- the bank, but only while it is in debt
+
+The menu groups the screens into team, club and league.
+
+The **Continue** button in the top bar always does the next sensible thing, and its second line says where that leads:
 - During the draft, it opens the draft room.
 - On match day, it goes to the stage.
 - During the season, it simulates until your next match.
@@ -91,18 +110,39 @@ After the players come a round for an assistant coach and a round for an analyst
 
 ## Match day
 
-1. **Lineup.** Both fives with photos, form and signature champions, plus team strength and chemistry, and your analyst's scouting report on the opponent. From here you can start champion select, let the assistant draft, or simulate the whole series.
-2. **Champion select.** The real tournament order of bans and picks, laid out like a broadcast. Each team's column fills with loading-screen art as champions lock in, and bans line up along the top.
+While a series is live, the match screen takes the whole window. The office's top bar and menu step aside for a slim bar with the competition, the game and the series score; **Office** goes back.
+
+1. **The tale of the tape.** The two fives role by role:
+   - overall and form, with a bar for the edge in each lane
+   - each player's comfort champions, gold where both sides want the same one
+   - the opponent's threat and weakest starter, marked
+   - team strength and chemistry side by side
+
+   Next to it is your analyst's read of the scouting report: the threat, the weak spot to attack, their plan, ban priorities and their last results. The full report is one click away. From here you can start champion select, let the assistant draft, or simulate the whole series.
+2. **Champion select.** The real tournament order of bans and picks, laid out like a broadcast. A strip along the top shows all twenty steps, the champions taken and the step on the clock. Each team's column fills with loading-screen art as champions lock in, with the side's bans underneath.
    - **The clock.** Every ban and pick has 30 seconds. When yours runs out, the champion you selected locks in; if you selected none, the assistant's first choice does. The opponent takes 7 to 30 seconds per turn, like a real team, and **Skip to my turn** plays all of its turns up to yours.
-   - **Players.** Hovering a player on either side shows their signature champions and the rest of their pool with mastery. Banned and picked champions are greyed out.
-   - **The assistant.** On your turn it lists its best options with their reasons: for picks, the player's fit, what the composition still needs and the lane counter; for bans, the threat.
+   - **Players.** Hovering a player on either side shows their signature champions and the rest of their pool with mastery. Banned and picked champions are greyed out. An opponent still to pick shows the comfort champions the scouting report knows of that are still open.
+   - **The assistant.** On your turn six suggestions sit in a row above the grid, each with its strongest reason; hovering one shows the full breakdown. For picks the reasons are the player's fit, what the composition still needs and the lane counter; for bans, the threat. A click takes one.
    - **The grid.** It badges every champion your players have high mastery on. Champions already played in the series are locked under fearless draft.
+   - **Locking in.** The bar with the selected champion, its reasons, the role and **Lock in** stays in the same place on every turn.
    - **Arrows.** On your turn a green arrow in a champion's corner marks a good pick or ban, a red one a bad pick here. Two arrows mean very good or very bad. Hovering shows every reason with its value: the player's comfort, the patch, the lane against the enemy pick, what the composition needs, combos. Champions that fit none of your open roles are faded.
    - **Your coach's read.** The arrows, values and suggestions are your assistant coach's read of the draft. A coach with high drafting reads it as it is; a weaker one over- or underrates some kinds of reasons and may miss lane matchups or combos.
    - **Compositions.** Once the draft is done, each side's composition notes appear: power curve, champion combos, missing damage or frontline.
    - **Set play.** After the draft you call one of the set plays your team knows, or none. Each shows how likely it is to work with this composition against this opponent. The assistant's call is selected to begin with, and plays already run in the series are greyed out.
-3. **The game.** A running game clock plays the game back with kills, towers, drakes, Barons and a live gold graph. Set plays and thrown fights stand out in the feed. At 1× a 30-minute game takes about three and a half minutes. It can also run at 2×, 5× or 10×, or skip to the end. The series score stays hidden until the game is over.
-4. **Result.** A scoreboard with champion icons, photos, KDA, CS, damage and ratings, plus the MVP, the set plays each side ran and whether they worked. Then the next game or the end of the series.
+3. **The game.** A running game clock plays the game back:
+   - **Scoreboard.** Kills, the clock, who leads in gold, and each side's towers, drakes by type, Herald, grubs and Baron.
+   - **The latest moment.** A banner for the last key moment, with the caster's call when a fight gets one.
+   - **Gold lead.** Your lead minute by minute, with your set play and the moments that moved it marked. It is scaled to what has been played, so it gives nothing away.
+   - **Set play.** A card for your set play shows whether it worked once it has had time to play out.
+   - **Feed.** It lists the key moments, or everything on request.
+
+   At 1× a 30-minute game takes about three and a half minutes. It can also run at 2×, 5× or 10×, or skip to the end. The series score stays hidden until the game is over.
+4. **Result.** Victory or defeat with the kills, gold, towers, drakes and Baron, followed by:
+   - up to three reasons the game went that way: the gold lead at 15 minutes, set plays, objectives, throws and teamfights
+   - your five's champions, KDA, damage and ratings
+   - the player of the game and the series score
+
+   The full scoreboard of both teams is on request. Then the next game or the end of the series.
 
 ## Structure
 
@@ -110,12 +150,14 @@ After the players come a round for an assistant coach and a round for an analyst
 src/
 ├── api/            client.ts (fetch wrapper) and types.ts (hand-kept copy of the API shapes)
 ├── state/          catalog and career contexts; the career context runs actions
-├── pages/          title, new career, the AppShell with sidebar and top bar
+├── pages/          title, new career, the AppShell with sidebar and top bar (collapsed on match day)
 ├── screens/        one per route inside a career
 ├── components/     Img (fallback chain), team logos, player photos, champion art, ratings, stars, match card,
 │                   standings, game report, gold graph, contract talks, transfer panel and offers,
-│                   board meeting, job offers, analyst review
-├── lib/            formatting, art URLs, useApi, the game clock (useTimeline), turn clocks (useClock)
+│                   board meeting, job offers, analyst review, season track, attribute radar,
+│                   game icons, head coach vacancies
+├── lib/            formatting, art URLs, useApi, the game clock (useTimeline), turn clocks (useClock),
+│                   team averages (squad.ts)
 ├── theme.ts        Mantine theme
 └── styles/         global.css: page background and the few colours Mantine has no slot for
 scripts/fetch-art.mjs   champion and role art download

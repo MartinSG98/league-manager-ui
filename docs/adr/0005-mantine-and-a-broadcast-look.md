@@ -1,7 +1,7 @@
 # 0005. Mantine and a broadcast look
 
 Date: 2026-10-11
-Status: Accepted, supersedes [0002](0002-a-manager-game-layout.md)
+Status: Accepted, supersedes [0002](0002-a-manager-game-layout.md); type and colour roles amended by [0009](0009-one-focus-per-screen.md)
 
 ## Context
 

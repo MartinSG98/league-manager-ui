@@ -53,7 +53,12 @@ function BudgetModal({ onClose }: { onClose: () => void }) {
       <Stack gap="lg">
         <SimpleGrid cols={2} spacing="md">
           <Side label="Salary budget" value={budget} change={budget - career.budget} note={`Payroll ${money(career.payroll)}`} />
-          <Side label="Bank (transfer funds)" value={bank} change={bank - career.cash} note="Pays transfer fees" />
+          <Side
+            label="Bank (transfer funds)"
+            value={bank}
+            change={bank - career.cash}
+            note={adjust.reserved ? `${money(adjust.reserved)} set aside for agreed fees` : "Pays transfer fees"}
+          />
         </SimpleGrid>
         <Stack gap={6}>
           <Slider
@@ -75,6 +80,11 @@ function BudgetModal({ onClose }: { onClose: () => void }) {
             </Text>
           </Group>
         </Stack>
+        {career.cash < 0 && (
+          <Text fz="sm" c="red.4">
+            The club is {money(-career.cash)} in debt, so the budget can only go down. Every cut pays the debt off at once.
+          </Text>
+        )}
         <Text fz="xs" c="dimmed">
           The board pays the budget out week by week and what the payroll leaves of it goes to the bank, until it sets the next budget
           after Worlds. With {adjust.weeks} week{adjust.weeks === 1 ? "" : "s"} to go, every {money(100)} of budget is worth{" "}

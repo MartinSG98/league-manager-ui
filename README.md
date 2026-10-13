@@ -110,7 +110,7 @@ After the players come a round for an assistant coach and a round for an analyst
 
 ## Match day
 
-While a series is live, the match screen takes the whole window. The office's top bar and menu step aside for a slim bar with the competition, the game and the series score; **Office** goes back.
+While a series is live, the match screen takes the whole window. The office's top bar and menu step aside for a slim bar with the competition and the game; **Office** goes back. In a series the score sits in each stage's own card: in place of the VS before the draft, between the bans in champion select, and under the clock during a game (as it stood before that game).
 
 1. **The tale of the tape.** The two fives role by role:
    - overall and form, with a bar for the edge in each lane
@@ -119,10 +119,10 @@ While a series is live, the match screen takes the whole window. The office's to
    - team strength and chemistry side by side
 
    Next to it is your analyst's read of the scouting report: the threat, the weak spot to attack, their plan, ban priorities and their last results. The full report is one click away. From here you can start champion select, let the assistant draft, or simulate the whole series.
-2. **Champion select.** The real tournament order of bans and picks, laid out like a broadcast. A strip along the top shows all twenty steps, the champions taken and the step on the clock. Each team's column fills with loading-screen art as champions lock in, with the side's bans underneath.
+2. **Champion select.** The real tournament order of bans and picks, laid out like a broadcast. Each team's column fills with loading-screen art as champions lock in. Bans line up along the top, five slots a side, with the series score between them. Under fearless draft a strip below them shows every champion already played in the series, by game and by team.
    - **The clock.** Every ban and pick has 30 seconds. When yours runs out, the champion you selected locks in; if you selected none, the assistant's first choice does. The opponent takes 7 to 30 seconds per turn, like a real team, and **Skip to my turn** plays all of its turns up to yours.
-   - **Players.** Hovering a player on either side shows their signature champions and the rest of their pool with mastery. Banned and picked champions are greyed out. An opponent still to pick shows the comfort champions the scouting report knows of that are still open.
-   - **The assistant.** On your turn six suggestions sit in a row above the grid, each with its strongest reason; hovering one shows the full breakdown. For picks the reasons are the player's fit, what the composition still needs and the lane counter; for bans, the threat. A click takes one.
+   - **Players.** Hovering a player on either side shows their signature champions and the rest of their pool with mastery. Banned and picked champions are greyed out.
+   - **The assistant.** On your turn six suggestions fill a row above the grid, each with its strongest reason; hovering one shows the full breakdown. For picks the reasons are the player's fit, what the composition still needs and the lane counter; for bans, the threat. A click takes one.
    - **The grid.** It badges every champion your players have high mastery on. Champions already played in the series are locked under fearless draft.
    - **Locking in.** The bar with the selected champion, its reasons, the role and **Lock in** stays in the same place on every turn.
    - **Arrows.** On your turn a green arrow in a champion's corner marks a good pick or ban, a red one a bad pick here. Two arrows mean very good or very bad. Hovering shows every reason with its value: the player's comfort, the patch, the lane against the enemy pick, what the composition needs, combos. Champions that fit none of your open roles are faded.
@@ -131,8 +131,8 @@ While a series is live, the match screen takes the whole window. The office's to
    - **Set play.** After the draft you call one of the set plays your team knows, or none. Each shows how likely it is to work with this composition against this opponent. The assistant's call is selected to begin with, and plays already run in the series are greyed out.
 3. **The game.** A running game clock plays the game back:
    - **Scoreboard.** Kills, the clock, who leads in gold, and each side's towers, drakes by type, Herald, grubs and Baron.
-   - **The latest moment.** A banner for the last key moment, with the caster's call when a fight gets one.
-   - **Gold lead.** Your lead minute by minute, with your set play and the moments that moved it marked. It is scaled to what has been played, so it gives nothing away.
+   - **The latest moment.** A banner for the last key moment. When a fight gets a caster's call ("TRIPLE KILL for…"), the call is the headline and the fight's result sits under it.
+   - **Gold difference.** Minute by minute in the sides' colours: above the line blue is ahead, below it red. Key moments are dots in the colour of the side they went to, a set play in gold. It is scaled to what has been played, so it gives nothing away.
    - **Set play.** A card for your set play shows whether it worked once it has had time to play out.
    - **Feed.** It lists the key moments, or everything on request.
 

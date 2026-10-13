@@ -1521,7 +1521,8 @@ function SideGraph({ gold, minute, events, blue, red, height = 300 }: { gold: nu
   const width = Math.max(320, Math.round(measured) || 700);
   const series = gold.slice(0, Math.max(1, minute + 1));
   const minutes = Math.max(20, minute + 4);
-  const peak = Math.max(3000, ...series.map((g) => Math.abs(g)));
+  // At least 10k either way, so an early lead of a thousand looks like one; past that, the next 5k up.
+  const peak = Math.max(10000, Math.ceil(Math.max(...series.map((g) => Math.abs(g))) / 5000) * 5000);
   const left = 44;
   const right = 14;
   const top = 14;

@@ -298,14 +298,17 @@ function LaneRow({
   );
   return (
     <div className={classes.laneRow}>
-      <Box ta="right" miw={0}>
-        <PlayerHoverCard player={us} mastery={mastery[us.id]} position="bottom">
-          <Text fw={700} fz="md" span>
-            {us.name}
-          </Text>
-        </PlayerHoverCard>
-        {comfort(us, false)}
-      </Box>
+      <Group gap="md" wrap="nowrap" justify="flex-end" miw={0}>
+        <Box ta="right" miw={0}>
+          <PlayerHoverCard player={us} mastery={mastery[us.id]} position="bottom">
+            <Text fw={700} fz="md" span>
+              {us.name}
+            </Text>
+          </PlayerHoverCard>
+          {comfort(us, false)}
+        </Box>
+        <PlayerPhoto photo={us.photo} name={us.name} size={56} ring={sideColor(ourSide)} />
+      </Group>
       <Stack gap={0} align="center">
         <Text className="display" fz={28} lh={1}>
           {us.overall}
@@ -336,21 +339,24 @@ function LaneRow({
         </Text>
         {form(them.form)}
       </Stack>
-      <Box miw={0}>
-        <Group gap={6}>
-          <PlayerHoverCard player={them} mastery={mastery[them.id]} position="bottom">
-            <Text fw={700} fz="md" span>
-              {them.name}
-            </Text>
-          </PlayerHoverCard>
-          {note && (
-            <Text span fz={12} fw={700} c={note === "threat" ? "orange.4" : "teal.4"}>
-              {note}
-            </Text>
-          )}
-        </Group>
-        {comfort(them, true)}
-      </Box>
+      <Group gap="md" wrap="nowrap" miw={0}>
+        <PlayerPhoto photo={them.photo} name={them.name} size={56} ring={sideColor(other(ourSide))} />
+        <Box miw={0}>
+          <Group gap={6}>
+            <PlayerHoverCard player={them} mastery={mastery[them.id]} position="bottom">
+              <Text fw={700} fz="md" span>
+                {them.name}
+              </Text>
+            </PlayerHoverCard>
+            {note && (
+              <Text span fz={12} fw={700} c={note === "threat" ? "orange.4" : "teal.4"}>
+                {note}
+              </Text>
+            )}
+          </Group>
+          {comfort(them, true)}
+        </Box>
+      </Group>
     </div>
   );
 }
@@ -849,15 +855,15 @@ function BanRow({ view }: { view: LiveView }) {
         <Group gap="lg" wrap="nowrap">
           {view.match.best_of > 1 && (
             <Group gap={8} wrap="nowrap">
-              <TeamLogo team={view.blue.team} size={26} />
-              <Text className="display" fz={26} lh={1}>
+              <TeamLogo team={view.blue.team} size={46} />
+              <Text className="display" fz={46} lh={1}>
                 {seriesBySide(view)[0]}{" "}
                 <Text span c="dimmed" inherit>
                   :
                 </Text>{" "}
                 {seriesBySide(view)[1]}
               </Text>
-              <TeamLogo team={view.red.team} size={26} />
+              <TeamLogo team={view.red.team} size={46} />
             </Group>
           )}
           {s.locked.length > 0 && (
@@ -1072,12 +1078,12 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
 
   return (
     <Stack gap={8} className={classes.column}>
-      <Group gap="xs" justify={red ? "flex-end" : "flex-start"} wrap="nowrap">
-        {!red && <TeamLogo team={sv.team} size={30} />}
-        <Text fw={800} className={`side-${side}`} tt="uppercase" fz="sm">
+      <Group gap="sm" justify={red ? "flex-end" : "flex-start"} wrap="nowrap">
+        {!red && <TeamLogo team={sv.team} size={42} />}
+        <Text fw={800} className={`display side-${side}`} fz={22}>
           {ours ? "You" : sv.team.tag} · {side}
         </Text>
-        {red && <TeamLogo team={sv.team} size={30} />}
+        {red && <TeamLogo team={sv.team} size={42} />}
       </Group>
       {sv.lineup.map((p) => {
         const champ = picks[p.slot];
@@ -1086,12 +1092,12 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
             <Box className={cx(classes.pickSlot, red && classes.pickRed, choosing && !champ && classes.pickWaiting)}>
               {champ && <ChampPortrait id={champ} className={classes.pickArt} />}
               <Box className={classes.pickShade} />
-              <Group className={classes.pickInfo} gap={10} wrap="nowrap" justify={red ? "flex-end" : "flex-start"}>
-                {!red && <PlayerPhoto photo={p.photo} name={p.name} size={38} />}
-                <Stack gap={0} align={red ? "flex-end" : "flex-start"} miw={0}>
-                  <Group gap={4} wrap="nowrap">
-                    <RoleIcon role={p.slot} size={14} />
-                    <Text fw={700} fz="sm" truncate>
+              <Group className={classes.pickInfo} gap={12} wrap="nowrap" justify={red ? "flex-end" : "flex-start"}>
+                {!red && <PlayerPhoto photo={p.photo} name={p.name} size={56} />}
+                <Stack gap={2} align={red ? "flex-end" : "flex-start"} miw={0}>
+                  <Group gap={6} wrap="nowrap">
+                    <RoleIcon role={p.slot} size={18} />
+                    <Text fw={800} fz="lg" truncate>
                       {p.name}
                     </Text>
                   </Group>
@@ -1100,12 +1106,12 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
                       {catalog.champion[champ]?.name ?? champ}
                     </Text>
                   ) : (
-                    <Text fz="xs" c={choosing ? "gold.4" : "dimmed"} fw={choosing ? 700 : 400}>
+                    <Text fz="sm" c={choosing ? "gold.4" : "dimmed"} fw={choosing ? 700 : 400}>
                       {choosing ? "picking…" : "waiting"}
                     </Text>
                   )}
                 </Stack>
-                {red && <PlayerPhoto photo={p.photo} name={p.name} size={38} />}
+                {red && <PlayerPhoto photo={p.photo} name={p.name} size={56} />}
               </Group>
             </Box>
           </PlayerHoverCard>
@@ -1120,6 +1126,8 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
 // At 1x the game clock runs nine times faster than real time: a game minute takes about 6.7
 // seconds and a 30-minute game about three and a half minutes. Faster speeds multiply that.
 const GAME_SECONDS_PER_SECOND = 9;
+// How long a caster's call holds the moment banner, in real seconds, at any speed.
+const CALL_SECONDS = 6;
 
 /** What each kind of event is called, its icon and its colour. Key events are the ones worth stopping for. */
 const KINDS: Record<string, { label: string; icon: GameIconKind; tone: string; key?: boolean }> = {
@@ -1189,8 +1197,16 @@ function Playback({ view, data, busy, onNext }: { view: LiveView; data: GameView
   const redTeam = view.red.team;
   const leader = goldLead > 0 ? blueTeam : goldLead < 0 ? redTeam : null;
   const latestKey = [...upTo].reverse().find((e) => kindOf(e.kind).key && e.kind !== "highlight");
-  // The engine logs a caster's call a second or two before the fight it is about.
-  const call = latestKey ? [...upTo].reverse().find((e) => e.kind === "highlight" && latestKey.t - e.t >= 0 && latestKey.t - e.t <= 5) : undefined;
+  // A caster's call stays on the banner for a few real seconds whatever the speed, then the banner
+  // goes back to the latest moment. The engine logs a call just before the fight it is about.
+  const lastCall = [...upTo].reverse().find((e) => e.kind === "highlight");
+  const [held, setHeld] = useState<{ t: number; at: number } | null>(null);
+  useEffect(() => {
+    if (lastCall && lastCall.t !== held?.t) setHeld({ t: lastCall.t, at: Date.now() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastCall?.t]);
+  const call = lastCall && held?.t === lastCall.t && Date.now() - held.at < CALL_SECONDS * 1000 ? lastCall : undefined;
+  const fight = call ? upTo.find((e) => e.t >= call.t && e.kind === "teamfight") : undefined;
   const ourPlay = upTo.find((e) => e.kind === "play" && e.side === ourSide);
   const shown = (mode === "key" ? upTo.filter((e) => kindOf(e.kind).key) : upTo).slice().reverse().slice(0, 12);
 
@@ -1233,7 +1249,7 @@ function Playback({ view, data, busy, onNext }: { view: LiveView; data: GameView
         </div>
       </Paper>
 
-      <Moment event={latestKey} call={call} blue={blueTeam.tag} red={redTeam.tag} game={view.game} />
+      <Moment event={latestKey} call={call} fight={fight} blue={blueTeam.tag} red={redTeam.tag} game={view.game} />
 
       <Box style={{ display: "flex", flexWrap: "wrap", gap: "var(--mantine-spacing-md)", alignItems: "flex-start" }}>
         <Box style={{ flex: "3 1 560px", minWidth: 0 }}>
@@ -1256,7 +1272,7 @@ function Playback({ view, data, busy, onNext }: { view: LiveView; data: GameView
               </Group>
             }
           >
-            <SideGraph gold={gold} minute={minute} t={timeline.t} events={upTo} blue={blueTeam.tag} red={redTeam.tag} />
+            <SideGraph gold={gold} minute={minute} events={upTo} blue={blueTeam.tag} red={redTeam.tag} />
           </Section>
         </Box>
 
@@ -1382,26 +1398,44 @@ function ObjectiveSide({ side, events, right = false }: { side: Side; events: Ti
   );
 }
 
-/** The latest moment that matters, big enough to notice from across the room. */
-function Moment({ event, call, blue, red, game }: { event: TimelineEvent | undefined; call?: TimelineEvent; blue: string; red: string; game: number }) {
+/**
+ * The latest moment that matters, big enough to notice from across the room. A caster's call takes
+ * the banner while it is fresh, with the fight it belongs to under it.
+ */
+function Moment({ event, call, fight, blue, red, game }: { event: TimelineEvent | undefined; call?: TimelineEvent; fight?: TimelineEvent; blue: string; red: string; game: number }) {
+  if (call) {
+    return (
+      <Paper radius={14} className={classes.moment} style={{ "--tone": "#f0c64a" } as React.CSSProperties}>
+        <span className={classes.momentIcon}>
+          <GameIcon kind="fight" size={30} />
+        </span>
+        <Box miw={0}>
+          <Text fz={12} fw={700} tt="uppercase" lts="0.14em" style={{ color: "#f0c64a" }}>
+            {clock(call.t)} · Caster
+          </Text>
+          <Text className={classes.momentTitle} fz={36}>
+            {call.text}
+          </Text>
+          {fight && (
+            <Text fz="md" c="gray.3" mt={4}>
+              {fight.text}
+            </Text>
+          )}
+        </Box>
+      </Paper>
+    );
+  }
   const k = event ? kindOf(event.kind) : KINDS.note;
-  // The caster's call takes the headline; the plain account of the fight goes under it.
-  const tone = call ? "#f0c64a" : k.tone;
   return (
-    <Paper radius={14} className={classes.moment} style={{ "--tone": tone } as React.CSSProperties}>
+    <Paper radius={14} className={classes.moment} style={{ "--tone": k.tone } as React.CSSProperties}>
       <span className={classes.momentIcon}>
         <GameIcon kind={event ? k.icon : "fight"} size={30} />
       </span>
       <Box miw={0}>
-        <Text fz={12} fw={700} tt="uppercase" lts="0.14em" style={{ color: tone }}>
+        <Text fz={12} fw={700} tt="uppercase" lts="0.14em" style={{ color: k.tone }}>
           {event ? `${clock(event.t)} · ${k.label}` : `Game ${game}`}
         </Text>
-        <Text className={classes.momentTitle}>{call ? call.text : event ? event.text : `${blue} and ${red} walk out`}</Text>
-        {call && event && (
-          <Text fz="md" c="gray.3" mt={4}>
-            {event.text}
-          </Text>
-        )}
+        <Text className={classes.momentTitle}>{event ? event.text : `${blue} and ${red} walk out`}</Text>
       </Box>
     </Paper>
   );
@@ -1434,7 +1468,7 @@ function PlayCard({ event, t, worked }: { event: TimelineEvent; t: number; worke
  * red is. Key moments are dots in the colour of the side they went to, a set play in gold. Scaled
  * to what has been played, so neither the axis nor the scale gives away how the game goes on.
  */
-function SideGraph({ gold, minute, t, events, blue, red, height = 300 }: { gold: number[]; minute: number; t: number; events: TimelineEvent[]; blue: string; red: string; height?: number }) {
+function SideGraph({ gold, minute, events, blue, red, height = 300 }: { gold: number[]; minute: number; events: TimelineEvent[]; blue: string; red: string; height?: number }) {
   const { ref, width: measured } = useElementSize();
   const id = useId();
   const width = Math.max(320, Math.round(measured) || 700);
@@ -1504,10 +1538,6 @@ function SideGraph({ gold, minute, t, events, blue, red, height = 300 }: { gold:
             <title>{`${clock(e.t)} ${e.text}`}</title>
           </circle>
         ))}
-        <line x1={x(t / 60)} x2={x(t / 60)} y1={top} y2={height - bottom} stroke="#e9edf4" strokeWidth="1" strokeDasharray="3 3" />
-        <text x={x(t / 60)} y={top - 3} textAnchor="middle" fill="#e9edf4" fontSize="10" fontWeight="700">
-          now
-        </text>
       </svg>
     </div>
   );

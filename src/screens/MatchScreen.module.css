@@ -156,10 +156,11 @@
 
 /* ---------- champion select ---------- */
 
+/* The two teams' columns grow with the window, so the picks stay in proportion to the grid. */
 .selectBody {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr) 260px;
-  gap: 16px;
+  grid-template-columns: minmax(300px, 21%) minmax(0, 1fr) minmax(300px, 21%);
+  gap: 18px;
   align-items: start;
 }
 
@@ -180,7 +181,7 @@
 
 .pickSlot {
   position: relative;
-  height: 108px;
+  height: 148px;
   overflow: hidden;
   border-radius: 10px;
   border: 1px solid var(--line);
@@ -229,14 +230,14 @@
 
 .pickInfo {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 9px;
+  left: 16px;
+  right: 16px;
+  bottom: 12px;
 }
 
 .pickChamp {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 32px;
   font-weight: 800;
   line-height: 1.05;
   text-transform: uppercase;

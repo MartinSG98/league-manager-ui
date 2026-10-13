@@ -16,6 +16,7 @@ import { PlayerScreen } from "./screens/PlayerScreen";
 import { PlayersScreen } from "./screens/PlayersScreen";
 import { ScheduleScreen } from "./screens/ScheduleScreen";
 import { SquadScreen } from "./screens/SquadScreen";
+import { StaffScreen } from "./screens/StaffScreen";
 import { TrainingScreen } from "./screens/TrainingScreen";
 import { TransfersScreen } from "./screens/TransfersScreen";
 import { CareerProvider } from "./state/career";
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="team/:team" element={<SquadScreen />} />
             <Route path="player/:player" element={<PlayerScreen />} />
             <Route path="players" element={<PlayersScreen />} />
+            <Route path="staff/:staff" element={<StaffScreen />} />
             <Route path="match" element={<MatchScreen />} />
             <Route path="matches/:match" element={<MatchDetailScreen />} />
             <Route path="schedule" element={<ScheduleScreen />} />

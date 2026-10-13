@@ -459,6 +459,30 @@ export interface StaffRow {
   overall: number;
   salary: number;
   contract_until: number | null;
+  /** The club they work for now. */
+  club: TeamRef | null;
+  mine: boolean;
+}
+
+/** A staff member's page: their contract and what talks with them would cost. */
+export interface StaffDetail extends StaffRow {
+  ask: number;
+  wanted_years: number;
+  max_years: number;
+  /** What their club wants to let them go, null when they are free or yours. */
+  compensation: number | null;
+  release_cost: number | null;
+  /** Club stars they want, give or take one. */
+  stars_wanted: number;
+  problem: string | null;
+  talks: { counter: number | null; counter_years: number | null; message: string; blocked_until: string | null } | null;
+  rounds_left: number;
+  budget_room: number;
+  /** Your staff member in the same seat, who has to go first. */
+  seat: StaffRow | null;
+  seat_name: string;
+  joined_market: number | null;
+  former_player: PlayerRow | null;
 }
 
 export interface StaffPoolRow extends StaffRow {
@@ -998,6 +1022,9 @@ export type Action =
   | { type: "board_meeting"; stances: Record<string, number> }
   | { type: "accept_job"; team: string }
   | { type: "apply_job"; team: string }
+  | { type: "staff_offer"; staff: string; salary: number; years: number }
+  | { type: "staff_accept_counter"; staff: string }
+  | { type: "staff_release"; staff: string }
   | { type: "decline_job"; team: string }
   | { type: "set_training"; load?: Load; focus?: string[]; play?: string; clear_play?: boolean }
   | { type: "set_player_training"; player: string; attribute: string | null; champion: string | null }

@@ -23,7 +23,7 @@ export function StaffScreen() {
     <Screen>
       <PageHeader
         icon={<PlayerPhoto photo={p.photo} name={p.name} size={72} />}
-        eyebrow={`${STAFF_KIND_NAMES[p.kind]} · ${p.position}`}
+        eyebrow={p.position.toLowerCase() === STAFF_KIND_NAMES[p.kind].toLowerCase() ? p.position : `${STAFF_KIND_NAMES[p.kind]} · ${p.position}`}
         title={p.name}
         right={
           <Group gap="lg">

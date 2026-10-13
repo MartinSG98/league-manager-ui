@@ -662,32 +662,42 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                     {view.suggestions.slice(0, 6).map((sg, i) => {
                       const entry = board?.champions[sg.champion];
                       const sgChoice = choiceFor(entry, sg.role ?? null);
-                      const why = topReason(sgChoice, sg, turn?.kind ?? "pick");
+                      const parts = valueParts(sgChoice, sg, turn?.kind ?? "pick");
                       const name = catalog.champion[sg.champion]?.name ?? sg.champion;
                       return (
                         <Tooltip
                           key={`${sg.champion}-${sg.role ?? ""}`}
-                          label={entry ? <Breakdown name={name} entry={entry} kind={board?.kind ?? null} coach={view.coach} /> : why}
+                          label={entry ? <Breakdown name={name} entry={entry} kind={board?.kind ?? null} coach={view.coach} /> : parts.map((p) => `${p.label} ${signed(p.value, 1)}`).join(" · ")}
                           multiline
                           w={entry ? 300 : undefined}
                           classNames={{ tooltip: classes.tip }}
                           openDelay={250}
                         >
                           <UnstyledButton className={classes.suggestion} data-first={i === 0 || undefined} disabled={busy} onClick={() => take(sg)}>
-                            <ChampIcon id={sg.champion} size={40} tooltip={false} />
+                            <ChampIcon id={sg.champion} size={48} tooltip={false} />
                             <Box miw={0} style={{ flex: 1 }}>
                               <Group justify="space-between" wrap="nowrap" gap={4}>
-                                <Text fw={700} fz="sm" truncate>
-                                  {name}
-                                </Text>
+                                <Group gap={5} wrap="nowrap" miw={0}>
+                                  {sg.role && <RoleIcon role={sg.role} size={14} />}
+                                  <Text fw={700} fz="sm" truncate>
+                                    {name}
+                                  </Text>
+                                </Group>
                                 <Text fw={800} fz="sm" className={sg.score >= 3 ? "gain" : undefined}>
                                   {signed(sg.score, 1)}
                                 </Text>
                               </Group>
-                              <Text fz={11} c="dimmed" truncate>
-                                {sg.role ? `${ROLE_NAMES[sg.role]} · ` : ""}
-                                {why}
-                              </Text>
+                              <div className={classes.suggestParts}>
+                                {parts.map((p) => (
+                                  <div key={p.label} className={classes.part}>
+                                    <span>{p.label}</span>
+                                    <span className={classes.partTrack}>
+                                      <span className={classes.partBar} data-loss={p.value < 0 || undefined} style={barStyle(p.value)} />
+                                    </span>
+                                    <b className={p.value > 0 ? "gain" : "loss"}>{signed(p.value, 1)}</b>
+                                  </div>
+                                ))}
+                              </div>
                             </Box>
                           </UnstyledButton>
                         </Tooltip>
@@ -817,17 +827,38 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
   );
 }
 
-/** The one line a suggestion shows: its strongest reason, the rest of the breakdown on hover. */
-function topReason(choice: BoardChoice | null, sg: Suggestion, kind: "ban" | "pick"): string {
-  const best = choice?.notes.filter((n) => n.value > 0).sort((a, b) => b.value - a.value)[0];
-  if (best) return best.text;
-  if (kind === "ban") return `threat ${signed(sg.threat ?? 0, 1)}`;
-  const parts: [number, string][] = [
-    [sg.power ?? 0, "suits the player"],
-    [sg.need ?? 0, "fits the comp"],
-    [sg.counter ?? 0, "wins the lane"],
-  ];
-  return parts.sort((a, b) => b[0] - a[0])[0][1];
+/** Short names for the kinds of reasons in a pick or ban value. */
+const PART_NAMES: Record<string, string> = { comfort: "comfort", meta: "patch", role: "off-role", comp: "comp", combo: "combo", lane: "lane", own: "yours too" };
+
+// Where zero sits on a suggestion's bars (as a share of the bar; .partTrack::after draws it) and how much of the bar one point takes.
+const BAR_ZERO = 0.35;
+const BAR_UNIT = 0.16;
+
+/** A part's bar from zero: to the right for a plus, to the left for a minus, cut at the bar's end. */
+function barStyle(value: number): React.CSSProperties {
+  const w = Math.min(Math.abs(value) * BAR_UNIT, value >= 0 ? 1 - BAR_ZERO : BAR_ZERO);
+  return { left: `${(value >= 0 ? BAR_ZERO : BAR_ZERO - w) * 100}%`, width: `${w * 100}%` };
+}
+
+/** What a suggestion shows under its name: the biggest pluses and minuses of its value, by kind. The full breakdown is on hover. */
+function valueParts(choice: BoardChoice | null, sg: Suggestion, kind: "ban" | "pick"): { label: string; value: number }[] {
+  const byKind = new Map<string, number>();
+  for (const n of choice?.notes ?? []) byKind.set(n.kind, (byKind.get(n.kind) ?? 0) + n.value);
+  let parts = [...byKind].map(([k, value]) => ({ label: PART_NAMES[k] ?? k, value }));
+  if (parts.length === 0) {
+    parts =
+      kind === "ban"
+        ? [{ label: "threat", value: sg.threat ?? 0 }]
+        : [
+            { label: "fit", value: sg.power ?? 0 },
+            { label: "comp", value: sg.need ?? 0 },
+            { label: "lane", value: sg.counter ?? 0 },
+          ];
+  }
+  return parts
+    .filter((p) => Math.abs(p.value) >= 0.05)
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+    .slice(0, 3);
 }
 
 /** Both sides' five ban slots along the top, the one being filled lit, and the series score between them. */

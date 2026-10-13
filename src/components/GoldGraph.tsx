@@ -8,7 +8,7 @@ export function GoldGraph({ gold, upTo, height = 150, lead = true }: { gold: num
   const width = Math.max(300, Math.round(measured) || 600);
   const shown = upTo === undefined ? gold : gold.slice(0, Math.max(1, upTo + 1));
   const minutes = Math.max(gold.length - 1, 20);
-  const peak = Math.max(3000, ...gold.map((g) => Math.abs(g)));
+  const peak = Math.max(10000, Math.ceil(Math.max(...gold.map((g) => Math.abs(g))) / 5000) * 5000); // as on the match screen
   const x = (m: number) => (m / minutes) * width;
   const y = (g: number) => height / 2 - (g / peak) * (height / 2 - 8);
   const line = shown.map((g, m) => `${x(m).toFixed(1)},${y(g).toFixed(1)}`).join(" ");

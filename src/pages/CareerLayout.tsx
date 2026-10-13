@@ -93,9 +93,16 @@ export function CareerLayout() {
   ];
 
   const boardColor = career.board.confidence >= 45 ? "teal" : career.board.confidence >= 22 ? "orange" : "red";
+  // On the stage the office steps aside: no header, no menu, the match screen has its own bar.
+  const matchMode = !!career.live && location.pathname.endsWith("/match");
 
   return (
-    <AppShell header={{ height: 72 }} navbar={{ width: 236, breakpoint: "sm" }} padding={0} style={vars({ "--team": career.team.color })}>
+    <AppShell
+      header={{ height: 72, collapsed: matchMode, offset: !matchMode }}
+      navbar={{ width: 236, breakpoint: "sm", collapsed: { desktop: matchMode, mobile: matchMode } }}
+      padding={0}
+      style={vars({ "--team": career.team.color })}
+    >
       <AppShell.Header className={classes.header}>
         <Group h="100%" px="lg" gap="xl" wrap="nowrap">
           <Group gap="sm" wrap="nowrap" style={{ flex: "none" }}>

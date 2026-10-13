@@ -1,6 +1,6 @@
 import { AppShell, Badge, Box, Button, Group, NavLink, Stack, Text, Tooltip, UnstyledButton } from "@mantine/core";
 import {
-  IconArrowLeft, IconBarbell, IconBuildingSkyscraper, IconCalendar, IconChartBar, IconHome, IconMail, IconPlayerPlayFilled,
+  IconArrowLeft, IconBarbell, IconBriefcase, IconBuildingSkyscraper, IconCalendar, IconChartBar, IconHome, IconMail, IconPlayerPlayFilled,
   IconSwords, IconTransfer, IconTrophy, IconUserSearch, IconUsersGroup, IconWand,
 } from "@tabler/icons-react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -26,6 +26,9 @@ export function CareerLayout() {
   const location = useLocation();
   const base = `/career/${career.id}`;
   const comps = useApi(() => api.competitions(career.id), [career.id, revision]);
+  // Only for the Job center's badge: a club that offers you its head coach job.
+  const board = useApi(() => (career.phase === "draft" ? Promise.resolve(null) : api.board(career.id).catch(() => null)), [career.id, revision, career.phase]);
+  const jobOffer = (board.data?.vacancies ?? []).some((v) => v.offer_until);
 
   const pending = career.pending.offers + career.pending.talks;
   const next = career.next_match;
@@ -75,6 +78,7 @@ export function CareerLayout() {
       items: [
         { to: `${base}/transfers`, label: "Transfers", icon: IconTransfer, badge: pending ? String(pending) : career.window ? "OPEN" : undefined },
         { to: `${base}/club`, label: "Board & finances", icon: IconBuildingSkyscraper, badge: career.board.warned ? "!" : undefined },
+        { to: `${base}/jobs`, label: "Job center", icon: IconBriefcase, show: career.phase !== "draft", badge: jobOffer ? "OFFER" : undefined },
       ],
     },
     {
@@ -190,7 +194,7 @@ export function CareerLayout() {
                       leftSection={<i.icon size={18} stroke={1.6} />}
                       rightSection={
                         i.badge !== undefined ? (
-                          <Badge size="sm" color={alert ? "red" : "gold"} variant={alert || /^\d+$/.test(i.badge) ? "filled" : "light"}>
+                          <Badge size="sm" color={alert ? "red" : "gold"} variant={alert || /^\d+$/.test(i.badge) || i.badge === "OFFER" ? "filled" : "light"}>
                             {i.badge}
                           </Badge>
                         ) : undefined

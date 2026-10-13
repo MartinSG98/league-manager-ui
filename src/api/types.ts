@@ -406,6 +406,20 @@ export interface JobOffer {
   league_name: string;
 }
 
+/** An AI club looking for a head coach. */
+export interface Vacancy {
+  team: TeamRef;
+  stars: number;
+  league_name: string;
+  opened: string;
+  closes: string;
+  /** An offer to you, open until this day. */
+  offer_until: string | null;
+  applied: boolean;
+  declined: boolean;
+  in_reach: boolean;
+}
+
 export interface SaveRow {
   id: string;
   manager: string;
@@ -894,6 +908,9 @@ export interface BoardView {
   finances: { budget: number; payroll: number; cash: number; sponsors_per_week: number; budget_step: number };
   league_reputation: { team: TeamRef; reputation: number; stars: number }[];
   job_offers: JobOffer[];
+  vacancies: Vacancy[];
+  /** The most stars a club can have and still want you. */
+  reach: number;
   star_reach: number;
   thresholds: { warning: number; safe: number };
 }
@@ -980,6 +997,8 @@ export type Action =
   | { type: "next_season" }
   | { type: "board_meeting"; stances: Record<string, number> }
   | { type: "accept_job"; team: string }
+  | { type: "apply_job"; team: string }
+  | { type: "decline_job"; team: string }
   | { type: "set_training"; load?: Load; focus?: string[]; play?: string; clear_play?: boolean }
   | { type: "set_player_training"; player: string; attribute: string | null; champion: string | null }
   | { type: "set_play"; play: string | null }

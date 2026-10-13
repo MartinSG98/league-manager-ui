@@ -274,10 +274,10 @@
 
 .suggestion {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
   min-width: 0;
-  padding: 7px;
+  padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid var(--line);
   background: var(--raised);
@@ -291,6 +291,64 @@
 .suggestion[data-first] {
   border-color: rgba(200, 170, 110, 0.6);
   background: rgba(200, 170, 110, 0.1);
+}
+
+/* The three biggest parts of a suggestion's value as bars from one zero: pluses grow right in green, minuses left in orange. */
+.suggestParts {
+  display: grid;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.part {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.part > span:first-child {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-3);
+}
+
+.part b {
+  text-align: right;
+  font-weight: 700;
+}
+
+.partTrack {
+  position: relative;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+/* Zero, at BAR_ZERO in MatchScreen.tsx. */
+.partTrack::after {
+  content: "";
+  position: absolute;
+  left: 35%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--text-4);
+}
+
+.partBar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  background: var(--better);
+}
+
+.partBar[data-loss] {
+  background: var(--worse);
 }
 
 .grid {

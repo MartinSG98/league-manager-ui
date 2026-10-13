@@ -55,10 +55,11 @@ export const api = {
 
   draft: (id: string) => request<DraftView>(`${career(id)}/draft`),
   squad: (id: string, team?: string) => request<SquadView>(`${career(id)}/squad${team ? `?team=${team}` : ""}`),
-  players: (id: string, query: { region?: string; freeAgents?: boolean; role?: Role; limit?: number }) => {
+  players: (id: string, query: { region?: string; freeAgents?: boolean; rookies?: boolean; role?: Role; limit?: number }) => {
     const params = new URLSearchParams();
     if (query.region) params.set("region", query.region);
     if (query.freeAgents) params.set("free_agents", "true");
+    if (query.rookies) params.set("rookies_only", "true");
     if (query.role) params.set("role", query.role);
     params.set("limit", String(query.limit ?? 300));
     return request<PlayerRow[]>(`${career(id)}/players?${params}`);

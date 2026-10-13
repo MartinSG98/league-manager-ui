@@ -67,10 +67,31 @@ export function PlayerScreen() {
             <Group gap="xs">
               <RoleIcon role={d.role} size={20} />
               <Text className="eyebrow">{ROLE_NAMES[d.role]}</Text>
-              {d.origin && (
-                <Text fz="sm" c="gray.4">
-                  · {d.origin.name} in 2026
-                </Text>
+              {d.retired && (
+                <Badge size="sm" color="gray" variant="light">
+                  retired
+                </Badge>
+              )}
+              {d.retiring && (
+                <Badge size="sm" color="orange" variant="light">
+                  retires after the {d.retiring} season
+                </Badge>
+              )}
+              {d.rookie ? (
+                <Group gap={6}>
+                  <Badge size="sm" color="lime" variant="light">
+                    rookie
+                  </Badge>
+                  <Text fz="sm" c="gray.4">
+                    {d.origin ? `came through ${d.origin.name}` : "straight from solo queue"}
+                  </Text>
+                </Group>
+              ) : (
+                d.origin && (
+                  <Text fz="sm" c="gray.4">
+                    · {d.origin.name} in 2026
+                  </Text>
+                )
               )}
             </Group>
             <Text className="display" fz={64} lh={0.95}>

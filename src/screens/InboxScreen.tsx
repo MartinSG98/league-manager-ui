@@ -95,7 +95,7 @@ export function InboxScreen() {
             <ScrollArea h={PANE_HEIGHT} type="auto">
               {shown.map((m) => (
                 <UnstyledButton key={m.id} className={classes.inboxRow} data-active={m.id === openId || undefined} onClick={() => select(m.id, m.read)}>
-                  <Badge size="xs" w={70} variant={m.read ? "outline" : "filled"} color={KIND_COLOR[m.kind] ?? "gray"}>
+                  <Badge size="xs" w={78} variant={m.read ? "outline" : "filled"} color={KIND_COLOR[m.kind] ?? "gray"}>
                     {m.kind}
                   </Badge>
                   <Text fz="sm" fw={m.read ? 400 : 700} truncate style={{ flex: 1 }}>

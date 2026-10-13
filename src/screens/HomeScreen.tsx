@@ -220,7 +220,7 @@ export function HomeScreen() {
             >
               {career.inbox.slice(0, 7).map((m) => (
                 <UnstyledButton key={m.id} component={Link} to={`${base}/inbox?m=${m.id}`} className={classes.inboxRow}>
-                  <Badge size="xs" variant={m.read ? "outline" : "filled"} color={m.kind === "patch" ? "hextech" : "gold"} w={64}>
+                  <Badge size="xs" variant={m.read ? "outline" : "filled"} color={m.kind === "patch" ? "hextech" : "gold"} w={78}>
                     {m.kind}
                   </Badge>
                   <Text fz="sm" fw={m.read ? 400 : 700} truncate style={{ flex: 1 }}>
@@ -232,12 +232,6 @@ export function HomeScreen() {
                 </UnstyledButton>
               ))}
             </Section>
-            <Group gap="xs" c="dimmed">
-              <TeamLogo team={career.team} size={18} />
-              <Text fz="xs" c="dimmed">
-                {career.team.name} · bank {money(career.cash)}
-              </Text>
-            </Group>
           </Stack>
         </Grid.Col>
       </Grid>

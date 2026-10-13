@@ -4,6 +4,7 @@ import { IconAlertTriangle, IconCheck, IconClock, IconX } from "@tabler/icons-re
 import { api } from "../api/client";
 import type { BoardView, ObjectiveStatus } from "../api/types";
 import { BonusList } from "../components/BonusList";
+import { BudgetAdjuster } from "../components/BudgetAdjuster";
 import { TeamLogo } from "../components/Media";
 import { Stars } from "../components/Stars";
 import { Empty, Loading, PageHeader, Screen, Section } from "../components/Ui";
@@ -127,10 +128,16 @@ function Club({ b }: { b: BoardView }) {
 
         <Grid.Col span={{ base: 12, lg: 5 }}>
           <Stack gap="lg">
-            <Section title="Finances">
+            <Section title="Finances" right={<BudgetAdjuster />}>
               <Table verticalSpacing={6}>
                 <Table.Tbody>
                   <Row label="Salary budget" value={money(b.finances.budget)} />
+                  {!!career.budget_adjust?.moved && (
+                    <Row
+                      label="Set by the board"
+                      value={`${money(career.budget_adjust.set)} · ${money(Math.abs(career.budget_adjust.moved))} moved ${career.budget_adjust.moved > 0 ? "to" : "from"} the bank`}
+                    />
+                  )}
                   <Row label="Payroll" value={money(b.finances.payroll)} />
                   <Row label="Bank (transfer funds)" value={money(b.finances.cash)} />
                   <Row label="Sponsors" value={`${money(b.finances.sponsors_per_week)} a week`} />
@@ -138,7 +145,8 @@ function Club({ b }: { b: BoardView }) {
               </Table>
               <Text fz="xs" c="dimmed" mt="sm">
                 The owners fund the salary budget: what the payroll leaves of it goes to the bank every week, with sponsors and prize money.
-                Every off-season the board adds money for transfers, more for a bigger club.
+                Every off-season the board adds money for transfers, more for a bigger club. Adjust budgets moves money between the
+                salary budget and the bank.
               </Text>
             </Section>
 

@@ -349,6 +349,8 @@ export interface CareerView {
   budget: number;
   payroll: number;
   cash: number;
+  /** Moving money between the salary budget and the bank; null during the draft. */
+  budget_adjust: BudgetAdjust | null;
   next_match: MatchSummary | null;
   live: LiveSummary | null;
   draft: { on_the_clock: string | null; my_turn: boolean; round: number; number: number; total: number } | null;
@@ -511,6 +513,21 @@ export interface Tactics {
 export interface Chemistry {
   score: number;
   reasons: string[];
+}
+
+export interface BudgetAdjust {
+  /** The lowest budget: what the contracts already cost. */
+  low: number;
+  /** The highest budget the bank can pay for. */
+  high: number;
+  /** Weeks until the board sets the next budget. */
+  weeks: number;
+  /** What a thousand of the budget is worth in the bank today: weeks / 52. */
+  rate: number;
+  step: number;
+  /** The budget the board set, and how much of it was moved into the bank (negative: out of it). */
+  set: number;
+  moved: number;
 }
 
 export interface SquadView {
@@ -967,4 +984,5 @@ export type Action =
   | { type: "transfer_list"; player: string; listed: boolean }
   | { type: "shortlist"; player: string; on: boolean }
   | { type: "scout_player"; player: string }
+  | { type: "adjust_budget"; budget: number }
   | { type: "talk"; conversation: number; choice: TalkChoice };

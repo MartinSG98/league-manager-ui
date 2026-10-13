@@ -21,6 +21,8 @@ import { GameReport } from "../components/GameReport";
 import { ChampIcon, ChampPortrait, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
 import { PlayerHoverCard } from "../components/PlayerHoverCard";
 import { ScoutingReport } from "../components/ScoutingReport";
+import { SeriesSoFar } from "../components/SeriesSoFar";
+import { TacticsPanel } from "../components/TacticsPanel";
 import { Empty, Loading, Screen, Section } from "../components/Ui";
 import { clock, cx, ROLE_NAMES, ROLES, signed } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -153,7 +155,7 @@ function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: st
       </Paper>
 
       <Box style={{ display: "flex", flexWrap: "wrap", gap: "var(--mantine-spacing-lg)", alignItems: "flex-start" }}>
-        <Box style={{ flex: "2 1 720px", minWidth: 0 }}>
+        <Box style={{ flex: "2 1 720px", minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--mantine-spacing-lg)" }}>
           <Section title="Tale of the tape" pad={false} right={<Text fz="xs" c="dimmed">overall · form · comfort picks</Text>}>
             {ROLES.map((r) => {
               const us = ours.lineup.find((p) => p.slot === r);
@@ -192,6 +194,7 @@ function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: st
               </Group>
             </Group>
           </Section>
+          <SeriesSoFar view={view} />
         </Box>
         <Stack gap="lg" style={{ flex: "1 1 380px", minWidth: 0 }}>
           {scouting && <ScoutRead report={scouting} champName={champName} />}
@@ -206,13 +209,14 @@ function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: st
               </Text>
             </Paper>
           )}
+          <TacticsPanel tactics={ours.tactics} />
         </Stack>
       </Box>
 
       <Paper radius={14} p="md">
         <Group justify="space-between" wrap="wrap" gap="md">
           <Text fz="sm" c="dimmed" maw={560}>
-            Lineup and tactics are set on the Squad screen.
+            The lineup is set on the Squad screen; tactics saved here count from this game on.
             {view.select.locked.length > 0 && ` Fearless: ${view.select.locked.length} champions are already used in this series.`}
           </Text>
           <Group>

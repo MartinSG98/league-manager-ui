@@ -4,8 +4,9 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { PlayerDetail, Role, SquadView, StaffRow, Tactics, TrainingView } from "../api/types";
+import type { PlayerDetail, Role, SquadView, StaffRow, TrainingView } from "../api/types";
 import { PlayerPhoto, PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
+import { TacticsPanel } from "../components/TacticsPanel";
 import { Empty, Loading, Meter, Ovr, Screen, Section, Stat, Tag } from "../components/Ui";
 import { ATTRIBUTE_NAMES, flag, money, ROLE_NAMES, ROLES, signed, STAFF_ATTRIBUTES, STAFF_KIND_NAMES, vars } from "../lib/format";
 import { ATTRS, teamAverages } from "../lib/squad";
@@ -376,69 +377,6 @@ function StaffLine({ person, kind }: { person: StaffRow | null; kind: "coach" | 
       </Stack>
       <Ovr value={person.overall} size="md" plain />
     </Group>
-  );
-}
-
-function TacticsPanel({ tactics }: { tactics: Tactics }) {
-  const { act, busy } = useCareer();
-  const [draft, setDraft] = useState(tactics);
-  const changed = JSON.stringify(draft) !== JSON.stringify(tactics);
-  return (
-    <Section title="Tactics">
-      <Stack gap="sm">
-        <Stack gap={4}>
-          <Text fz="sm" fw={600}>
-            Game plan
-          </Text>
-          <SegmentedControl
-            fullWidth
-            value={draft.style}
-            onChange={(v) => setDraft({ ...draft, style: v as Tactics["style"] })}
-            data={[
-              { value: "early", label: "Early game" },
-              { value: "balanced", label: "Balanced" },
-              { value: "scaling", label: "Scaling" },
-            ]}
-          />
-        </Stack>
-        <Stack gap={4}>
-          <Text fz="sm" fw={600}>
-            Jungle focus
-          </Text>
-          <SegmentedControl
-            fullWidth
-            value={draft.lane}
-            onChange={(v) => setDraft({ ...draft, lane: v as Tactics["lane"] })}
-            data={[
-              { value: "top", label: "Top" },
-              { value: "mid", label: "Mid" },
-              { value: "bot", label: "Bot" },
-            ]}
-          />
-        </Stack>
-        <Stack gap={4}>
-          <Text fz="sm" fw={600}>
-            Objectives
-          </Text>
-          <SegmentedControl
-            fullWidth
-            value={draft.objectives}
-            onChange={(v) => setDraft({ ...draft, objectives: v as Tactics["objectives"] })}
-            data={[
-              { value: "dragons", label: "Dragons" },
-              { value: "balanced", label: "Balanced" },
-              { value: "barons", label: "Grubs & Baron" },
-            ]}
-          />
-        </Stack>
-        <Text fz="xs" c="dimmed">
-          A game plan that matches your champions' power curve is worth about a point of team strength.
-        </Text>
-        <Button disabled={!changed} loading={busy} onClick={() => act({ type: "set_tactics", tactics: draft })}>
-          Save tactics
-        </Button>
-      </Stack>
-    </Section>
   );
 }
 

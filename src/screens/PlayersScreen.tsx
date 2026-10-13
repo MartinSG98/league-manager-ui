@@ -1,12 +1,13 @@
 import { Badge, Group, ScrollArea, SegmentedControl, Select, Stack, Switch, Table, Text, TextInput, UnstyledButton } from "@mantine/core";
 import { IconChevronDown, IconChevronUp, IconSearch } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { PlayerRow, Role } from "../api/types";
 import { ChampIcon, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
 import { ShortlistButton } from "../components/ShortlistButton";
+import { StaffScouting } from "../components/StaffScouting";
 import { Loading, Ovr, PageHeader, Screen, Section } from "../components/Ui";
 import { cx, flag, money, ROLES } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -41,6 +42,8 @@ export function PlayersScreen() {
   const { career, revision } = useCareer();
   const catalog = useCatalog();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") === "coaches" ? "coach" : params.get("tab") === "analysts" ? "analyst" : "players";
   const [region, setRegion] = useState<string | null>(career.region);
   const [role, setRole] = useState<Role | "ALL">("ALL");
   const [freeAgents, setFreeAgents] = useState(false);
@@ -62,8 +65,26 @@ export function PlayersScreen() {
 
   return (
     <Screen>
-      <PageHeader eyebrow="Scouting" title="Players" />
+      <PageHeader
+        eyebrow="Scouting"
+        title={tab === "players" ? "Players" : tab === "coach" ? "Coaches" : "Analysts"}
+        right={
+          <SegmentedControl
+            value={tab}
+            onChange={(v) => setParams(v === "players" ? {} : { tab: v === "coach" ? "coaches" : "analysts" }, { replace: true })}
+            data={[
+              { value: "players", label: "Players" },
+              { value: "coach", label: "Coaches" },
+              { value: "analyst", label: "Analysts" },
+            ]}
+          />
+        }
+      />
       <Section pad={false}>
+        {tab !== "players" ? (
+          <StaffScouting kind={tab} />
+        ) : (
+          <>
         <Group gap="sm" p="sm" style={{ borderBottom: "1px solid var(--line)" }}>
           <Select
             placeholder="Every region"
@@ -175,6 +196,8 @@ export function PlayersScreen() {
               </Table.Tbody>
             </Table>
           </ScrollArea>
+        )}
+          </>
         )}
       </Section>
     </Screen>

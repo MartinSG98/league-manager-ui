@@ -1,7 +1,9 @@
 import { Badge, Box, Group, Paper, Stack, Text, Tooltip } from "@mantine/core";
+import { Link } from "react-router-dom";
 
 import type { StaffKind, StaffRow } from "../api/types";
 import { flag, money, STAFF_ATTRIBUTES, STAFF_KIND_NAMES } from "../lib/format";
+import { useCareer } from "../state/career";
 import { PlayerPhoto, TeamLogo } from "./Media";
 import classes from "./Staff.module.css";
 import { AttrBar, Ovr } from "./Ui";
@@ -20,6 +22,7 @@ export function StaffOrigin({ person }: { person: StaffRow }) {
 
 /** A staff member with every attribute and what it does. */
 export function StaffCard({ person, kind, emptyText }: { person: StaffRow | null; kind: StaffKind; emptyText?: string }) {
+  const { career } = useCareer();
   if (!person) {
     return (
       <Paper p="md" className={classes.card} data-empty>
@@ -37,7 +40,7 @@ export function StaffCard({ person, kind, emptyText }: { person: StaffRow | null
           <PlayerPhoto photo={person.photo} name={person.name} size={48} />
           <Stack gap={1} miw={0}>
             <Text className="eyebrow">{STAFF_KIND_NAMES[kind]}</Text>
-            <Text className="display" fz={22} lh={1} truncate>
+            <Text className="display" fz={22} lh={1} truncate component={Link} to={`/career/${career.id}/staff/${person.id}`} c="inherit">
               {person.name}
             </Text>
             <Text fz="xs" c="dimmed" truncate>

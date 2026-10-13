@@ -1,6 +1,7 @@
 import type {
   Action, ActionResult, BoardView, CareerView, Catalog, CompetitionRow, CompetitionView, DraftView, GameView, LiveView,
-  MatchSummary, MatchView, MetaView, NegotiationView, PlayerDetail, PlayerRow, Role, SaveRow, SquadView, TeamPreview,
+  MatchSummary, MatchView, MetaView, NegotiationView, PlayerDetail, PlayerRow, Role, SaveRow, SquadView, StaffDetail,
+  StaffKind, StaffRow, TeamPreview,
   ShortlistRow, TrainingView, TransfersView,
 } from "./types";
 
@@ -65,6 +66,15 @@ export const api = {
     return request<PlayerRow[]>(`${career(id)}/players?${params}`);
   },
   player: (id: string, player: string) => request<PlayerDetail>(`${career(id)}/players/${player}`),
+  staff: (id: string, query: { kind?: StaffKind; region?: string; freeOnly?: boolean; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (query.kind) params.set("kind", query.kind);
+    if (query.region) params.set("region", query.region);
+    if (query.freeOnly) params.set("free_only", "true");
+    params.set("limit", String(query.limit ?? 300));
+    return request<StaffRow[]>(`${career(id)}/staff?${params}`);
+  },
+  staffMember: (id: string, staff: string) => request<StaffDetail>(`${career(id)}/staff/${staff}`),
   competitions: (id: string) => request<CompetitionRow[]>(`${career(id)}/competitions`),
   competition: (id: string, comp: string) => request<CompetitionView>(`${career(id)}/competitions/${comp}`),
   schedule: (id: string, team?: string) =>

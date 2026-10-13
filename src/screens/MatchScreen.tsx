@@ -566,6 +566,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
   return (
     <Stack gap="md">
       <BanRow view={view} />
+      <FearlessStrip view={view} />
       <Box className={classes.selectBody}>
         <PickColumn side="blue" view={view} unavailable={taken} />
         <Stack gap="md" miw={0} className={classes.selectMiddle}>
@@ -829,7 +830,7 @@ function topReason(choice: BoardChoice | null, sg: Suggestion, kind: "ban" | "pi
   return parts.sort((a, b) => b[0] - a[0])[0][1];
 }
 
-/** Both sides' five ban slots along the top, the one being filled lit, and the champions fearless has locked between them. */
+/** Both sides' five ban slots along the top, the one being filled lit, and the series score between them. */
 function BanRow({ view }: { view: LiveView }) {
   const s = view.select;
   const banning = s.turn?.kind === "ban" ? s.turn.side : null;
@@ -852,37 +853,61 @@ function BanRow({ view }: { view: LiveView }) {
           </Text>
           {slots("blue", s.blue_bans)}
         </Group>
-        <Group gap="lg" wrap="nowrap">
-          {view.match.best_of > 1 && (
-            <Group gap={8} wrap="nowrap">
-              <TeamLogo team={view.blue.team} size={46} />
-              <Text className="display" fz={46} lh={1}>
-                {seriesBySide(view)[0]}{" "}
-                <Text span c="dimmed" inherit>
-                  :
-                </Text>{" "}
-                {seriesBySide(view)[1]}
-              </Text>
-              <TeamLogo team={view.red.team} size={46} />
-            </Group>
-          )}
-          {s.locked.length > 0 && (
-            <Group gap={3} wrap="nowrap" visibleFrom="lg">
-              <Text className="eyebrow" mr={4}>
-                Fearless
-              </Text>
-              {s.locked.slice(0, 20).map((c) => (
-                <ChampIcon key={c} id={c} size={22} dim />
-              ))}
-            </Group>
-          )}
-        </Group>
+        {view.match.best_of > 1 && (
+          <Group gap={8} wrap="nowrap">
+            <TeamLogo team={view.blue.team} size={46} />
+            <Text className="display" fz={46} lh={1}>
+              {seriesBySide(view)[0]}{" "}
+              <Text span c="dimmed" inherit>
+                :
+              </Text>{" "}
+              {seriesBySide(view)[1]}
+            </Text>
+            <TeamLogo team={view.red.team} size={46} />
+          </Group>
+        )}
         <Group gap={6} wrap="nowrap">
           {slots("red", s.red_bans)}
           <Text className="eyebrow side-red" ml={4}>
             Bans
           </Text>
         </Group>
+      </Group>
+    </Paper>
+  );
+}
+
+/**
+ * Fearless draft: every champion already played in the series, by game and by team, in a strip of
+ * its own under the bans. The grid greys the same champions out.
+ */
+function FearlessStrip({ view }: { view: LiveView }) {
+  const teams = teamsOf(view.match);
+  const games = view.match.game_list.filter((g) => g.number < view.game);
+  if (!view.match.fearless || games.length === 0) return null;
+  const sideOf = (g: GameRecord, team: string) => (team === g.blue ? g.blue_picks : g.red_picks);
+  return (
+    <Paper radius={12} px="md" py="xs">
+      <Group gap="xl" wrap="wrap" justify="center">
+        <Text className="eyebrow">Fearless · already played</Text>
+        {games.map((g) => (
+          <Group key={g.number} gap="md" wrap="nowrap">
+            <Text fz="sm" fw={800} c="dimmed" style={{ whiteSpace: "nowrap" }}>
+              Game {g.number}
+            </Text>
+            {[g.blue, g.red].map((team) => (
+              <Group key={team} gap={4} wrap="nowrap">
+                <Text fz="xs" fw={700} c="gray.4" mr={2}>
+                  {teams[team]?.tag ?? team}
+                </Text>
+                {ROLES.map((r) => {
+                  const c = sideOf(g, team)[r];
+                  return c ? <ChampIcon key={r} id={c} size={28} /> : null;
+                })}
+              </Group>
+            ))}
+          </Group>
+        ))}
       </Group>
     </Paper>
   );

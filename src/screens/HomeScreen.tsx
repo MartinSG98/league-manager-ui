@@ -438,7 +438,9 @@ function Race({ stage, league }: { stage: StageView; league: boolean }) {
   const swiss = stage.kind === "swiss";
   // A Swiss stage goes by wins, not by place, so it gets no line.
   const cut = swiss ? 0 : stage.tables.length > 1 ? stage.advance / stage.tables.length : stage.advance;
-  const limit = Math.min(rows.length, Math.max(cut + 1, swiss ? 8 : 6));
+  const top = Math.min(rows.length, Math.max(cut + 1, swiss ? 8 : 6));
+  // Down to your team when only a few rows lie between: skipping two teams reads like a bug.
+  const limit = index >= top && index - top <= 3 ? index + 1 : top;
   const shown = rows.slice(0, limit).map((r, i) => ({ row: r, pos: i + 1 }));
   if (index >= limit) shown.push({ row: rows[index], pos: index + 1 });
 

@@ -1176,6 +1176,8 @@ const KINDS: Record<string, { label: string; icon: GameIconKind; tone: string; k
   nexus: { label: "Nexus", icon: "nexus", tone: "#f0e6d2", key: true },
   play: { label: "Set play", icon: "play", tone: "#c8aa6e", key: true },
   throw: { label: "Throw", icon: "throw", tone: "#ff8a5c", key: true },
+  // The caster's call on a fight: quoted under the moment it belongs to, listed with everything else.
+  highlight: { label: "Caster", icon: "fight", tone: "#f0e6d2" },
   note: { label: "", icon: "fight", tone: "#8e99ae" },
 };
 const kindOf = (k: string) => KINDS[k] ?? KINDS.note;
@@ -1269,7 +1271,13 @@ function Playback({ view, data, busy, onNext, onRevealed }: { view: LiveView; da
 
       <Box style={{ display: "flex", flexWrap: "wrap", gap: "var(--mantine-spacing-md)", alignItems: "flex-start" }}>
         <Stack gap="md" style={{ flex: "3 1 560px", minWidth: 0 }}>
-          <Moment event={latestKey} blue={blueTeam.tag} red={redTeam.tag} game={view.game} />
+          <Moment
+            event={latestKey}
+            call={latestKey && upTo.find((e) => e.kind === "highlight" && e.t === latestKey.t)}
+            blue={blueTeam.tag}
+            red={redTeam.tag}
+            game={view.game}
+          />
           <Section
             title="Your gold lead"
             right={
@@ -1417,7 +1425,7 @@ function ObjectiveSide({ side, events, right = false }: { side: Side; events: Ti
 }
 
 /** The latest moment that matters, big enough to notice from across the room. */
-function Moment({ event, blue, red, game }: { event: TimelineEvent | undefined; blue: string; red: string; game: number }) {
+function Moment({ event, call, blue, red, game }: { event: TimelineEvent | undefined; call?: TimelineEvent; blue: string; red: string; game: number }) {
   const k = event ? kindOf(event.kind) : KINDS.note;
   return (
     <Paper radius={14} className={classes.moment} style={{ "--tone": k.tone } as React.CSSProperties}>
@@ -1429,6 +1437,11 @@ function Moment({ event, blue, red, game }: { event: TimelineEvent | undefined; 
           {event ? `${clock(event.t)} · ${k.label}` : `Game ${game}`}
         </Text>
         <Text className={classes.momentTitle}>{event ? event.text : `${blue} and ${red} walk out`}</Text>
+        {call && (
+          <Text fz="md" fs="italic" c="gray.3" mt={4}>
+            “{call.text}”
+          </Text>
+        )}
       </Box>
     </Paper>
   );

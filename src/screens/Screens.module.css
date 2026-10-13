@@ -1,15 +1,103 @@
-/* Shared screen pieces: hero banners over splash art, list rows. */
+/* Shared screen pieces: the stage over splash art, list rows, rows of cards. */
 
 .hero {
   position: relative;
   overflow: hidden;
   min-height: 250px;
+  border-color: #263149;
+  background: linear-gradient(180deg, var(--raised), #0b111c);
+}
+
+/* The club's colour glowing in from the top left, over the splash art. */
+.glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 140% at 0% 0%, color-mix(in srgb, var(--team) 24%, transparent), transparent 60%);
 }
 
 .heroInner {
   position: relative;
   z-index: 1;
   padding: 28px 32px;
+}
+
+.franchise {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--team);
+}
+
+/* What the analyst makes of the player, on the stage. */
+.read {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 760px;
+  margin-top: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(7, 10, 18, 0.7);
+}
+
+/* A row of small facts in one bar. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: var(--mantine-spacing-lg);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.strip > * {
+  flex: 1 1 170px;
+  min-width: 0;
+  padding: 14px 20px;
+  border-right: 1px solid var(--line-soft);
+}
+
+.strip > *:last-child {
+  border-right: 0;
+}
+
+.inlineLink {
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.inlineLink:hover {
+  color: var(--gold-bright);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-lg);
+  align-items: stretch;
+  margin-bottom: var(--mantine-spacing-lg);
+}
+
+.grow1 {
+  flex: 1 1 480px;
+  min-width: 0;
+}
+
+.tile {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--raised);
+}
+
+.worse {
+  color: var(--worse);
 }
 
 .inboxRow {

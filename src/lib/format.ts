@@ -68,6 +68,21 @@ export function longDate(iso: string): string {
   return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
 }
 
+/** "Sat 12 Aug": the game's date in the top bar. */
+export function dayLabel(iso: string): string {
+  const d = new Date(`${iso}T12:00:00`);
+  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).replace(",", "");
+}
+
+/** The day of a match as people say it: today, tomorrow, the weekday within a week, else the date. */
+export function whenLabel(iso: string, today: string): string {
+  const days = Math.round((Date.parse(`${iso}T12:00:00`) - Date.parse(`${today}T12:00:00`)) / 86_400_000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  if (days > 1 && days < 7) return new Date(`${iso}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long" });
+  return shortDate(iso);
+}
+
 export function clock(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);

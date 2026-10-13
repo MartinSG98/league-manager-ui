@@ -9,6 +9,7 @@ import { CompetitionsScreen } from "./screens/CompetitionsScreen";
 import { DraftScreen } from "./screens/DraftScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { InboxScreen } from "./screens/InboxScreen";
+import { JobCenterScreen } from "./screens/JobCenterScreen";
 import { MatchDetailScreen } from "./screens/MatchDetailScreen";
 import { MatchScreen } from "./screens/MatchScreen";
 import { MetaScreen } from "./screens/MetaScreen";
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="inbox" element={<InboxScreen />} />
             <Route path="training" element={<TrainingScreen />} />
             <Route path="club" element={<ClubScreen />} />
+            <Route path="jobs" element={<JobCenterScreen />} />
             <Route path="transfers" element={<TransfersScreen />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

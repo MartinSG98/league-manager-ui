@@ -3,10 +3,24 @@
     --side-blue / --side-red   the map sides, whichever team is on them
     --band-*                   rating bands for overall ratings and 1-20 attributes
     --page                     the page behind the cards, darker than a card
+    --chrome / --surface / --raised   top bar and menu, a card, something raised inside a card
+    --team                     the manager's club colour (CareerLayout sets it): crest, your rows, the stage glow
+    --text-2 .. --text-4       secondary, dimmed and faint text
+    --better / --worse         an outlier above or below the rest, never every number
 */
 :root {
   --page: #070a12;
   --page-glow: #10203f;
+  --chrome: #0a0f1a;
+  --surface: #0d1320;
+  --raised: #111a2b;
+  --team: #c8aa6e;
+  --text-2: #aab3c5;
+  --text-3: #8e99ae;
+  --text-4: #5e6982;
+  --better: #3ee08f;
+  --worse: #ff8a5c;
+  --line-soft: #1a2336;
   --side-blue: #4e9cff;
   --side-red: #ff5a5f;
   --band-elite: #3ee08f;
@@ -16,7 +30,7 @@
   --gold: #c8aa6e;
   --gold-bright: #f0e6d2;
   --teal: #0ac8b9;
-  --line: #222c42;
+  --line: #1f2940;
   --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
 }
 
@@ -46,6 +60,15 @@ body {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--gold);
+}
+
+/* The eyebrow's quiet sibling: labels above a value or a group of rows. */
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
 }
 
 .num {

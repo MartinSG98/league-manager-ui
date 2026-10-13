@@ -1,18 +1,20 @@
-import { Badge, Box, Button, Grid, Group, Paper, Progress, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
-import { IconArrowRight, IconCheck, IconClock, IconSwords, IconTransfer, IconWand, IconX } from "@tabler/icons-react";
+import { Button, Group, Paper, Stack, Text, Title, UnstyledButton } from "@mantine/core";
+import {
+  IconAlertTriangle, IconArrowRight, IconBarbell, IconCheck, IconClipboardList, IconCoin, IconFileCertificate, IconFileText, IconMail,
+  IconMessageCircle, IconSwords, IconTransfer, IconTrophy, IconWand,
+} from "@tabler/icons-react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { CompetitionRow, MatchSummary, SquadView } from "../api/types";
-import { MatchCard } from "../components/MatchCard";
-import { LeagueLogo, PlayerPhoto, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
-import { Stars } from "../components/Stars";
-import { StandingsTable } from "../components/StandingsTable";
-import { Empty, Loading, Ovr, Screen, Section } from "../components/Ui";
-import { longDate, money, ROLES, shortDate, signed } from "../lib/format";
+import type { CareerView, CompetitionRow, CompetitionView, InboxMessage, MatchSummary, ScoutingReport, SquadView, StageView, StandingRow, Tactics, TeamRef, TrainingView } from "../api/types";
+import { isReview } from "../api/types";
+import { PlayerPhoto, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
+import { Empty, FormArrow, Loading, Ovr, Screen, Section } from "../components/Ui";
+import { longDate, ordinal, ROLES, shortDate, signed, whenLabel } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
-import classes from "./Screens.module.css";
+import classes from "./HomeScreen.module.css";
 
 function currentCompetition(rows: CompetitionRow[], league: string): CompetitionRow | null {
   const mine = rows.filter((c) => c.mine);
@@ -25,290 +27,561 @@ function currentCompetition(rows: CompetitionRow[], league: string): Competition
   );
 }
 
-/** The splash behind the banner: the franchise player's favourite champion. */
+/** The splash behind the stage: the franchise player's favourite champion. */
 function heroChampion(squad: SquadView | null): string | null {
   if (!squad) return null;
   const star = squad.players.find((p) => p.id === squad.franchise) ?? squad.players[0];
   return star?.signatures[0] ?? star?.pool[0]?.champion ?? null;
 }
 
+function isScouting(report: InboxMessage["report"]): report is ScoutingReport {
+  return !!report && "opponent" in report && "match" in report;
+}
+
+/** The standings table a team is in, with its place. */
+function tableOf(stage: StageView | null, team: string | undefined): { rows: StandingRow[]; index: number } | null {
+  if (!stage || !team) return null;
+  for (const t of stage.tables) {
+    const index = t.rows.findIndex((r) => r.team.id === team);
+    if (index >= 0) return { rows: t.rows, index };
+  }
+  return null;
+}
+
 export function HomeScreen() {
   const { career, revision } = useCareer();
-  const base = `/career/${career.id}`;
   const comps = useApi(() => api.competitions(career.id), [career.id, revision]);
   const current = comps.data ? currentCompetition(comps.data, career.league) : null;
   const table = useApi(() => (current ? api.competition(career.id, current.id) : Promise.resolve(null)), [career.id, revision, current?.id]);
   const squad = useApi(() => api.squad(career.id), [career.id, revision]);
+  const schedule = useApi(() => (career.phase === "draft" ? Promise.resolve([]) : api.schedule(career.id)), [career.id, revision, career.phase]);
+  const training = useApi(() => (career.phase === "draft" ? Promise.resolve(null) : api.training(career.id).catch(() => null)), [career.id, revision, career.phase]);
   const stage = table.data ? table.data.stages.find((s) => s.kind === "round_robin" || s.kind === "swiss") ?? null : null;
 
   return (
     <Screen>
-      <Paper className={classes.hero} mb="lg">
-        <SplashBackdrop id={heroChampion(squad.data)} strength={0.62} />
-        <Box className={classes.heroInner}>
-          {career.phase === "draft" ? (
-            <Group justify="space-between" align="center" wrap="wrap">
-              <Stack gap={4}>
-                <Text className="eyebrow">Pre-season</Text>
-                <Text className="display" fz={40} lh={1}>
-                  The draft is running
-                </Text>
-                <Text c="gray.4">{career.draft?.my_turn ? "You are on the clock." : "The other teams are picking."}</Text>
-              </Stack>
-              <Button component={Link} to={`${base}/draft`} size="lg" leftSection={<IconWand size={18} />}>
-                Draft room
+      <div className={classes.top}>
+        <StageCard squad={squad.data} schedule={schedule.data ?? []} comp={table.data} stage={stage} />
+        <ThisWeek squad={squad.data} training={training.data} />
+      </div>
+
+      <div className={classes.bottom}>
+        <Section
+          className={classes.race}
+          title="The race"
+          pad={false}
+          right={
+            current && (
+              <Button component={Link} to={`/career/${career.id}/competitions/${current.id}`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
+                {current.short}
               </Button>
-            </Group>
-          ) : career.window ? (
-            <Group justify="space-between" align="center" wrap="wrap">
-              <Stack gap={4}>
-                <Text className="eyebrow">Off-season {career.season}</Text>
-                <Text className="display" fz={40} lh={1}>
-                  The transfer window is open
-                </Text>
-                <Text c="gray.4">
-                  Until {longDate(career.window.closes)}. Contracts that end run out on {shortDate(career.window.free_agency)}.
-                  {career.pending.offers > 0 && ` ${career.pending.offers} bid${career.pending.offers > 1 ? "s" : ""} waiting for your answer.`}
-                </Text>
-              </Stack>
-              <Button component={Link} to={`${base}/transfers`} size="lg" leftSection={<IconTransfer size={18} />}>
-                Transfers
-              </Button>
-            </Group>
-          ) : career.next_match ? (
-            <Stack gap="md">
-              <Text className="eyebrow">{career.live ? "Match day" : "Next match"}</Text>
-              <MatchCard match={career.next_match} mine={career.team.id} size={88} />
-              {career.live && (
-                <Group justify="center">
-                  <Button component={Link} to={`${base}/match`} size="lg" leftSection={<IconSwords size={18} />}>
-                    To the stage
-                  </Button>
-                </Group>
-              )}
-            </Stack>
+            )
+          }
+        >
+          {!table.data ? (
+            career.phase === "draft" ? <Empty>The schedule is made after the draft.</Empty> : <Loading />
+          ) : stage ? (
+            <Race stage={stage} league={table.data.kind === "league"} />
           ) : (
-            <Stack gap={4}>
-              <Text className="eyebrow">Season {career.season}</Text>
-              <Text className="display" fz={40} lh={1}>
-                {career.season_over ? "The season is over" : "No match scheduled"}
-              </Text>
-              <Text c="gray.4">{career.season_over ? "Your review is in the inbox. Start the next season when you are ready." : "Continue to the next event."}</Text>
-            </Stack>
+            <Empty>{table.data.short} is down to its bracket.</Empty>
           )}
-        </Box>
-      </Paper>
+        </Section>
 
-      <Grid gap="lg">
-        <Grid.Col span={{ base: 12, lg: 7 }}>
-          <Stack gap="lg">
-            <Section
-              title={current ? current.name : "Standings"}
-              pad={false}
-              right={
-                current && (
-                  <Button component={Link} to={`${base}/competitions/${current.id}`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
-                    Full view
-                  </Button>
-                )
-              }
-            >
-              {!table.data && (career.phase === "draft" ? <Empty>The schedule is made after the draft.</Empty> : <Loading />)}
-              {stage && <StandingsTable stage={stage} mine={career.team.id} careerId={career.id} />}
-            </Section>
-            {career.phase === "season" && <Fixtures />}
-          </Stack>
-        </Grid.Col>
+        {squad.data && squad.data.players.length > 0 && <YourFive squad={squad.data} />}
 
-        <Grid.Col span={{ base: 12, lg: 5 }}>
-          <Stack gap="lg">
-            {squad.data && squad.data.players.length > 0 && (
-              <Section
-                title="Your five"
-                right={
-                  <Button component={Link} to={`${base}/squad`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
-                    Squad
-                  </Button>
-                }
-              >
-                <SimpleGrid cols={5} spacing="xs">
-                  {ROLES.map((r) => {
-                    const p = squad.data!.players.find((x) => x.id === squad.data!.lineup[r]);
-                    return (
-                      <Stack key={r} gap={4} align="center">
-                        <PlayerPhoto photo={p?.photo} name={p?.name ?? r} size={52} ring={career.team.color} />
-                        <Group gap={4} wrap="nowrap">
-                          <RoleIcon role={r} size={13} />
-                          <Text fz="xs" fw={700} truncate maw={70}>
-                            {p?.name ?? "—"}
-                          </Text>
-                        </Group>
-                        {p && <Ovr value={p.overall} size="sm" />}
-                      </Stack>
-                    );
-                  })}
-                </SimpleGrid>
-                <Group justify="space-between" mt="md">
-                  <Text fz="sm" c="dimmed">
-                    Team strength <b style={{ color: "var(--gold-bright)" }}>{squad.data.strength}</b>
-                  </Text>
-                  <Text fz="sm" c="dimmed">
-                    Chemistry <b className={squad.data.chemistry.score >= 0 ? "gain" : "loss"}>{signed(squad.data.chemistry.score, 1)}</b>
-                  </Text>
-                  <Text fz="sm" c="dimmed">
-                    Payroll <b>{money(squad.data.payroll)}</b>
-                  </Text>
-                </Group>
-              </Section>
-            )}
-
-            <Section
-              title="The board"
-              right={
-                <Button component={Link} to={`${base}/club`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
-                  Club
-                </Button>
-              }
-            >
-              <Group justify="space-between" mb="xs">
-                <Badge variant="light" color={career.board.confidence >= 45 ? "teal" : career.board.confidence >= 22 ? "orange" : "red"}>
-                  {career.board.security}
-                </Badge>
-                <Stars value={career.reputation.team_stars} label={`Club reputation ${career.reputation.team}`} />
-              </Group>
-              <Progress value={career.board.confidence} color={career.board.confidence >= 45 ? "teal" : career.board.confidence >= 22 ? "orange" : "red"} size="sm" radius="xl" mb="sm" />
-              <Stack gap={4}>
-                {career.board.objectives.map((o) => (
-                  <Group key={o.id} gap={8} wrap="nowrap">
-                    {o.status === "met" ? (
-                      <IconCheck size={15} color="var(--mantine-color-teal-5)" />
-                    ) : o.status === "failed" ? (
-                      <IconX size={15} color="var(--mantine-color-red-5)" />
-                    ) : (
-                      <IconClock size={15} color="var(--mantine-color-gray-6)" />
-                    )}
-                    <Text fz="sm" c={o.status === "pending" ? undefined : "dimmed"} truncate>
-                      {o.text}
-                    </Text>
-                  </Group>
-                ))}
-                {career.board.bonuses
-                  .filter((x) => x.status !== "missed")
-                  .map((x) => (
-                    <Group key={x.id} gap={8} wrap="nowrap">
-                      {x.status === "earned" ? (
-                        <IconCheck size={15} color="var(--mantine-color-teal-5)" />
-                      ) : (
-                        <IconClock size={15} color="var(--mantine-color-gray-6)" />
-                      )}
-                      <Text fz="sm" c={x.status === "earned" ? "dimmed" : undefined} truncate>
-                        Bonus: {x.text}
-                      </Text>
-                    </Group>
-                  ))}
-              </Stack>
-            </Section>
-
-            <Section
-              title="Inbox"
-              pad={false}
-              right={
-                <Button component={Link} to={`${base}/inbox`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
-                  All
-                </Button>
-              }
-            >
-              {career.inbox.slice(0, 7).map((m) => (
-                <UnstyledButton key={m.id} component={Link} to={`${base}/inbox?m=${m.id}`} className={classes.inboxRow}>
-                  <Badge size="xs" variant={m.read ? "outline" : "filled"} color={m.kind === "patch" ? "hextech" : "gold"} w={78}>
-                    {m.kind}
-                  </Badge>
-                  <Text fz="sm" fw={m.read ? 400 : 700} truncate style={{ flex: 1 }}>
-                    {m.subject}
-                  </Text>
-                  <Text fz="xs" c="dimmed">
-                    {shortDate(m.day)}
-                  </Text>
-                </UnstyledButton>
-              ))}
-            </Section>
-          </Stack>
-        </Grid.Col>
-      </Grid>
+        <Storylines comps={comps.data ?? []} current={current} stage={stage} schedule={schedule.data ?? []} />
+      </div>
     </Screen>
   );
 }
 
-/** The last results and the next matches, with the next one marked. */
-function Fixtures() {
-  const { career, revision } = useCareer();
-  const schedule = useApi(() => api.schedule(career.id), [career.id, revision]);
+// ---------- the stage: the one thing this screen is about ----------
+
+function StageCard({ squad, schedule, comp, stage }: { squad: SquadView | null; schedule: MatchSummary[]; comp: CompetitionView | null; stage: StageView | null }) {
+  const { career } = useCareer();
   const base = `/career/${career.id}`;
-  if (!schedule.data) return null;
-  const played = schedule.data.filter((m) => m.winner);
-  const upcoming = schedule.data.filter((m) => !m.winner);
-  const rows = [...played.slice(-3), ...upcoming.slice(0, 4)];
+  const next = career.next_match;
+
+  let body: ReactNode;
+  if (career.phase === "draft") {
+    body = (
+      <Banner eyebrow="Pre-season" title="The draft is running" text={career.draft?.my_turn ? "You are on the clock." : "The other teams are picking."}>
+        <Button component={Link} to={`${base}/draft`} size="lg" leftSection={<IconWand size={18} />}>
+          Draft room
+        </Button>
+      </Banner>
+    );
+  } else if (career.window) {
+    body = (
+      <Banner
+        eyebrow={`Off-season ${career.season}`}
+        title="The transfer window is open"
+        text={`Until ${longDate(career.window.closes)}. Contracts that end run out on ${shortDate(career.window.free_agency)}.`}
+      >
+        <Button component={Link} to={`${base}/transfers`} size="lg" leftSection={<IconTransfer size={18} />}>
+          Transfers
+        </Button>
+      </Banner>
+    );
+  } else if (next) {
+    body = <NextMatch next={next} squad={squad} schedule={schedule} comp={comp} stage={stage} />;
+  } else {
+    body = (
+      <Banner
+        eyebrow={`Season ${career.season}`}
+        title={career.season_over ? "The season is over" : "No match scheduled"}
+        text={career.season_over ? "Your review is in the inbox. Start the next season when you are ready." : "Continue to the next event."}
+      />
+    );
+  }
+
+  return (
+    <Paper radius={14} className={classes.stage}>
+      <SplashBackdrop id={heroChampion(squad)} strength={0.74} />
+      <div className={classes.glow} aria-hidden />
+      <div className={classes.stageInner}>{body}</div>
+    </Paper>
+  );
+}
+
+function Banner({ eyebrow, title, text, children }: { eyebrow: string; title: string; text: string; children?: ReactNode }) {
+  return (
+    <Group justify="space-between" align="flex-end" wrap="wrap" h="100%">
+      <Stack gap={6} maw={640} style={{ alignSelf: "center" }}>
+        <Text className="eyebrow">{eyebrow}</Text>
+        <Text className="display" fz={46} lh={1}>
+          {title}
+        </Text>
+        <Text c="gray.3" fz="md">
+          {text}
+        </Text>
+      </Stack>
+      {children}
+    </Group>
+  );
+}
+
+const STYLE_TEXT: Record<Tactics["style"], string> = { early: "an early game", balanced: "a balanced game", scaling: "for the late game" };
+const OBJECTIVE_TEXT: Record<Tactics["objectives"], string> = { dragons: ", dragons first", balanced: "", barons: ", grubs and Baron first" };
+
+/** One or two sentences from the scouting report: how they play, and who to stop. */
+function analystRead(report: ScoutingReport, mine: Tactics | undefined): string {
+  const parts: string[] = [];
+  const plan = report.plan;
+  if (plan) {
+    parts.push(`They play ${STYLE_TEXT[plan.style]} with the jungler on ${plan.lane}${OBJECTIVE_TEXT[plan.objectives]}.`);
+    if (mine && plan.objectives === mine.objectives && plan.objectives !== "balanced") {
+      parts.push(`You both want ${plan.objectives === "dragons" ? "the drakes" : "Baron"}: expect the fights there.`);
+    }
+  }
+  if (report.threat) parts.push(`Watch ${report.threat.name}, ${report.threat.why}.`);
+  else if (report.weaknesses?.length) parts.push(`Weak spot: ${report.weaknesses[0]}.`);
+  if (parts.length === 0 && report.form.length) parts.push(`Recent form: ${report.form.map((f) => (f.won ? "W" : "L")).join("")}.`);
+  return parts.slice(0, 2).join(" ") || "The report is in.";
+}
+
+function NextMatch({ next, squad, schedule, comp, stage }: { next: MatchSummary; squad: SquadView | null; schedule: MatchSummary[]; comp: CompetitionView | null; stage: StageView | null }) {
+  const { career } = useCareer();
+  const base = `/career/${career.id}`;
+  const me = career.team.id;
+  const opponent = next.home?.id === me ? next.away : next.home;
+  const sameComp = comp?.id === next.competition ? stage : null;
+
+  const record = (team: TeamRef | null) => {
+    const t = tableOf(sameComp, team?.id);
+    if (!t) return null;
+    const row = t.rows[t.index];
+    if (sameComp?.kind === "swiss") return `${row.wins}–${row.losses} in the Swiss stage`;
+    return `${row.wins}–${row.losses} · ${ordinal(t.index + 1)} in the ${comp?.short ?? "table"}`;
+  };
+
+  const message = career.inbox.find((m) => m.kind === "scouting" && isScouting(m.report) && m.report.match === next.id);
+  const report = message && isScouting(message.report) ? message.report : null;
+
+  const inComp = schedule.filter((m) => m.competition === next.competition);
+  const played = inComp.filter((m) => m.winner).slice(-5);
+  const upcoming = inComp.filter((m) => !m.winner).slice(0, 5);
+
+  return (
+    <Stack gap="lg">
+      <Group justify="space-between" wrap="wrap" gap="xs">
+        <Text className="eyebrow">
+          {career.live ? "Match day" : "Next match"} · {next.competition_name} · {next.label}
+        </Text>
+        <Text fz="sm" fw={600} c="gray.4">
+          {whenLabel(next.day, career.day)} · Best of {next.best_of}
+          {next.fearless && " · fearless"}
+        </Text>
+      </Group>
+
+      <div className={classes.faceoff}>
+        <TeamSide team={career.team} record={record(career.team)} careerId={career.id} />
+        <Text className={classes.vs}>VS</Text>
+        <TeamSide team={opponent} record={record(opponent)} careerId={career.id} right />
+      </div>
+
+      {message && report && (
+        <div className={classes.read}>
+          <PlayerPhoto photo={career.staff.analyst?.photo} name={report.analyst ?? "Analyst"} size={38} ring="var(--teal)" />
+          <Stack gap={2} style={{ flex: "1 1 320px" }} miw={0}>
+            <Text fz="xs" c="dimmed" fw={600}>
+              {report.analyst ?? "Your analyst"} · scouting report
+            </Text>
+            <Text fz="md" lh={1.4}>
+              {analystRead(report, squad?.tactics)}
+            </Text>
+          </Stack>
+          <Button component={Link} to={`${base}/inbox?m=${message.id}`} variant="default" size="sm">
+            Full report
+          </Button>
+        </div>
+      )}
+
+      {(played.length > 0 || upcoming.length > 0) && (
+        <Stack gap={8}>
+          <Text className="label">Your {next.competition_name.replace(/ \d{4}$/, "")} run</Text>
+          <div className={classes.run}>
+            {played.map((m) => {
+              const home = m.home?.id === me;
+              const opp = home ? m.away : m.home;
+              const [us, them] = home ? m.score : [m.score[1], m.score[0]];
+              const won = m.winner === me;
+              return (
+                <Link key={m.id} to={`${base}/matches/${m.id}`} className={classes.runChip}>
+                  <TeamLogo team={opp} size={16} />
+                  {opp?.tag ?? "TBD"}
+                  <span className={won ? "gain" : classes.worse}>
+                    {won ? "W" : "L"} {us}–{them}
+                  </span>
+                </Link>
+              );
+            })}
+            {upcoming.map((m, i) => {
+              const opp = m.home?.id === me ? m.away : m.home;
+              return (
+                <span key={m.id} className={classes.runChip} data-next={i === 0 || undefined} data-upcoming={i > 0 || undefined}>
+                  <TeamLogo team={opp} size={16} />
+                  {opp?.tag ?? "TBD"}
+                  <span>{i === 0 ? whenLabel(m.day, career.day) : shortDate(m.day)}</span>
+                </span>
+              );
+            })}
+          </div>
+        </Stack>
+      )}
+
+      {career.live && (
+        <Group>
+          <Button component={Link} to={`${base}/match`} size="lg" leftSection={<IconSwords size={18} />}>
+            To the stage
+          </Button>
+        </Group>
+      )}
+    </Stack>
+  );
+}
+
+function TeamSide({ team, record, careerId, right = false }: { team: TeamRef | null; record: string | null; careerId: string; right?: boolean }) {
+  return (
+    <div className={classes.side} data-right={right || undefined}>
+      <TeamLogo team={team} size={84} />
+      <Stack gap={6} miw={0}>
+        {team ? (
+          <Link to={`/career/${careerId}/team/${team.id}`} className={`link ${classes.teamName}`}>
+            {team.name}
+          </Link>
+        ) : (
+          <Text className={classes.teamName}>TBD</Text>
+        )}
+        {record && (
+          <Text fz="sm" c="gray.4">
+            {record}
+          </Text>
+        )}
+      </Stack>
+    </div>
+  );
+}
+
+// ---------- this week: what needs you ----------
+
+type AgendaItem = { key: string; icon: ReactNode; title: string; text: string; to?: string; action?: string; ok?: boolean };
+
+function matchDay(day: string, today: string): string {
+  const when = whenLabel(day, today);
+  if (when === "Today") return "Read it before the match.";
+  if (when === "Tomorrow") return "The match is tomorrow.";
+  return `The match is on ${when}.`;
+}
+
+function agenda(career: CareerView, squad: SquadView | null, training: TrainingView | null): AgendaItem[] {
+  const base = `/career/${career.id}`;
+  const items: AgendaItem[] = [];
+  const mentioned = new Set<number>();
+
+  if (career.pending.offers > 0) {
+    const n = career.pending.offers;
+    items.push({ key: "offers", icon: <IconTransfer size={19} />, title: `${n} bid${n > 1 ? "s" : ""} waiting for your answer`, text: "Clubs want your players. They will not wait long.", to: `${base}/transfers`, action: "Answer" });
+  }
+  if (career.pending.talks > 0) {
+    items.push({ key: "talks", icon: <IconMessageCircle size={19} />, title: "A player wants to talk", text: "Unhappy players play worse. Hear them out.", to: `${base}/transfers`, action: "Talk" });
+  }
+  if (career.board.warned) {
+    items.push({ key: "warned", icon: <IconAlertTriangle size={19} />, title: "The board is losing patience", text: `Confidence ${career.board.confidence} of 100.`, to: `${base}/club`, action: "Club" });
+  }
+  if (career.cash < 0) {
+    items.push({ key: "debt", icon: <IconCoin size={19} />, title: "The bank is in debt", text: "The board loses confidence every week until it is back above zero.", to: `${base}/club`, action: "Finances" });
+  }
+
+  const next = career.next_match;
+  const scouting = next ? career.inbox.find((m) => m.kind === "scouting" && isScouting(m.report) && m.report.match === next.id) : null;
+  if (next && scouting && !scouting.read && isScouting(scouting.report)) {
+    mentioned.add(scouting.id);
+    const opp = next.home?.id === career.team.id ? next.away : next.home;
+    items.push({
+      key: "scouting", icon: <IconFileText size={19} />, title: `Scouting report on ${opp?.name ?? "your opponent"}`,
+      text: `In from ${scouting.report.analyst ?? "the staff"}. ${matchDay(next.day, career.day)}`,
+      to: `${base}/inbox?m=${scouting.id}`, action: "Read",
+    });
+  }
+
+  const review = career.inbox.find((m) => !m.read && isReview(m.report));
+  if (review && isReview(review.report)) {
+    mentioned.add(review.id);
+    const n = review.report.recommend.length;
+    items.push({
+      key: "review", icon: <IconClipboardList size={19} />, title: review.subject,
+      text: n ? `${review.report.analyst ?? "The analyst"} has ${n} thing${n > 1 ? "s" : ""} to work on.` : "The analyst's read of your last games.",
+      to: `${base}/inbox?m=${review.id}`, action: "Open",
+    });
+  }
+
+  if (training && training.load !== training.recommended && career.phase !== "draft") {
+    const name = (id: string) => training.loads.find((l) => l.id === id)?.name ?? id;
+    items.push({ key: "load", icon: <IconBarbell size={19} />, title: `Scrim load is ${name(training.load)}`, text: training.advice, to: `${base}/training`, action: "Training" });
+  }
+
+  if (squad && career.window && career.day < career.window.free_agency) {
+    const ending = squad.players.filter((p) => p.contract_until !== null && p.contract_until <= career.season && p.id !== squad.franchise && !p.retiring);
+    if (ending.length) {
+      items.push({
+        key: "contracts", icon: <IconFileCertificate size={19} />, title: `${ending.length} contract${ending.length > 1 ? "s" : ""} run out on ${shortDate(career.window.free_agency)}`,
+        text: ending.map((p) => p.name).join(", "), to: `${base}/squad`, action: "Squad",
+      });
+    }
+  }
+
+  const unread = career.inbox.filter((m) => !m.read && !mentioned.has(m.id));
+  if (unread.length) {
+    items.push({ key: "unread", icon: <IconMail size={19} />, title: `${unread.length} unread message${unread.length > 1 ? "s" : ""}`, text: unread[0].subject, to: `${base}/inbox?m=${unread[0].id}`, action: "Inbox" });
+  }
+
+  const actions = items.slice(0, 5);
+  if (!career.board.warned && actions.length < 5) {
+    const objective = career.board.objectives.find((o) => o.status === "pending");
+    if (objective) actions.push({ key: "board", icon: <IconCheck size={19} />, title: `Board: ${career.board.security}`, text: objective.text, to: `${base}/club`, ok: true });
+  }
+  return actions;
+}
+
+function ThisWeek({ squad, training }: { squad: SquadView | null; training: TrainingView | null }) {
+  const { career } = useCareer();
+  const items = agenda(career, squad, training);
+  const needed = items.filter((i) => !i.ok).length;
   return (
     <Section
-      title="Fixtures"
+      className={classes.week}
+      title="This week"
       pad={false}
       right={
-        <Button component={Link} to={`${base}/schedule`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
-          Schedule
-        </Button>
+        <Text fz="sm" fw={700} c={needed ? "gold.4" : "dimmed"}>
+          {needed ? `${needed} need${needed === 1 ? "s" : ""} you` : "All clear"}
+        </Text>
       }
     >
-      {rows.length === 0 ? (
-        <Empty>No matches scheduled.</Empty>
+      {items.length === 0 ? (
+        <Empty>Nothing needs you this week.</Empty>
       ) : (
-        rows.map((m) => <FixtureRow key={m.id} m={m} next={m.id === upcoming[0]?.id} />)
+        items.map((i) => (
+          <div key={i.key} className={classes.agendaRow} data-ok={i.ok || undefined}>
+            <span className={classes.agendaIcon} aria-hidden>
+              {i.icon}
+            </span>
+            <Stack gap={2} style={{ flex: 1 }} miw={0}>
+              <Text fw={700} fz="md" lh={1.25} c={i.ok ? "gray.4" : undefined}>
+                {i.title}
+              </Text>
+              <Text fz="sm" c="dimmed" lineClamp={2}>
+                {i.text}
+              </Text>
+            </Stack>
+            {i.to && i.action && (
+              <Button component={Link} to={i.to} size="xs" variant="light">
+                {i.action}
+              </Button>
+            )}
+          </div>
+        ))
       )}
     </Section>
   );
 }
 
-function FixtureRow({ m, next }: { m: MatchSummary; next: boolean }) {
+// ---------- the race, your five, the storylines ----------
+
+function Race({ stage, league }: { stage: StageView; league: boolean }) {
   const { career } = useCareer();
   const me = career.team.id;
-  const home = m.home?.id === me;
-  const opponent = home ? m.away : m.home;
-  const [us, them] = home ? m.score : [m.score[1], m.score[0]];
-  const won = m.winner === me;
-  const body = (
-    <Group gap="md" wrap="nowrap" className={classes.inboxRow} data-active={next || undefined}>
-      <Text fz="xs" c="dimmed" w={48}>
-        {shortDate(m.day)}
-      </Text>
-      <LeagueLogo logo={m.competition_logo} name={m.competition_name} size={18} />
-      <Text fz="xs" c="dimmed" w={150} truncate>
-        {m.label}
-      </Text>
-      <Group gap={8} wrap="nowrap" style={{ flex: 1 }} miw={0}>
-        <TeamLogo team={opponent} size={24} />
-        <Text fz="sm" fw={600} truncate>
-          {home ? "vs" : "at"} {opponent?.name ?? "TBD"}
+  const found = tableOf(stage, me);
+  const rows = found?.rows ?? stage.tables[0]?.rows ?? [];
+  const index = found?.index ?? -1;
+  const swiss = stage.kind === "swiss";
+  // A Swiss stage goes by wins, not by place, so it gets no line.
+  const cut = swiss ? 0 : stage.tables.length > 1 ? stage.advance / stage.tables.length : stage.advance;
+  const limit = Math.min(rows.length, Math.max(cut + 1, swiss ? 8 : 6));
+  const shown = rows.slice(0, limit).map((r, i) => ({ row: r, pos: i + 1 }));
+  if (index >= limit) shown.push({ row: rows[index], pos: index + 1 });
+
+  return (
+    <div>
+      <div className={classes.raceRow} data-head>
+        <span>#</span>
+        <span />
+        <span>Team</span>
+        <span className="num">W–L</span>
+        <span className="num">{swiss ? "" : "+/-"}</span>
+      </div>
+      {shown.map(({ row, pos }, i) => (
+        <div key={row.team.id}>
+          {i > 0 && shown[i - 1].pos !== pos - 1 && <div className={classes.cut}>…</div>}
+          <div className={classes.raceRow} data-mine={row.team.id === me || undefined}>
+            <Text span c="dimmed" fw={600}>
+              {pos}
+            </Text>
+            <TeamLogo team={row.team} size={20} />
+            <Link to={`/career/${career.id}/team/${row.team.id}`} className="link" style={{ fontWeight: row.team.id === me ? 700 : 500, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {row.team.name}
+            </Link>
+            <Text span className="num" fw={700}>
+              {row.wins}–{row.losses}
+            </Text>
+            <Text span className="num" c="dimmed">
+              {swiss ? "" : signed(row.game_wins - row.game_losses)}
+            </Text>
+          </div>
+          {pos === cut && cut < rows.length && <div className={classes.cut}>{league ? "Playoffs above" : "Through above"}</div>}
+        </div>
+      ))}
+      <div style={{ height: 10 }} />
+    </div>
+  );
+}
+
+function YourFive({ squad }: { squad: SquadView }) {
+  const { career } = useCareer();
+  const base = `/career/${career.id}`;
+  return (
+    <Section
+      className={classes.five}
+      title="Your five"
+      pad={false}
+      right={
+        <Button component={Link} to={`${base}/squad`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
+          Squad
+        </Button>
+      }
+    >
+      {ROLES.map((r) => {
+        const p = squad.players.find((x) => x.id === squad.lineup[r]);
+        if (!p) return null;
+        return (
+          <UnstyledButton key={r} component={Link} to={`${base}/player/${p.id}`} className={classes.fiveRow}>
+            <RoleIcon role={r} size={18} />
+            <PlayerPhoto photo={p.photo} name={p.name} size={34} ring="var(--team)" />
+            <Text fw={700} fz="md" style={{ flex: 1 }} truncate>
+              {p.name}
+            </Text>
+            <FormArrow value={p.form} />
+            <Ovr value={p.overall} size="md" plain />
+          </UnstyledButton>
+        );
+      })}
+      <Group justify="space-between" px="md" py="sm" className={classes.fiveFoot}>
+        <Text fz="sm" c="dimmed">
+          Strength <b style={{ color: "var(--gold-bright)" }}>{squad.strength.toFixed(1)}</b>
+        </Text>
+        <Text fz="sm" c="dimmed">
+          Chemistry <b className={squad.chemistry.score >= 0 ? "gain" : "loss"}>{signed(squad.chemistry.score, 1)}</b>
         </Text>
       </Group>
-      {m.winner ? (
-        <Badge color={won ? "teal" : "red"} variant="light">
-          {won ? "W" : "L"} {us}-{them}
-        </Badge>
-      ) : next ? (
-        <Badge color="gold" variant="filled">
-          next · Bo{m.best_of}
-        </Badge>
-      ) : (
-        <Text fz="xs" c="dimmed">
-          Bo{m.best_of}
-        </Text>
-      )}
-    </Group>
+    </Section>
   );
-  return m.games ? (
-    <UnstyledButton component={Link} to={`/career/${career.id}/matches/${m.id}`} w="100%">
-      {body}
-    </UnstyledButton>
-  ) : (
-    body
+}
+
+type Story = { key: string; big?: string; art?: ReactNode; text: string };
+
+function Storylines({ comps, current, stage, schedule }: { comps: CompetitionRow[]; current: CompetitionRow | null; stage: StageView | null; schedule: MatchSummary[] }) {
+  const { career } = useCareer();
+  const me = career.team.id;
+  const stories: Story[] = [];
+
+  // Unbeaten in the current table beats a plain streak; a streak of three or more otherwise.
+  const found = tableOf(stage, me);
+  const row = found ? found.rows[found.index] : null;
+  if (current && row && row.losses === 0 && row.wins >= 2) {
+    const only = found!.rows.filter((r) => r.losses === 0).length === 1;
+    const clean = stage!.kind !== "swiss" && row.game_losses === 0;
+    stories.push({
+      key: "unbeaten",
+      big: clean ? `${row.game_wins}–0` : `${row.wins}–0`,
+      text: `${clean ? "Not a game dropped" : "Unbeaten"} in the ${current.short}.${only ? " The only team without a defeat." : ""}`,
+    });
+  } else {
+    const played = schedule.filter((m) => m.winner);
+    let streak = 0;
+    const lastWon = played.length ? played[played.length - 1].winner === me : false;
+    for (let i = played.length - 1; i >= 0 && (played[i].winner === me) === lastWon; i--) streak++;
+    if (streak >= 3) stories.push({ key: "streak", big: String(streak), text: lastWon ? "Wins in a row, across every competition." : "Defeats in a row. Something has to change." });
+  }
+
+  const titles = comps.filter((c) => c.status === "finished" && c.winner?.id === me);
+  const lastTitle = titles[titles.length - 1];
+  if (lastTitle) {
+    const lastLeague = [...comps].reverse().find((c) => c.status === "finished" && c.kind === "league" && c.mine);
+    const backToBack = current && current.status === "running" && current.kind === "league" && lastTitle.id === lastLeague?.id;
+    stories.push({
+      key: "title",
+      art: <IconTrophy size={34} stroke={1.5} />,
+      text: `${lastTitle.name} champions.${backToBack ? ` A ${current!.short} title makes it back-to-back.` : ""}`,
+    });
+  }
+
+  const next = career.next_match;
+  const opponent = next ? (next.home?.id === me ? next.away : next.home) : null;
+  const won = opponent ? comps.filter((c) => c.status === "finished" && c.winner?.id === opponent.id) : [];
+  if (next && opponent && won.length) {
+    const when = whenLabel(next.day, career.day);
+    stories.push({
+      key: "rival",
+      art: <TeamLogo team={opponent} size={40} />,
+      text: `${opponent.name} won the ${won[won.length - 1].short}. You meet them ${/^(Today|Tomorrow)$/.test(when) ? when.toLowerCase() : `on ${when}`}.`,
+    });
+  }
+
+  if (stories.length === 0) return null;
+  return (
+    <div className={classes.stories}>
+      <Title order={2} className={classes.storiesTitle}>
+        Storylines
+      </Title>
+      {stories.slice(0, 3).map((s) => (
+        <div key={s.key} className={classes.story}>
+          <div className={classes.storyBig}>{s.big ?? s.art}</div>
+          <Text fz="sm" lh={1.45} c="gray.3">
+            {s.text}
+          </Text>
+        </div>
+      ))}
+    </div>
   );
 }

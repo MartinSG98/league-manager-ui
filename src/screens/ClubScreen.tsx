@@ -8,7 +8,6 @@ import { BudgetAdjuster } from "../components/BudgetAdjuster";
 import { DebtAlert } from "../components/DebtAlert";
 import { TeamLogo } from "../components/Media";
 import { Stars } from "../components/Stars";
-import { Vacancies } from "../components/Vacancies";
 import { Empty, Loading, PageHeader, Screen, Section } from "../components/Ui";
 import { longDate, money } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -151,19 +150,6 @@ function Club({ b }: { b: BoardView }) {
                 Every off-season the board adds money for transfers, more for a bigger club. Adjust budgets moves money between the
                 salary budget and the bank.
               </Text>
-            </Section>
-
-            <Section
-              title="Head coach vacancies"
-              right={
-                (b.vacancies ?? []).some((v) => v.offer_until) ? (
-                  <Badge color="gold" variant="light">
-                    offer
-                  </Badge>
-                ) : undefined
-              }
-            >
-              <Vacancies vacancies={b.vacancies ?? []} reach={b.reach ?? 0} />
             </Section>
 
             <Section title={`${career.league} by reputation`} pad={false}>

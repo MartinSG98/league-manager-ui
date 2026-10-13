@@ -1,36 +1,109 @@
 .header {
-  background: rgba(7, 10, 18, 0.88);
+  background: rgba(10, 15, 26, 0.92);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
 
 .navbar {
-  background: linear-gradient(180deg, #0d1320, #070a12);
+  background: var(--chrome);
   border-right: 1px solid var(--line);
+  overflow-y: auto;
 }
 
 .club {
-  padding: 14px;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 10px;
   border: 1px solid var(--line);
   background:
-    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--team) 25%, transparent), transparent 65%),
-    #0d1320;
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--team) 22%, transparent), transparent 65%),
+    var(--surface);
+}
+
+.groupLabel {
+  padding: 0 12px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-4);
 }
 
 .navItem {
+  min-height: 42px;
   border-radius: 6px;
   font-weight: 600;
+  color: var(--text-2);
 }
 
 .navItem[data-active] {
-  box-shadow: inset 2px 0 0 var(--gold);
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--gold-bright);
+  box-shadow: inset 3px 0 0 var(--team);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.chip[data-tone="teal"] {
+  color: #b3fbf3;
+  background: rgba(10, 200, 185, 0.1);
+  border-color: rgba(10, 200, 185, 0.3);
+}
+
+.chip[data-tone="orange"] {
+  color: #ffc2a8;
+  background: rgba(255, 138, 92, 0.12);
+  border-color: rgba(255, 138, 92, 0.4);
+}
+
+.chip[data-tone="red"] {
+  color: #ffb3b5;
+  background: rgba(255, 90, 95, 0.12);
+  border-color: rgba(255, 90, 95, 0.4);
 }
 
 .continue {
-  min-width: 180px;
+  min-width: 200px;
+  padding-inline: 18px 16px;
+}
+
+.continueText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.1;
+}
+
+.continueLabel {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+}
+
+.continueSub {
+  font-size: 12px;
+  font-weight: 600;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .main {

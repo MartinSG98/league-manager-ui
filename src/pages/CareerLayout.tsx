@@ -36,6 +36,8 @@ export function CareerLayout() {
   const opponent = next ? (next.home?.id === career.team.id ? next.away : next.home) : null;
   // Sacked: looking at the clubs that want you folds their offers into a bar until you go back to them.
   const [browsing, setBrowsing] = useState(false);
+  // Unread mail comes before the next day, one message a press, oldest first, as in Football Manager.
+  const unread = [...career.inbox].reverse().find((m) => !m.read);
 
   async function proceed() {
     if (career.board.sacked) return setBrowsing(false);
@@ -43,6 +45,7 @@ export function CareerLayout() {
     if (career.phase === "draft") return navigate(`${base}/draft`);
     if (career.live) return navigate(`${base}/match`);
     if (pending > 0) return navigate(`${base}/transfers`);
+    if (unread) return navigate(`${base}/inbox?m=${unread.id}`);
     const result = await act({ type: "advance" });
     if (result?.career.live) navigate(`${base}/match`);
     else if (result && (result.career.pending.offers || result.career.pending.talks)) navigate(`${base}/transfers`);
@@ -56,6 +59,7 @@ export function CareerLayout() {
   else if (career.phase === "draft") [label, sub] = career.draft?.my_turn ? ["Your pick", "You are on the clock"] : ["Draft room", career.draft ? `Pick ${career.draft.number} of ${career.draft.total}` : null];
   else if (career.live) [label, sub] = ["Match day", opponent ? `vs ${opponent.name}` : null];
   else if (pending > 0) [label, sub] = ["Answer the offers", `${pending} waiting for you`];
+  else if (unread) [label, sub] = ["Next message", `${career.unread} unread`];
   else if (next && opponent) sub = `Next: ${opponent.tag} · ${whenLabel(next.day, career.day)}`;
   else if (career.window) sub = `Window closes ${shortDate(career.window.closes)}`;
   const urgent = !!career.live || !!career.draft?.my_turn || pending > 0 || career.board.meeting;

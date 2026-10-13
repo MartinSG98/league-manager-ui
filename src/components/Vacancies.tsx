@@ -50,7 +50,8 @@ export function Vacancies({ vacancies, reach }: { vacancies: Vacancy[]; reach: n
         </Table.Tbody>
       </Table>
       <Text fz="xs" c="dimmed" mt="sm">
-        Your reputation reaches clubs up to {reach.toFixed(1)} stars. Clubs out of reach turn applications down.
+        {reach >= 5 ? "Your reputation reaches every club." : `Your reputation reaches clubs up to ${reach.toFixed(1)} stars.`} Clubs out of
+        reach turn applications down.
       </Text>
       {taking && <TakeJob v={taking} onClose={() => setTaking(null)} />}
     </>

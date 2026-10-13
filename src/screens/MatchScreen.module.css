@@ -525,11 +525,14 @@
   font-size: 13px;
 }
 
+/* Centred across the full width, like a broadcast's lower third. */
 .moment {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 18px;
-  padding: 16px 20px;
+  padding: 18px 24px;
+  text-align: center;
   --tone: #8e99ae;
   border-color: color-mix(in srgb, var(--tone) 45%, transparent);
   background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 18%, transparent), color-mix(in srgb, var(--tone) 4%, transparent)), var(--surface);

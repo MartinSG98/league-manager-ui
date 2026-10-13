@@ -1,7 +1,7 @@
 import { Badge, Button, Group, Modal, Stack, Table, Text } from "@mantine/core";
 import { IconBriefcase } from "@tabler/icons-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import type { Vacancy } from "../api/types";
 import { shortDate } from "../lib/format";
@@ -12,10 +12,10 @@ import { Empty } from "./Ui";
 
 /**
  * AI clubs looking for a head coach. A club may offer you the job on its own; you can also apply.
- * Taking an offer means leaving your club, so it asks first.
+ * Taking an offer means leaving your club, so it asks first. Each club links to its team page.
  */
 export function Vacancies({ vacancies, reach }: { vacancies: Vacancy[]; reach: number }) {
-  const { act, busy } = useCareer();
+  const { career, act, busy } = useCareer();
   const [taking, setTaking] = useState<Vacancy | null>(null);
   if (!vacancies.length) {
     return <Empty>No club is looking for a head coach right now. Clubs that sack theirs appear here.</Empty>;
@@ -28,9 +28,11 @@ export function Vacancies({ vacancies, reach }: { vacancies: Vacancy[]; reach: n
             <Table.Tr key={v.team.id}>
               <Table.Td>
                 <Group gap="sm" wrap="nowrap">
-                  <TeamLogo team={v.team} size={26} />
+                  <Link to={`/career/${career.id}/team/${v.team.id}`}>
+                    <TeamLogo team={v.team} size={26} />
+                  </Link>
                   <Stack gap={0}>
-                    <Text fz="sm" fw={700}>
+                    <Text fz="sm" fw={700} component={Link} to={`/career/${career.id}/team/${v.team.id}`} className="link">
                       {v.team.name}
                     </Text>
                     <Group gap={6} wrap="nowrap">

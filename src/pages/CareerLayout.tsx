@@ -3,6 +3,7 @@ import {
   IconArrowLeft, IconBarbell, IconBriefcase, IconBuildingSkyscraper, IconCalendar, IconChartBar, IconHome, IconMail, IconPlayerPlayFilled,
   IconSwords, IconTransfer, IconTrophy, IconUserSearch, IconUsersGroup, IconWand,
 } from "@tabler/icons-react";
+import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
@@ -33,9 +34,12 @@ export function CareerLayout() {
   const pending = career.pending.offers + career.pending.talks;
   const next = career.next_match;
   const opponent = next ? (next.home?.id === career.team.id ? next.away : next.home) : null;
+  // Sacked: looking at the clubs that want you folds their offers into a bar until you go back to them.
+  const [browsing, setBrowsing] = useState(false);
 
   async function proceed() {
-    if (career.board.meeting || career.board.sacked) return;
+    if (career.board.sacked) return setBrowsing(false);
+    if (career.board.meeting) return;
     if (career.phase === "draft") return navigate(`${base}/draft`);
     if (career.live) return navigate(`${base}/match`);
     if (pending > 0) return navigate(`${base}/transfers`);
@@ -227,7 +231,7 @@ export function CareerLayout() {
       <AppShell.Main className={classes.main}>
         <Outlet />
         {career.board.sacked ? (
-          <JobOffers />
+          <JobOffers browsing={browsing} onBrowse={setBrowsing} />
         ) : career.board.meeting ? (
           <BoardMeeting />
         ) : (

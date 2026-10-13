@@ -64,7 +64,7 @@ Both public folders are git-ignored, about 42 MB together. Every image tries its
 | `/career/:id/training` | Scrim load, team focus areas, set plays to drill, every player's condition and own training, the analyst's review |
 | `/career/:id/transfers` | The transfer window: bids for your players, your bids, players who want to talk, your transfer list, every move, the shortlist, and the budget slider |
 | `/career/:id/club` | Board confidence and job security, objectives, the board's reviews, reputation in stars, finances and the budget slider (salary budget against the bank, as in Football Manager) |
-| `/career/:id/jobs` | Job center: head coach jobs at clubs that sacked their coach, with your manager reputation; apply, or take or decline an offer |
+| `/career/:id/jobs` | Job center: head coach jobs at clubs that sacked their coach, with your manager reputation; each club links to its team page; apply, or take or decline an offer |
 | `/career/:id/inbox` | News, scouting reports, analyst reviews, patch notes and previews, draft, contract and transfer messages, with the decisions they ask for |
 
 The top bar shows:
@@ -82,7 +82,7 @@ The **Continue** button in the top bar always does the next sensible thing, and 
 - During the season, it simulates until your next match.
 - In the off-season, it moves through the transfer window and stops when a club bids for one of your players or a player wants to talk; when a decision is waiting it takes you to the transfers screen.
 
-Two things block the career until you deal with them, so they open over every screen: the **board meeting** about the season's objectives (when a job starts and every off-season) and, after a sacking, the **job offers**.
+Two things block the career until you deal with them, so they open over every screen: the **board meeting** about the season's objectives (when a job starts and every off-season) and, after a sacking, the **job offers**. Each offer can open the club's team page first: the offers then fold into a bar at the bottom, and the bar or Continue brings them back.
 
 ## The board and the club
 

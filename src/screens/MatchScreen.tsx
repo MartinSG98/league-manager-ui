@@ -557,7 +557,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
 
   return (
     <Stack gap="md">
-      <DraftStrip view={view} />
+      <BanRow view={view} />
       <Box className={classes.selectBody}>
         <PickColumn side="blue" view={view} unavailable={taken} />
         <Stack gap="md" miw={0} className={classes.selectMiddle}>
@@ -736,16 +736,6 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                     })}
                   </Box>
                 </ScrollArea.Autosize>
-                {s.locked.length > 0 && (
-                  <Group gap={4} p="sm" style={{ borderTop: "1px solid var(--line)" }}>
-                    <Text className="label" mr={6}>
-                      Fearless · used this series
-                    </Text>
-                    {s.locked.map((c) => (
-                      <ChampIcon key={c} id={c} size={22} dim />
-                    ))}
-                  </Group>
-                )}
               </Section>
 
               {ourTurn && (
@@ -831,50 +821,46 @@ function topReason(choice: BoardChoice | null, sg: Suggestion, kind: "ban" | "pi
   return parts.sort((a, b) => b[0] - a[0])[0][1];
 }
 
-/** The twenty steps of champion select, done and to come, with the one on the clock lit. */
-function DraftStrip({ view }: { view: LiveView }) {
-  const catalog = useCatalog();
+/** Both sides' five ban slots along the top, the one being filled lit, and the champions fearless has locked between them. */
+function BanRow({ view }: { view: LiveView }) {
   const s = view.select;
-  const lists: Record<Side, Record<"ban" | "pick", string[]>> = {
-    blue: { ban: s.blue_bans, pick: Object.values(s.blue_picks) },
-    red: { ban: s.red_bans, pick: Object.values(s.red_picks) },
-  };
-  const used: Record<Side, Record<"ban" | "pick", number>> = { blue: { ban: 0, pick: 0 }, red: { ban: 0, pick: 0 } };
-  const steps = s.order.map((o, i) => {
-    const champ = lists[o.side][o.kind][used[o.side][o.kind]++] ?? null;
-    return { i, side: o.side, kind: o.kind, champ, now: !!s.turn && i === s.step };
-  });
-  const phases: [number, number, string][] = [
-    [0, 6, "Bans 1"],
-    [6, 12, "Picks 1"],
-    [12, 16, "Bans 2"],
-    [16, steps.length, "Picks 2"],
-  ];
+  const banning = s.turn?.kind === "ban" ? s.turn.side : null;
+  const slots = (side: Side, bans: string[]) =>
+    Array.from({ length: 5 }, (_, i) =>
+      bans[i] ? (
+        <span key={i} className={classes.banned}>
+          <ChampIcon id={bans[i]} size={42} dim />
+        </span>
+      ) : (
+        <span key={i} className={cx(classes.emptyBan, banning === side && i === bans.length && classes.banWaiting)} />
+      ),
+    );
   return (
-    <Paper radius={12} className={classes.strip}>
-      {phases.map(([from, to, name]) => (
-        <Stack key={name} gap={5}>
-          <Text fz={10} fw={700} tt="uppercase" lts="0.14em" c="dark.3">
-            {name}
+    <Paper p="sm" radius={12}>
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap={6} wrap="nowrap">
+          <Text className="eyebrow side-blue" mr={4}>
+            Bans
           </Text>
-          <Group gap={3} wrap="nowrap">
-            {steps.slice(from, to).map((st) => {
-              const mine = st.side === view.our_side;
-              return (
-                <Tooltip key={st.i} label={`Step ${st.i + 1}: ${mine ? "your" : view[st.side].team.tag} ${st.kind}`}>
-                  <span
-                    className={classes.stripStep}
-                    data-state={st.now ? "now" : st.champ ? st.kind : undefined}
-                    style={{ "--side": sideColor(st.side) } as React.CSSProperties}
-                  >
-                    {st.champ ? catalog.champion[st.champ]?.name ?? st.champ : st.now ? (mine ? "YOU · NOW" : "NOW") : mine ? "you" : view[st.side].team.tag}
-                  </span>
-                </Tooltip>
-              );
-            })}
+          {slots("blue", s.blue_bans)}
+        </Group>
+        {s.locked.length > 0 && (
+          <Group gap={3} wrap="nowrap" visibleFrom="lg">
+            <Text className="eyebrow" mr={4}>
+              Fearless
+            </Text>
+            {s.locked.slice(0, 20).map((c) => (
+              <ChampIcon key={c} id={c} size={22} dim />
+            ))}
           </Group>
-        </Stack>
-      ))}
+        )}
+        <Group gap={6} wrap="nowrap">
+          {slots("red", s.red_bans)}
+          <Text className="eyebrow side-red" ml={4}>
+            Bans
+          </Text>
+        </Group>
+      </Group>
     </Paper>
   );
 }
@@ -1058,29 +1044,14 @@ function Breakdown({ name, entry, kind, coach }: { name: string; entry: BoardEnt
   );
 }
 
-/**
- * One side's five: the champion portrait once picked, what the champion does, and for an
- * opponent still to pick, the comfort picks the scouting report knows of that are still open.
- */
+/** One side's five: the player's name, and the champion's portrait and name once picked. */
 function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; unavailable: Set<string> }) {
   const catalog = useCatalog();
   const picks = side === "blue" ? view.select.blue_picks : view.select.red_picks;
-  const bans = side === "blue" ? view.select.blue_bans : view.select.red_bans;
   const sv = view[side];
   const ours = side === view.our_side;
   const choosing = view.select.turn?.side === side && view.select.turn.kind === "pick";
   const red = side === "red";
-  const scouted = !ours && view.scouting ? view.scouting.players : [];
-  const name = (id: string) => catalog.champion[id]?.name ?? id;
-
-  const comfortFor = (role: Role): [string, number][] => {
-    const sp = scouted.find((p) => p.role === role);
-    if (!sp) return [];
-    const seen = new Map<string, number>();
-    for (const [c, n] of sp.recent ?? []) seen.set(c, n);
-    for (const c of sp.signatures) if (!seen.has(c)) seen.set(c, 0);
-    return [...seen].filter(([c]) => !unavailable.has(c)).slice(0, 3);
-  };
 
   return (
     <Stack gap={8} className={classes.column}>
@@ -1093,11 +1064,9 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
       </Group>
       {sv.lineup.map((p) => {
         const champ = picks[p.slot];
-        const info = champ ? catalog.champion[champ] : null;
-        const comfort = !champ && !ours ? comfortFor(p.slot) : [];
         return (
           <PlayerHoverCard key={p.id} player={p} mastery={view.mastery[p.id]} unavailable={unavailable} position={red ? "left" : "right"}>
-            <Box className={cx(classes.pickSlot, red && classes.pickRed, choosing && !champ && classes.pickWaiting, !champ && !choosing && classes.pickOpen)}>
+            <Box className={cx(classes.pickSlot, red && classes.pickRed, choosing && !champ && classes.pickWaiting)}>
               {champ && <ChampPortrait id={champ} className={classes.pickArt} />}
               <Box className={classes.pickShade} />
               <Group className={classes.pickInfo} gap={10} wrap="nowrap" justify={red ? "flex-end" : "flex-start"}>
@@ -1110,19 +1079,8 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
                     </Text>
                   </Group>
                   {champ ? (
-                    <>
-                      <Text className={classes.pickChamp} truncate>
-                        {info?.name ?? champ}
-                      </Text>
-                      {info && (
-                        <Text fz={11} c="gray.4">
-                          {info.focus} · {info.damage} {info.cls.toLowerCase()}
-                        </Text>
-                      )}
-                    </>
-                  ) : comfort.length > 0 ? (
-                    <Text fz={11} fw={600} style={{ color: "#ffb3b5" }} ta={red ? "right" : "left"}>
-                      comfort: {comfort.map(([c, n]) => (n ? `${name(c)} ${n}` : name(c))).join(" · ")}
+                    <Text className={classes.pickChamp} truncate>
+                      {catalog.champion[champ]?.name ?? champ}
                     </Text>
                   ) : (
                     <Text fz="xs" c={choosing ? "gold.4" : "dimmed"} fw={choosing ? 700 : 400}>
@@ -1136,20 +1094,6 @@ function PickColumn({ side, view, unavailable }: { side: Side; view: LiveView; u
           </PlayerHoverCard>
         );
       })}
-      {bans.length > 0 && (
-        <>
-          <Text className="label" ta={red ? "right" : "left"} mt={4}>
-            {ours ? "Your bans" : "Their bans"}
-          </Text>
-          <Group gap={4} justify={red ? "flex-end" : "flex-start"}>
-            {bans.map((b) => (
-              <span key={b} className={classes.banChip}>
-                {name(b)}
-              </span>
-            ))}
-          </Group>
-        </>
-      )}
     </Stack>
   );
 }

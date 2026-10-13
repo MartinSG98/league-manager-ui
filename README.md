@@ -53,8 +53,8 @@ Both public folders are git-ignored, about 42 MB together. Every image tries its
 | `/career/:id/competitions/:comp` | Standings, brackets, Swiss records and results |
 | `/career/:id/meta` | Champion tier list per role on the current patch and patch notes |
 | `/career/:id/training` | Scrim load, team focus areas, set plays to drill, every player's condition and own training, the analyst's review |
-| `/career/:id/transfers` | The transfer window: bids for your players, your bids, players who want to talk, your transfer list, every move |
-| `/career/:id/club` | Board confidence and job security, objectives, the board's reviews, reputation in stars, finances |
+| `/career/:id/transfers` | The transfer window: bids for your players, your bids, players who want to talk, your transfer list, every move, the shortlist, and the budget slider |
+| `/career/:id/club` | Board confidence and job security, objectives, the board's reviews, reputation in stars, finances and the budget slider (salary budget against the bank, as in Football Manager) |
 | `/career/:id/inbox` | News, scouting reports, analyst reviews, patch notes and previews, draft, contract and transfer messages, with the decisions they ask for |
 
 The **Continue** button in the top bar always does the next sensible thing:

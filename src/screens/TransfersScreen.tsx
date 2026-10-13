@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { TransferOfferRow, TransfersView } from "../api/types";
+import { BudgetAdjuster } from "../components/BudgetAdjuster";
 import { PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
 import { ShortlistTable } from "../components/ShortlistTable";
 import { Conversation, IncomingOffer, OfferStatus } from "../components/TransferActions";
@@ -46,6 +47,7 @@ function Transfers({ view }: { view: TransfersView }) {
                 {money(view.room)}
               </Text>
             </Stack>
+            <BudgetAdjuster size="sm" variant="default" />
             <Button component={Link} to={`${base}/players`} variant="light" leftSection={<IconUserSearch size={16} />}>
               Find players
             </Button>

@@ -6,20 +6,50 @@ import classes from "./Ui.module.css";
 
 const BAND_COLOR = { elite: "#3ee08f", good: "#a4d65e", decent: "#f0c64a", weak: "#ff8a5c" } as const;
 
-/** A card with a small uppercase title bar. With `fill` it grows to the height its flex column leaves it. */
+/**
+ * A card: a job the screen does, under a title in the display face. With `fill` it grows to the
+ * height its flex column leaves it.
+ */
 export function Section({ title, right, children, pad = true, fill = false, className }: { title?: ReactNode; right?: ReactNode; children: ReactNode; pad?: boolean; fill?: boolean; className?: string }) {
+  const head = !!(title || right);
   return (
-    <Paper className={cx(classes.section, fill && classes.fill, className)}>
-      {(title || right) && (
+    <Paper radius={12} className={cx(classes.section, fill && classes.fill, className)}>
+      {head && (
         <Group justify="space-between" className={classes.sectionHead} wrap="nowrap">
-          <Text className="eyebrow">{title}</Text>
+          <Title order={2} className={classes.sectionTitle}>
+            {title}
+          </Title>
           {right}
         </Group>
       )}
-      <Box p={pad ? "md" : 0} className={fill ? classes.fill : undefined}>
-        {children}
-      </Box>
+      <Box className={cx(pad && (head ? classes.bodyUnderHead : classes.body), fill && classes.fill)}>{children}</Box>
     </Paper>
+  );
+}
+
+/** A label over a big number, with an optional line of context under it. */
+export function Stat({ label, value, sub, tone, size = 34 }: { label: ReactNode; value: ReactNode; sub?: ReactNode; tone?: string; size?: number }) {
+  return (
+    <Stack gap={0}>
+      <Text className="label">{label}</Text>
+      <Text className={cx(classes.statValue, tone)} fz={size}>
+        {value}
+      </Text>
+      {sub && (
+        <Text fz="xs" c="dimmed" fw={600}>
+          {sub}
+        </Text>
+      )}
+    </Stack>
+  );
+}
+
+/** A small pill: what stands out (better), what holds a player back (worse), or plain. */
+export function Tag({ tone = "plain", children }: { tone?: "better" | "worse" | "plain"; children: ReactNode }) {
+  return (
+    <span className={classes.tag} data-tone={tone}>
+      {children}
+    </span>
   );
 }
 
@@ -40,11 +70,14 @@ export function PageHeader({ eyebrow, title, right, icon }: { eyebrow?: ReactNod
   );
 }
 
-/** Overall rating, coloured by band. */
-export function Ovr({ value, size = "md" }: { value: number; size?: "sm" | "md" | "lg" | "xl" }) {
-  const band = ratingBand(value);
+/**
+ * Overall rating, coloured by band. `plain` drops the band colour where every number would get the
+ * same one, as in a strong team of your own.
+ */
+export function Ovr({ value, size = "md", plain = false }: { value: number; size?: "sm" | "md" | "lg" | "xl"; plain?: boolean }) {
+  const color = plain ? "#f0e6d2" : BAND_COLOR[ratingBand(value)];
   return (
-    <span className={cx(classes.ovr, classes[`ovr-${size}`])} style={{ color: BAND_COLOR[band], borderColor: BAND_COLOR[band] }}>
+    <span className={cx(classes.ovr, classes[`ovr-${size}`])} style={{ color, borderColor: color }}>
       {value}
     </span>
   );

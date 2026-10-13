@@ -1,0 +1,268 @@
+/* Home: the stage and this week on top, the race, your five and the storylines under them. */
+
+.top,
+.bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-lg);
+}
+
+.top {
+  align-items: stretch;
+  margin-bottom: var(--mantine-spacing-lg);
+}
+
+.bottom {
+  align-items: flex-start;
+}
+
+.stage {
+  position: relative;
+  overflow: hidden;
+  flex: 2 1 640px;
+  min-width: 0;
+  min-height: 320px;
+  border-color: #263149;
+  background: linear-gradient(180deg, var(--raised), #0b111c);
+}
+
+.glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(70% 130% at 0% 0%, color-mix(in srgb, var(--team) 24%, transparent), transparent 62%);
+}
+
+.stageInner {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: 24px 28px;
+}
+
+.faceoff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.side {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.side[data-right] {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.teamName {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.vs {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--text-4);
+}
+
+.read {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(7, 10, 18, 0.7);
+}
+
+.run {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.runChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: rgba(7, 10, 18, 0.6);
+  font-size: 13px;
+  font-weight: 700;
+  color: #e9edf4;
+  text-decoration: none;
+}
+
+a.runChip:hover {
+  border-color: var(--gold);
+}
+
+.runChip[data-next] {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #14100a;
+}
+
+.runChip[data-upcoming] {
+  background: transparent;
+  border-color: #263149;
+  color: var(--text-2);
+}
+
+.worse {
+  color: var(--worse);
+}
+
+.week {
+  flex: 1 1 360px;
+  min-width: 0;
+}
+
+.agendaRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.agendaIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 8px;
+  background: rgba(200, 170, 110, 0.12);
+  color: var(--gold);
+}
+
+.agendaRow[data-ok] .agendaIcon {
+  background: rgba(62, 224, 143, 0.1);
+  color: var(--better);
+}
+
+.race {
+  flex: 1.25 1 380px;
+  min-width: 0;
+}
+
+.raceRow {
+  display: grid;
+  grid-template-columns: 26px 22px minmax(0, 1fr) 52px 44px;
+  gap: 10px;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.raceRow[data-head] {
+  min-height: 26px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+.raceRow[data-mine] {
+  background: color-mix(in srgb, var(--team) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--team);
+}
+
+.cut {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+.cut::before,
+.cut::after {
+  content: "";
+  flex: 1;
+  border-top: 1px dashed #3a4560;
+}
+
+.five {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.fiveRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 16px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.fiveRow:hover {
+  background: rgba(200, 170, 110, 0.05);
+}
+
+.fiveFoot {
+  border-top: 1px solid var(--line-soft);
+}
+
+.stories {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.storiesTitle {
+  margin: 12px 0 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.story {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.storyBig {
+  display: flex;
+  justify-content: center;
+  min-width: 64px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--team);
+}

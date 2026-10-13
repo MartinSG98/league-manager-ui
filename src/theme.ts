@@ -1,9 +1,11 @@
 import { createTheme, type CSSVariablesResolver, type MantineColorsTuple } from "@mantine/core";
 
 /*
-  The look is an esports broadcast: near-black navy, League's gold for everything you can act on
-  and for titles, hextech teal as the second accent, the map's blue and red for sides. Mantine
-  takes the palettes below; colours Mantine has no slot for live as CSS variables in global.css.
+  The look is an esports broadcast: near-black navy, League's gold for everything you can act on,
+  the club's own colour for who you are, hextech teal for what your staff tell you, the map's blue
+  and red for sides only. One type family: Barlow for text, Barlow Condensed for titles and big
+  numbers. Mantine takes the palettes below; colours Mantine has no slot for live as CSS variables
+  in global.css.
 */
 
 const gold: MantineColorsTuple = [
@@ -23,7 +25,7 @@ export const theme = createTheme({
   primaryColor: "gold",
   primaryShade: { light: 6, dark: 4 },
   colors: { gold, hextech, dark },
-  fontFamily: "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif",
+  fontFamily: "Barlow, system-ui, -apple-system, 'Segoe UI', sans-serif",
   fontFamilyMonospace: "'JetBrains Mono', ui-monospace, monospace",
   headings: {
     fontFamily: "'Barlow Condensed', 'Arial Narrow', sans-serif",
@@ -44,6 +46,6 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
   light: {},
   dark: {
     "--mantine-color-body": "#0d1320",
-    "--mantine-color-default-border": "#222c42",
+    "--mantine-color-default-border": "#1f2940",
   },
 });

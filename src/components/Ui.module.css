@@ -1,6 +1,7 @@
 .section {
   overflow: hidden;
-  background: linear-gradient(180deg, #111827, #0c121e);
+  background: var(--surface);
+  border-color: var(--line);
 }
 
 .fill {
@@ -11,10 +12,56 @@
 }
 
 .sectionHead {
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.015);
-  min-height: 42px;
+  padding: 14px 16px 10px;
+  min-height: 48px;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #e9edf4;
+  min-width: 0;
+}
+
+.body {
+  padding: 16px;
+}
+
+.bodyUnderHead {
+  padding: 2px 16px 16px;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.05);
+  color: #c4cbd9;
+}
+
+.tag[data-tone="better"] {
+  background: rgba(62, 224, 143, 0.12);
+  color: #8ff0bd;
+}
+
+.tag[data-tone="worse"] {
+  background: rgba(255, 138, 92, 0.14);
+  color: #ffb08f;
 }
 
 .ovr {

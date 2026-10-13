@@ -49,7 +49,7 @@ Both public folders are git-ignored, about 42 MB together. Every image tries its
 |---|---|
 | `/` | Title over a champion splash: start a career or continue a saved one |
 | `/new` | Choose a league and a team, see the franchise player you keep and the 2026 roster you release |
-| `/career/:id` | Manager's office: the next match on a stage (both teams, the analyst's read from the scouting report, your run through the competition), or the transfer window in the off-season; **This week**, the things that need you; the race around the playoff line; your five; storylines picked from the results |
+| `/career/:id` | Manager's office: the next match on a stage (both teams, the analyst's read from the scouting report, your run through the competition), or the transfer window in the off-season; **This week**, the things that need you; the race around the playoff line; every match of the current round, with arrows to the others; storylines picked from the results |
 | `/career/:id/draft` | Draft room: the team on the clock, pick order, the region's players and staff with photos and filters, your roster and budget, rivals |
 | `/career/:id/squad` | Starting five as portrait cards with each player's two best attributes and weak spot; a team profile of attributes, condition or contracts side by side, coloured only where a player stands two points above or below the five; chemistry, tactics, staff, lineup |
 | `/career/:id/team/:team` | Any other team's squad |

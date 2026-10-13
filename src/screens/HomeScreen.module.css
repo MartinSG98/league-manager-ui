@@ -1,4 +1,4 @@
-/* Home: the stage and this week on top, the race, your five and the storylines under them. */
+/* Home: the stage and this week on top, the race, the round's fixtures and the storylines under them. */
 
 .top,
 .bottom {
@@ -205,27 +205,38 @@ a.runChip:hover {
   border-top: 1px dashed #3a4560;
 }
 
-.five {
-  flex: 1 1 320px;
+.round {
+  flex: 1.25 1 380px;
   min-width: 0;
 }
 
-.fiveRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 50px;
-  padding: 0 16px;
-  border-top: 1px solid var(--line-soft);
+.fixDay {
+  padding: 10px 16px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-4);
 }
 
-.fiveRow:hover {
+.fixture {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 16px;
+  color: inherit;
+  text-decoration: none;
+}
+
+a.fixture:hover {
   background: rgba(200, 170, 110, 0.05);
 }
 
-.fiveFoot {
-  border-top: 1px solid var(--line-soft);
+.fixture[data-mine] {
+  background: color-mix(in srgb, var(--team) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--team);
 }
 
 .stories {

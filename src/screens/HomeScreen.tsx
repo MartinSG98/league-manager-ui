@@ -1,17 +1,17 @@
-import { Button, Group, Paper, Stack, Text, Title, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
 import {
-  IconAlertTriangle, IconArrowRight, IconBarbell, IconCheck, IconClipboardList, IconCoin, IconFileCertificate, IconFileText, IconMail,
-  IconMessageCircle, IconSwords, IconTransfer, IconTrophy, IconWand,
+  IconAlertTriangle, IconArrowRight, IconBarbell, IconCheck, IconChevronLeft, IconChevronRight, IconClipboardList, IconCoin, IconFileCertificate,
+  IconFileText, IconMail, IconMessageCircle, IconSwords, IconTransfer, IconTrophy, IconWand,
 } from "@tabler/icons-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { CareerView, CompetitionRow, CompetitionView, InboxMessage, MatchSummary, ScoutingReport, SquadView, StageView, StandingRow, Tactics, TeamRef, TrainingView } from "../api/types";
 import { isReview } from "../api/types";
-import { PlayerPhoto, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
-import { Empty, FormArrow, Loading, Ovr, Screen, Section } from "../components/Ui";
-import { longDate, ordinal, ROLES, shortDate, signed, whenLabel } from "../lib/format";
+import { PlayerPhoto, SplashBackdrop, TeamLogo } from "../components/Media";
+import { Empty, Loading, Screen, Section } from "../components/Ui";
+import { dayLabel, longDate, ordinal, shortDate, signed, whenLabel } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import classes from "./HomeScreen.module.css";
@@ -87,7 +87,7 @@ export function HomeScreen() {
           )}
         </Section>
 
-        {squad.data && squad.data.players.length > 0 && <YourFive squad={squad.data} />}
+        <Round comp={table.data} />
 
         <Storylines comps={comps.data ?? []} current={current} stage={stage} schedule={schedule.data ?? []} />
       </div>
@@ -427,7 +427,7 @@ function ThisWeek({ squad, training }: { squad: SquadView | null; training: Trai
   );
 }
 
-// ---------- the race, your five, the storylines ----------
+// ---------- the race, the round, the storylines ----------
 
 function Race({ stage, league }: { stage: StageView; league: boolean }) {
   const { career } = useCareer();
@@ -479,44 +479,111 @@ function Race({ stage, league }: { stage: StageView; league: boolean }) {
   );
 }
 
-function YourFive({ squad }: { squad: SquadView }) {
+// ---------- the round: who plays whom ----------
+
+/** A stage's rounds in the order they are played: its matches by day, grouped by label (Week 3, Upper final…). */
+function roundsOf(stage: StageView): { label: string; matches: MatchSummary[] }[] {
+  const rounds = new Map<string, MatchSummary[]>();
+  for (const m of [...stage.matches].sort((a, b) => a.day.localeCompare(b.day))) rounds.set(m.label, [...(rounds.get(m.label) ?? []), m]);
+  return [...rounds].map(([label, matches]) => ({ label, matches }));
+}
+
+/** Every match of the current round, day by day; the arrows page through the other rounds. */
+function Round({ comp }: { comp: CompetitionView | null }) {
   const { career } = useCareer();
-  const base = `/career/${career.id}`;
+  const [picked, setPicked] = useState<{ key: string; index: number } | null>(null);
+  const stage = comp ? (comp.stages.find((s) => !s.finished) ?? comp.stages[comp.stages.length - 1]) : undefined;
+  const rounds = stage ? roundsOf(stage) : [];
+  const open = rounds.findIndex((r) => r.matches.some((m) => !m.winner));
+  const current = open >= 0 ? open : rounds.length - 1;
+  // A round paged to holds until the day moves on; then the current round shows again.
+  const key = `${stage?.id}|${career.day}`;
+  const index = picked?.key === key ? picked.index : current;
+  const round = rounds[index];
+  const days = new Map<string, MatchSummary[]>();
+  for (const m of round?.matches ?? []) days.set(m.day, [...(days.get(m.day) ?? []), m]);
+
   return (
     <Section
-      className={classes.five}
-      title="Your five"
+      className={classes.round}
+      title={round?.label ?? "This round"}
       pad={false}
       right={
-        <Button component={Link} to={`${base}/squad`} variant="subtle" size="xs" rightSection={<IconArrowRight size={14} />}>
-          Squad
-        </Button>
+        rounds.length > 1 && (
+          <Group gap={4} wrap="nowrap">
+            {index !== current && (
+              <Button variant="subtle" size="compact-xs" onClick={() => setPicked(null)}>
+                Now
+              </Button>
+            )}
+            <ActionIcon variant="subtle" color="gray" disabled={index <= 0} onClick={() => setPicked({ key, index: index - 1 })} aria-label="Previous round">
+              <IconChevronLeft size={16} />
+            </ActionIcon>
+            <ActionIcon variant="subtle" color="gray" disabled={index >= rounds.length - 1} onClick={() => setPicked({ key, index: index + 1 })} aria-label="Next round">
+              <IconChevronRight size={16} />
+            </ActionIcon>
+          </Group>
+        )
       }
     >
-      {ROLES.map((r) => {
-        const p = squad.players.find((x) => x.id === squad.lineup[r]);
-        if (!p) return null;
-        return (
-          <UnstyledButton key={r} component={Link} to={`${base}/player/${p.id}`} className={classes.fiveRow}>
-            <RoleIcon role={r} size={18} />
-            <PlayerPhoto photo={p.photo} name={p.name} size={34} ring="var(--team)" />
-            <Text fw={700} fz="md" style={{ flex: 1 }} truncate>
-              {p.name}
-            </Text>
-            <FormArrow value={p.form} />
-            <Ovr value={p.overall} size="md" plain />
-          </UnstyledButton>
-        );
-      })}
-      <Group justify="space-between" px="md" py="sm" className={classes.fiveFoot}>
-        <Text fz="sm" c="dimmed">
-          Strength <b style={{ color: "var(--gold-bright)" }}>{squad.strength.toFixed(1)}</b>
-        </Text>
-        <Text fz="sm" c="dimmed">
-          Chemistry <b className={squad.chemistry.score >= 0 ? "gain" : "loss"}>{signed(squad.chemistry.score, 1)}</b>
-        </Text>
-      </Group>
+      {!round ? (
+        <Empty>{career.phase === "draft" ? "The schedule is made after the draft." : "No matches to show."}</Empty>
+      ) : (
+        <>
+          {[...days].map(([day, matches]) => {
+            const when = whenLabel(day, career.day);
+            return (
+              <div key={day}>
+                <div className={classes.fixDay}>{when === "Today" || when === "Tomorrow" ? `${when} · ${dayLabel(day)}` : dayLabel(day)}</div>
+                {matches.map((m) => (
+                  <Fixture key={m.id} m={m} />
+                ))}
+              </div>
+            );
+          })}
+          <div style={{ height: 10 }} />
+        </>
+      )}
     </Section>
+  );
+}
+
+function Fixture({ m }: { m: MatchSummary }) {
+  const { career } = useCareer();
+  const me = career.team.id;
+  const side = (team: TeamRef | null, away: boolean) => {
+    const lost = !!m.winner && m.winner !== team?.id;
+    const name = (
+      <Text fz="sm" fw={team?.id === me ? 800 : m.winner === team?.id ? 700 : 500} c={lost ? "dimmed" : undefined} truncate>
+        {team?.name ?? "TBD"}
+      </Text>
+    );
+    const logo = <TeamLogo team={team} size={20} />;
+    return (
+      <Group gap={8} wrap="nowrap" justify={away ? "flex-start" : "flex-end"} miw={0}>
+        {away ? logo : name}
+        {away ? name : logo}
+      </Group>
+    );
+  };
+  const body = (
+    <>
+      {side(m.home, false)}
+      <Text ta="center" fw={800} fz="sm" c={m.games ? undefined : "dimmed"}>
+        {m.games ? `${m.score[0]} : ${m.score[1]}` : "vs"}
+      </Text>
+      {side(m.away, true)}
+    </>
+  );
+  const mine = m.home?.id === me || m.away?.id === me || undefined;
+  return m.games ? (
+    <Link to={`/career/${career.id}/matches/${m.id}`} className={classes.fixture} data-mine={mine}>
+      {body}
+    </Link>
+  ) : (
+    <div className={classes.fixture} data-mine={mine}>
+      {body}
+    </div>
   );
 }
 

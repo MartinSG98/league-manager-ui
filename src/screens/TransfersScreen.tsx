@@ -185,7 +185,7 @@ function Transfers({ view }: { view: TransfersView }) {
 }
 
 function OutgoingBid({ offer }: { offer: TransferOfferRow }) {
-  const { career } = useCareer();
+  const { career, act, busy } = useCareer();
   return (
     <Paper p="sm" style={{ borderBottom: "1px solid var(--line)", borderRadius: 0 }}>
       <Group justify="space-between" wrap="nowrap">
@@ -199,9 +199,14 @@ function OutgoingBid({ offer }: { offer: TransferOfferRow }) {
             {offer.note}
           </Text>
           {(offer.status === "open" || offer.status === "agreed") && (
-            <Button component={Link} to={`/career/${career.id}/player/${offer.player}`} size="compact-xs" variant="subtle">
-              {offer.status === "agreed" ? "Agree personal terms" : "Answer the counter"}
-            </Button>
+            <Group gap={4} wrap="nowrap">
+              <Button size="compact-xs" variant="subtle" color="gray" disabled={busy} onClick={() => act({ type: "withdraw_bid", offer: offer.id })}>
+                {offer.status === "agreed" ? "Call off the deal" : "Withdraw"}
+              </Button>
+              <Button component={Link} to={`/career/${career.id}/player/${offer.player}`} size="compact-xs" variant="subtle">
+                {offer.status === "agreed" ? "Agree personal terms" : "Answer the counter"}
+              </Button>
+            </Group>
           )}
         </Stack>
       </Group>

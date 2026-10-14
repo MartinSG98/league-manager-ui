@@ -72,9 +72,19 @@ export function TransferPanel({ player }: { player: PlayerDetail }) {
             Players under contract can only be bought in the off-season transfer window, after Worlds.
           </Text>
         ) : bid?.status === "agreed" ? (
-          <Alert color="teal" variant="light">
-            {bid.note} Use the contract panel below to agree personal terms; the fee is paid when they sign.
-          </Alert>
+          <Stack gap="xs">
+            <Alert color="teal" variant="light">
+              {bid.note} Use the contract panel below to agree personal terms; the fee is paid when they sign.
+            </Alert>
+            <Group justify="space-between" wrap="nowrap" gap="md">
+              <Text fz="xs" c="dimmed">
+                The {money(bid.fee)} stays set aside in the bank until they sign or you call the deal off.
+              </Text>
+              <Button size="xs" variant="subtle" color="gray" disabled={busy} onClick={() => act({ type: "withdraw_bid", offer: bid.id })}>
+                Call off the deal
+              </Button>
+            </Group>
+          </Stack>
         ) : m.bid_problem ? (
           <Alert color="red" variant="light">
             {m.bid_problem}

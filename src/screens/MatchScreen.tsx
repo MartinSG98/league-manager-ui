@@ -1615,7 +1615,8 @@ function SideGraph({ gold, seconds, events, blue, red, height = 300 }: { gold: n
   const minute = Math.min(Math.floor(seconds / 60), gold.length);
   const series = [0, ...gold.slice(0, minute)]; // the lead at 0′, 1′, … minute′
   const live = seconds / 60 > minute ? goldAt(gold, events, seconds) : null;
-  const minutes = Math.max(20, minute + 4);
+  // The time axis shows half an hour from the start, and grows once the game nears its end.
+  const minutes = Math.max(30, minute + 4);
   // At least 10k either way, so an early lead of a thousand looks like one; past that, the next 5k up.
   const peak = Math.max(10000, Math.ceil(Math.max(...series.map((g) => Math.abs(g)), Math.abs(live ?? 0)) / 5000) * 5000);
   const left = 44;

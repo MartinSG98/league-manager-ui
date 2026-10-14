@@ -225,7 +225,7 @@ function LineupStage({ view, onFinished }: { view: LiveView; onFinished: (id: st
               Simulate the series
             </Button>
             <Button variant="light" color="hextech" leftSection={<IconRobot size={16} />} disabled={busy} onClick={() => act({ type: "auto_select" })}>
-              Let {view.coach?.name ?? "the assistant"} draft
+              {view.reader?.you ? "Auto draft" : `Let ${view.coach?.name ?? "the assistant"} draft`}
             </Button>
             <Button size="lg" leftSection={<IconSwords size={18} />} disabled={busy} onClick={() => act({ type: "start_champ_select" })}>
               Champion select
@@ -480,6 +480,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
   const ourLineup = Object.fromEntries(view[view.our_side].lineup.map((p) => [p.slot, p]));
   const board = ourTurn ? view.board : null;
   const coachName = view.coach?.name ?? "The assistant";
+  const reader = view.reader;
 
   // ---- the clock: every turn has thirty seconds, the opponent uses a few of them ----
   const stepKey = `${view.match.id}-${view.game}-${s.step}`;
@@ -552,7 +553,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
       notifications.show({
         color: "gold",
         title: "Time ran out",
-        message: `${selected ? "Locked in" : "The assistant locked in"} ${catalog.champion[champion]?.name ?? champion}.`,
+        message: `${selected ? "Locked in" : reader?.you ? "Locked in your first choice," : "The assistant locked in"} ${catalog.champion[champion]?.name ?? champion}.`,
       });
     }
   }
@@ -578,7 +579,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
 
   return (
     <Stack gap="md">
-      <ChampSelectMusic match={view.match} game={view.game} active={view.phase === "draft"} />
+      <ChampSelectMusic match={view.match} game={view.game} active={view.phase === "draft" || view.phase === "ready"} />
       <BanRow view={view} />
       <FearlessStrip view={view} />
       <Box className={classes.selectBody}>
@@ -649,7 +650,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                         </Button>
                       )}
                       <Button size="xs" variant="light" color="hextech" leftSection={<IconRobot size={14} />} disabled={busy} onClick={() => act({ type: "auto_select" })}>
-                        Let {view.coach?.name ?? "the assistant"} finish
+                        {reader?.you ? "Auto finish" : `Let ${view.coach?.name ?? "the assistant"} finish`}
                       </Button>
                     </Group>
                   </Group>
@@ -666,10 +667,10 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
               {ourTurn && view.suggestions.length > 0 && (
                 <Paper p="sm" radius={12}>
                   <Group justify="space-between" mb={8} px={2}>
-                    <Text className="label">{coachName} suggests</Text>
+                    <Text className="label">{reader?.you ? "Your read" : `${coachName} suggests`}</Text>
                     <Text fz={11} c="dimmed">
                       click to {turn?.kind === "ban" ? "ban" : "pick"}
-                      {view.coach && ` · drafting ${view.coach.drafting}/20`}
+                      {reader && ` · drafting ${reader.drafting}/20`}
                     </Text>
                   </Group>
                   <div className={classes.suggestRow}>
@@ -681,7 +682,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                       return (
                         <Tooltip
                           key={`${sg.champion}-${sg.role ?? ""}`}
-                          label={entry ? <Breakdown name={name} entry={entry} kind={board?.kind ?? null} coach={view.coach} /> : parts.map((p) => `${p.label} ${signed(p.value, 1)}`).join(" · ")}
+                          label={entry ? <Breakdown name={name} entry={entry} kind={board?.kind ?? null} reader={reader} /> : parts.map((p) => `${p.label} ${signed(p.value, 1)}`).join(" · ")}
                           multiline
                           w={entry ? 300 : undefined}
                           classNames={{ tooltip: classes.tip }}
@@ -758,7 +759,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                           champion={c}
                           entry={off ? undefined : board?.champions[c.id]}
                           kind={board?.kind ?? null}
-                          coach={view.coach}
+                          reader={reader}
                           off={off}
                           mastery={turn?.kind === "pick" ? best : 0}
                           selected={selected === c.id}
@@ -823,7 +824,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
                   ) : (
                     <Group justify="space-between" wrap="nowrap">
                       <Text fz="sm" c="dimmed">
-                        Pick a champion from the grid, or click one of {coachName}'s suggestions.
+                        Pick a champion from the grid, or click one of {reader?.you ? "your" : `${coachName}'s`} suggestions.
                       </Text>
                       <Button size="lg" disabled>
                         {turn?.kind === "ban" ? "Ban" : "Lock in"}
@@ -1039,7 +1040,7 @@ function ChampTile({
   champion,
   entry,
   kind,
-  coach,
+  reader,
   off,
   mastery,
   selected,
@@ -1049,7 +1050,7 @@ function ChampTile({
   champion: Champion;
   entry: BoardEntry | undefined;
   kind: "ban" | "pick" | null;
-  coach: LiveView["coach"];
+  reader: LiveView["reader"];
   off: boolean;
   mastery: number;
   selected: boolean;
@@ -1070,7 +1071,7 @@ function ChampTile({
   );
   return (
     <Tooltip
-      label={entry ? <Breakdown name={champion.name} entry={entry} kind={kind} coach={coach} /> : champion.name}
+      label={entry ? <Breakdown name={champion.name} entry={entry} kind={kind} reader={reader} /> : champion.name}
       multiline
       w={entry ? 300 : undefined}
       openDelay={150}
@@ -1083,7 +1084,7 @@ function ChampTile({
   );
 }
 
-function Breakdown({ name, entry, kind, coach }: { name: string; entry: BoardEntry; kind: "ban" | "pick" | null; coach: LiveView["coach"] }) {
+function Breakdown({ name, entry, kind, reader }: { name: string; entry: BoardEntry; kind: "ban" | "pick" | null; reader: LiveView["reader"] }) {
   const others = Object.entries(entry.others) as [Role, BoardChoice][];
   return (
     <Stack gap={5}>
@@ -1131,7 +1132,7 @@ function Breakdown({ name, entry, kind, coach }: { name: string; entry: BoardEnt
         </Text>
       ))}
       <Text fz={10} c="dimmed" fs="italic">
-        {coach ? `${coach.name}'s read (drafting ${coach.drafting}/20)` : "No assistant coach: a rough read"}
+        {reader ? `${reader.you ? "Your" : `${reader.name}'s`} read (drafting ${reader.drafting}/20)` : "No assistant coach: a rough read"}
       </Text>
     </Stack>
   );
@@ -1671,7 +1672,9 @@ function SideGraph({ gold, seconds, events, blue, red, height = 300 }: { gold: n
             <stop offset="0" style={{ stopColor: "var(--side-red)", stopOpacity: 0.02 }} />
             <stop offset="1" style={{ stopColor: "var(--side-red)", stopOpacity: 0.5 }} />
           </linearGradient>
-          <filter id={`${id}-glow`} x="-10%" y="-30%" width="120%" height="160%">
+          {/* In the graph's own units: a region from the line's box would have no height while the game is
+              even and the line flat, and the browser would then draw nothing of it. */}
+          <filter id={`${id}-glow`} filterUnits="userSpaceOnUse" x="0" y="0" width={width} height={height}>
             <feGaussianBlur stdDeviation="3.5" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />

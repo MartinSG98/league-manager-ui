@@ -801,8 +801,11 @@ export interface LiveView {
   suggestions: Suggestion[];
   /** Every available champion scored for our current ban or pick; null on the opponent's turn. */
   board: Board | null;
-  /** The manager's assistant coach, whose read the board and suggestions are. */
+  /** The manager's assistant coach, who drafts when the manager lets them. */
   coach: { name: string; drafting: number } | null;
+  /** Whoever drafts for the club, whose read the board and suggestions are: the coach, or the
+   * manager (`you`) when they took drafting on or have no coach. */
+  reader: { name: string; drafting: number; you: boolean } | null;
   scouting: ScoutingReport | null;
   compositions: Record<Side, { value: number; notes: string[] } | null>;
   bench: PlayerRow[];
@@ -1109,9 +1112,8 @@ export interface ManagerRecord {
   seasons: { season: number; current: boolean; teams: TeamRef[]; series: [number, number]; games: [number, number]; titles: string[]; competitions: CompetitionRecordView[] }[];
   trophies: { name: string; kind: CompetitionRecordView["kind"]; season: number; team: TeamRef | null }[];
   clubs: { team: TeamRef | null; start: string; end: string | null; left: "" | "moved" | "sacked"; series: [number, number]; games: [number, number]; titles: number }[];
-  /** [day, reputation] each time it changed. */
-  /** [day, world, region] each time it changed; the oldest entries may lack the region. */
-  reputation_log: [string, number, number?][];
+  /** [day, world, region's reputation, the region's league] each time it changed; the oldest entries have the world alone. */
+  reputation_log: [string, number, number?, string?][];
 }
 
 export interface ManagerView {

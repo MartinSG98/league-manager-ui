@@ -1,5 +1,5 @@
 import { Badge, Group, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
@@ -54,10 +54,47 @@ function span(comps: CompetitionRow[]): string {
   return `${shortDate(start)} – ${shortDate(end)}`;
 }
 
+/** A competition in detail: undefined while it loads, null if it could not be loaded. */
+type Views = { get: (c: CompetitionRow) => CompetitionView | null | undefined };
+
+/**
+ * Every competition the screen shows in detail, fetched once after each action and kept by its id,
+ * so the phase cards and the season matrix share one request and never show another phase's data.
+ * What was loaded before an action stays on screen until the new one lands, as with useApi.
+ */
+function useDetails(ids: string[]): Views {
+  const { career, revision } = useCareer();
+  const [views, setViews] = useState(() => new Map<string, CompetitionView | null>());
+  const fetched = useRef({ at: "", ids: new Set<string>() });
+  const wanted = [...new Set(ids)].sort().join(",");
+  useEffect(() => {
+    const at = `${career.id}:${revision}`;
+    if (fetched.current.at !== at) fetched.current = { at, ids: new Set() };
+    const missing = wanted ? wanted.split(",").filter((id) => !fetched.current.ids.has(id)) : [];
+    if (missing.length === 0) return;
+    missing.forEach((id) => fetched.current.ids.add(id));
+    void Promise.all(missing.map((id) => api.competition(career.id, id).catch(() => null))).then((loaded) => {
+      if (fetched.current.at !== at) return; // a newer action asks again
+      setViews((old) => {
+        const next = new Map(old);
+        missing.forEach((id, i) => next.set(`${career.id}:${id}`, loaded[i]));
+        return next;
+      });
+    });
+  }, [career.id, revision, wanted]);
+  return { get: (c) => views.get(`${career.id}:${c.id}`) };
+}
+
 export function CompetitionsScreen() {
   const { career, revision } = useCareer();
   const comps = useApi(() => api.competitions(career.id), [career.id, revision]);
   const [picked, setPicked] = useState<string | null>(null);
+  const phases = phasesOf(comps.data ?? []);
+  const current = phases.find((p) => p.status === "running") ?? phases.find((p) => p.status === "upcoming" || p.status === "tba") ?? phases[phases.length - 1];
+  const phase = phases.find((p) => p.key === picked) ?? current;
+  // The matrix needs the events' teams and places and a running split's leader; the cards their phase.
+  const shown = [...(comps.data ?? []).filter((c) => c.kind === "international" || c.status === "running"), ...phase.comps];
+  const views = useDetails(shown.map((c) => c.id));
   if (career.phase === "draft") {
     return (
       <Screen>
@@ -66,9 +103,6 @@ export function CompetitionsScreen() {
     );
   }
   if (!comps.data) return <Loading />;
-  const phases = phasesOf(comps.data);
-  const current = phases.find((p) => p.status === "running") ?? phases.find((p) => p.status === "upcoming" || p.status === "tba") ?? phases[phases.length - 1];
-  const phase = phases.find((p) => p.key === picked) ?? current;
 
   return (
     <Screen>
@@ -113,8 +147,8 @@ export function CompetitionsScreen() {
       </div>
 
       <Stack gap="lg">
-        {phase.kind === "split" ? <SplitPhase phase={phase} all={comps.data} /> : <EventPhase phase={phase} />}
-        <Season rows={comps.data} phases={phases} selected={phase.key} onPick={setPicked} />
+        {phase.kind === "split" ? <SplitPhase phase={phase} all={comps.data} views={views} /> : <EventPhase phase={phase} views={views} />}
+        <Season rows={comps.data} phases={phases} selected={phase.key} onPick={setPicked} views={views} />
       </Stack>
     </Screen>
   );
@@ -123,18 +157,11 @@ export function CompetitionsScreen() {
 // ---------- the season at a glance ----------
 
 /** Every league across the season: its split winners, or where a split stands, and its teams at each international event. */
-function Season({ rows, phases, selected, onPick }: { rows: CompetitionRow[]; phases: Phase[]; selected: string; onPick: (key: string) => void }) {
-  const { career, revision } = useCareer();
+function Season({ rows, phases, selected, onPick, views }: { rows: CompetitionRow[]; phases: Phase[]; selected: string; onPick: (key: string) => void; views: Views }) {
+  const { career } = useCareer();
   const navigate = useNavigate();
   const catalog = useCatalog();
   const open = (c: CompetitionRow) => navigate(`/career/${career.id}/competitions/${c.id}`);
-  // Details for what a row alone cannot say: the events' teams and places, a running split's leader.
-  const wanted = rows.filter((c) => c.kind === "international" || c.status === "running");
-  const details = useApi(
-    () => Promise.all(wanted.map((c) => api.competition(career.id, c.id).catch(() => null))),
-    [career.id, revision, wanted.map((c) => c.id).join(",")],
-  );
-  const viewOf = (c: CompetitionRow) => details.data?.[wanted.indexOf(c)] ?? null;
   const leagues = [...new Set(rows.filter((c) => c.kind === "league").map((c) => c.league!))].sort(
     (a, b) => Number(b === career.league) - Number(a === career.league) || a.localeCompare(b),
   );
@@ -147,7 +174,7 @@ function Season({ rows, phases, selected, onPick }: { rows: CompetitionRow[]; ph
 
   const splitCell = (c: CompetitionRow | undefined, key: string) => {
     if (!c) return <div key={key} className={classes.matrixCell} data-empty />;
-    const view = c.status === "running" ? viewOf(c) : null;
+    const view = c.status === "running" ? views.get(c) : null;
     const stage = view?.stages.find((s) => !s.finished);
     const table = stage?.tables.find((t) => t.rows.some((r) => r.team.id === me)) ?? stage?.tables[0];
     const leader = table?.rows[0];
@@ -174,6 +201,10 @@ function Season({ rows, phases, selected, onPick }: { rows: CompetitionRow[]; ph
                 </Text>
               )}
             </>
+          ) : view === undefined ? (
+            <Text fz="xs" c="dimmed">
+              …
+            </Text>
           ) : (
             <Badge size="sm" color="hextech" variant="light">
               under way
@@ -192,7 +223,7 @@ function Season({ rows, phases, selected, onPick }: { rows: CompetitionRow[]; ph
     const c = p.comps[0];
     const key = `${league}-${p.key}`;
     if (!c) return <div key={key} className={classes.matrixCell} data-empty data-event />;
-    const view = viewOf(c);
+    const view = views.get(c);
     const placed = view?.placements ?? [];
     const teams = (placed.length ? placed : view?.entrants ?? []).filter((t) => t.league === league);
     return (
@@ -270,16 +301,7 @@ function Season({ rows, phases, selected, onPick }: { rows: CompetitionRow[]; ph
 
 // ---------- a split: every league ----------
 
-function useDetails(phase: Phase) {
-  const { career, revision } = useCareer();
-  return useApi(
-    () => Promise.all(phase.comps.map((c) => api.competition(career.id, c.id).catch(() => null))),
-    [career.id, revision, phase.key, phase.comps.length],
-  );
-}
-
-function SplitPhase({ phase, all }: { phase: Phase; all: CompetitionRow[] }) {
-  const details = useDetails(phase);
+function SplitPhase({ phase, all, views }: { phase: Phase; all: CompetitionRow[]; views: Views }) {
   // Who won each league last: the holders an upcoming split starts against.
   const holder = (c: CompetitionRow) =>
     all.filter((o) => o.league === c.league && o.kind === "league" && o.winner && o.end < c.start).sort((a, b) => a.end.localeCompare(b.end)).pop()?.winner ?? null;
@@ -288,7 +310,7 @@ function SplitPhase({ phase, all }: { phase: Phase; all: CompetitionRow[] }) {
     <Section title={`${phase.label} · ${phase.status === "finished" ? "finished" : phase.status === "running" ? "under way" : "to come"}`} right={<Text fz="xs" c="dimmed">{span(phase.comps)}</Text>}>
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
         {rows.map((c) => (
-          <LeagueCard key={c.id} c={c} view={details.data?.[phase.comps.indexOf(c)] ?? null} holder={holder(c)} />
+          <LeagueCard key={c.id} c={c} view={views.get(c) ?? null} holder={holder(c)} />
         ))}
       </SimpleGrid>
     </Section>
@@ -462,11 +484,10 @@ function MatchLine({ m, me, prefix }: { m: MatchSummary; me: string; prefix: str
 
 // ---------- an international event ----------
 
-function EventPhase({ phase }: { phase: Phase }) {
+function EventPhase({ phase, views }: { phase: Phase; views: Views }) {
   const { career } = useCareer();
   const navigate = useNavigate();
   const catalog = useCatalog();
-  const details = useDetails(phase);
   const c = phase.comps[0];
   if (!c) {
     return (
@@ -477,7 +498,7 @@ function EventPhase({ phase }: { phase: Phase }) {
       </Section>
     );
   }
-  const view = details.data?.[0] ?? null;
+  const view = views.get(c) ?? null;
   const me = career.team.id;
   const entrants = view?.entrants ?? [];
   const stage = view ? (view.stages.find((s) => !s.finished) ?? view.stages[view.stages.length - 1]) : null;
@@ -528,13 +549,15 @@ function EventPhase({ phase }: { phase: Phase }) {
           </Group>
         )}
         <Text fz="sm" fw={700} c={inIt ? "gold.4" : "dimmed"}>
-          {!inIt
-            ? `${career.team.name} did not qualify.`
-            : c.status === "finished"
-              ? place === 1
-                ? "You won it."
-                : `You finished ${ordinal(place)}.`
-              : "You are in it."}
+          {!view
+            ? "…"
+            : !inIt
+              ? `${career.team.name} did not qualify.`
+              : c.status === "finished"
+                ? place === 1
+                  ? "You won it."
+                  : `You finished ${ordinal(place)}.`
+                : "You are in it."}
         </Text>
         {mineNext && <MatchLine m={mineNext} me={me} prefix="Next" />}
       </Group>

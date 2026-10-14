@@ -356,8 +356,14 @@ function Clubs({ v }: { v: ManagerView }) {
   );
 }
 
-/** The manager's reputation since the Me screen keeps it: the world's and the region's, as step lines over time. */
-function ReputationGraph({ log, region }: { log: [string, number, number?][]; region: string }) {
+/** Colours for the regions the manager worked in before: the current one is always teal. */
+const EARLIER = ["#c389f5", "#f08c5a", "#6fa8ff", "#e06c9f"];
+
+/**
+ * The manager's reputation over time: the world in gold, and a line for each region they worked in,
+ * each starting where they took a job there, since a region's standing means nothing elsewhere.
+ */
+function ReputationGraph({ log, region }: { log: [string, number, number?, string?][]; region: string }) {
   if (log.length < 2) {
     const [, world, regional] = log[0] ?? ["", 0];
     return (
@@ -387,10 +393,29 @@ function ReputationGraph({ log, region }: { log: [string, number, number?][]; re
     });
     return d;
   };
+  // One line per spell in a region: a return to a region after working elsewhere starts a new one.
+  const spells: { name: string; from: number; to: number }[] = [];
+  log.forEach((e, i) => {
+    if (e[2] === undefined) return;
+    const name = e[3] ?? region;
+    const last = spells[spells.length - 1];
+    if (last && last.name === name && last.to === i - 1) last.to = i;
+    else spells.push({ name, from: i, to: i });
+  });
+  const named = [...new Set(spells.map((s) => s.name))].filter((n) => n !== region);
+  const colour = (name: string) => (name === region ? "#0ac8b9" : EARLIER[named.indexOf(name) % EARLIER.length]);
   const lines = [
-    { key: "world", label: "World", color: "var(--gold-bright)", values: log.map((e) => e[1]) },
-    { key: "region", label: region, color: "#0ac8b9", values: log.map((e) => e[2]) },
+    { key: "world", label: "World", color: "var(--gold-bright)", values: log.map((e) => e[1]), until: undefined as number | undefined },
+    ...spells.map((s) => ({
+      key: `${s.name}-${s.from}`,
+      label: s.name,
+      color: colour(s.name),
+      values: log.map((e, i) => (i >= s.from && i <= s.to ? e[2] : undefined)),
+      // A region left behind keeps its standing until the day of the move.
+      until: s.to + 1 < log.length ? times[s.to + 1] : undefined,
+    })),
   ];
+  const legend = [...new Map(lines.map((l) => [l.label, l])).values()];
   return (
     <Stack gap={6}>
       <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} role="img" aria-label="Manager reputation over time, in the world and in the region">
@@ -404,7 +429,7 @@ function ReputationGraph({ log, region }: { log: [string, number, number?][]; re
         ))}
         {lines.map((l) => (
           <g key={l.key}>
-            <path d={steps(l.values)} fill="none" stroke={l.color} strokeWidth="2.5" strokeLinejoin="round" />
+            <path d={steps(l.values) + (l.until !== undefined ? ` H${x(l.until).toFixed(1)}` : "")} fill="none" stroke={l.color} strokeWidth="2.5" strokeLinejoin="round" />
             {l.values.map((v, i) =>
               v === undefined ? null : (
                 <circle key={i} cx={x(times[i])} cy={y(v)} r="3" fill={l.color}>
@@ -422,7 +447,7 @@ function ReputationGraph({ log, region }: { log: [string, number, number?][]; re
         </text>
       </svg>
       <Group gap="md">
-        {lines.map((l) => (
+        {legend.map((l) => (
           <Group key={l.key} gap={6}>
             <span style={{ width: 12, height: 3, borderRadius: 2, background: l.color }} />
             <Text fz="xs" c="dimmed">

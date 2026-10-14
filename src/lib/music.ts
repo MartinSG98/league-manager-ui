@@ -9,7 +9,7 @@ import type { MatchSummary } from "../api/types";
  * - international: First Stand, MSI and Worlds;
  * - decider: a best of five at 2-2, whatever the competition.
  * Each champion select plays one track at random from its folder, never the one the folder played
- * last when there is a choice, and loops it until the select is over.
+ * last when there is a choice, and loops it through the set plays until the game starts.
  */
 export type MusicPool = "splits" | "international" | "decider";
 export type Track = { pool: MusicPool; file: string };
@@ -46,11 +46,16 @@ function store(key: string, value: string): void {
   }
 }
 
-/** The track for this champion select: the same one again if the screen reloads mid-select. */
-export function chooseTrack(files: Partial<Record<MusicPool, string[]>>, match: MatchSummary, game: number): Track | null {
+/** The folder a champion select plays from and its files: an empty decider folder gives way to the competition's own. */
+export function poolFiles(files: Partial<Record<MusicPool, string[]>>, match: MatchSummary): { pool: MusicPool; list: string[] } {
   let pool = poolFor(match);
   if (pool === "decider" && !files.decider?.length) pool = INTERNATIONAL.test(match.competition) ? "international" : "splits";
-  const list = files[pool] ?? [];
+  return { pool, list: files[pool] ?? [] };
+}
+
+/** The track for this champion select: the same one again if the screen reloads mid-select. */
+export function chooseTrack(files: Partial<Record<MusicPool, string[]>>, match: MatchSummary, game: number): Track | null {
+  const { pool, list } = poolFiles(files, match);
   if (list.length === 0) return null;
   const key = `music:${match.id}:${game}`;
   const kept = stored(key);

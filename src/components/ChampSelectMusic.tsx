@@ -3,15 +3,18 @@ import { IconMusic, IconMusicOff, IconPlayerPlayFilled, IconVolume, IconVolumeOf
 import { useEffect, useRef, useState } from "react";
 
 import type { MatchSummary } from "../api/types";
-import { chooseTrack, musicFiles, setMusic, trackTitle, trackUrl, useMusic, type MusicPool, type Track } from "../lib/music";
+import { chooseTrack, musicFiles, poolFiles, setMusic, trackTitle, trackUrl, useMusic, type MusicPool, type Track } from "../lib/music";
 
-/** Moves the volume to `to` over `ms`, on a timer so it finishes in a background tab too. */
-function fade(el: HTMLAudioElement, to: number, ms: number, done?: () => void): () => void {
+/**
+ * Moves the volume to `to` over `ms`, on a timer so it finishes in a background tab too. `to` is
+ * read on every step, so a mute or a new volume during the fade is where it ends.
+ */
+function fade(el: HTMLAudioElement, to: () => number, ms: number, done?: () => void): () => void {
   const from = el.volume;
   const start = Date.now();
   const id = window.setInterval(() => {
     const k = Math.min(1, (Date.now() - start) / ms);
-    el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+    el.volume = Math.max(0, Math.min(1, from + (to() - from) * k));
     if (k >= 1) {
       window.clearInterval(id);
       done?.();
@@ -20,17 +23,28 @@ function fade(el: HTMLAudioElement, to: number, ms: number, done?: () => void): 
   return () => window.clearInterval(id);
 }
 
+/** Files the browser could not play, as "pool/file": skipped for the rest of the session. */
+const unplayable = new Set<string>();
+
+function playable(files: Partial<Record<MusicPool, string[]>>): Partial<Record<MusicPool, string[]>> {
+  return Object.fromEntries(Object.entries(files).map(([pool, list]) => [pool, (list ?? []).filter((f) => !unplayable.has(`${pool}/${f}`))]));
+}
+
 /**
  * The music of a champion select: a track for the competition (see lib/music), faded in when the
- * select starts and out when it ends, looping until then. A small control in the corner mutes it,
- * sets the volume and, when the browser blocks sound until a click, starts it.
+ * select starts and out when the game starts, looping through the set plays until then. A small
+ * control in the corner mutes it, sets the volume and, when the browser blocks sound until a click,
+ * starts it. A file the browser cannot play gives way to another from the same folder.
  */
 export function ChampSelectMusic({ match, game, active }: { match: MatchSummary; game: number; active: boolean }) {
   const [track, setTrack] = useState<Track | null>(null);
-  const [missing, setMissing] = useState(false);
+  const [trouble, setTrouble] = useState<"none" | "unplayable" | null>(null);
   const [blocked, setBlocked] = useState(false);
+  const [retry, setRetry] = useState(0);
   const { volume, muted } = useMusic();
   const audio = useRef<HTMLAudioElement | null>(null);
+  const stopFade = useRef(() => {});
+  const failed = useRef<(e: unknown) => void>(() => {});
   const level = useRef(muted ? 0 : volume);
   level.current = muted ? 0 : volume;
   // The live view comes back as a new object after every move: the match is followed by its id.
@@ -42,38 +56,53 @@ export function ChampSelectMusic({ match, game, active }: { match: MatchSummary;
     let cancelled = false;
     void musicFiles().then((files) => {
       if (cancelled) return;
-      const t = chooseTrack(files, current.current, game);
+      const t = chooseTrack(playable(files), current.current, game);
       setTrack(t);
-      setMissing(t === null);
+      // No track: the folder it would play from is empty, or none of its files can play.
+      setTrouble(t ? null : poolFiles(files, current.current).list.length ? "unplayable" : "none");
     });
     return () => {
       cancelled = true;
     };
-  }, [active, match.id, game]);
+  }, [active, match.id, game, retry]);
 
   const key = track ? trackUrl(track) : null;
   useEffect(() => {
-    if (!active || !key) return;
+    if (!active || !key || !track) return;
     const el = new Audio(key);
     el.loop = true;
     el.volume = 0;
     audio.current = el;
-    let stopFade = () => {};
+    let over = false;
+    // Only a browser waiting for a click is "blocked"; any other failure means the file cannot play.
+    failed.current = (e: unknown) => {
+      const name = e instanceof DOMException ? e.name : "";
+      if (over || name === "AbortError") return;
+      if (name === "NotAllowedError") return setBlocked(true);
+      over = true;
+      unplayable.add(`${track.pool}/${track.file}`);
+      setBlocked(false);
+      setRetry((n) => n + 1);
+    };
+    el.addEventListener("error", () => failed.current(new DOMException("The file cannot be played", "NotSupportedError")));
     el.play()
       .then(() => {
         setBlocked(false);
-        stopFade = fade(el, level.current, 1500);
+        stopFade.current = fade(el, () => level.current, 1500);
       })
-      .catch(() => setBlocked(true));
+      .catch((e: unknown) => failed.current(e));
     return () => {
-      stopFade();
+      over = true;
+      stopFade.current();
       audio.current = null;
-      fade(el, 0, 1200, () => {
+      fade(el, () => 0, 1200, () => {
         el.pause();
         el.removeAttribute("src");
         el.load();
       });
     };
+    // The track is followed by its file: a new object for the same file must not restart it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, key]);
 
   useEffect(() => {
@@ -81,14 +110,22 @@ export function ChampSelectMusic({ match, game, active }: { match: MatchSummary;
   }, [volume, muted]);
 
   if (!active) return null;
-  if (missing)
+  if (trouble)
     return (
       <Paper withBorder radius="xl" px="sm" py={4} style={corner}>
-        <Tooltip label="Add audio files to public/music/splits, public/music/international and public/music/decider" multiline w={260}>
+        <Tooltip
+          label={
+            trouble === "none"
+              ? "Add audio files to public/music/splits, public/music/international and public/music/decider"
+              : "The browser cannot play the files in public/music. MP3 plays everywhere."
+          }
+          multiline
+          w={260}
+        >
           <Group gap={6} wrap="nowrap">
             <IconMusic size={14} color="var(--text-4)" />
             <Text fz="xs" c="dimmed">
-              No music yet
+              {trouble === "none" ? "No music yet" : "The music cannot play"}
             </Text>
           </Group>
         </Tooltip>
@@ -99,10 +136,13 @@ export function ChampSelectMusic({ match, game, active }: { match: MatchSummary;
   function start() {
     const el = audio.current;
     if (!el) return;
-    void el.play().then(() => {
-      setBlocked(false);
-      fade(el, level.current, 800);
-    });
+    el.play()
+      .then(() => {
+        setBlocked(false);
+        stopFade.current();
+        stopFade.current = fade(el, () => level.current, 800);
+      })
+      .catch((e: unknown) => failed.current(e));
   }
 
   return (

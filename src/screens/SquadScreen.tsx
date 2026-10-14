@@ -6,6 +6,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { PlayerDetail, Role, SquadView, StaffRow, TrainingView } from "../api/types";
 import { PlayerPhoto, PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
+import { ClubStars } from "../components/Stars";
 import { TacticsPanel } from "../components/TacticsPanel";
 import { Empty, Loading, Meter, Ovr, Screen, Section, Stat, Tag } from "../components/Ui";
 import { ATTRIBUTE_NAMES, flag, money, ROLE_NAMES, ROLES, signed, STAFF_ATTRIBUTES, STAFF_KIND_NAMES, vars } from "../lib/format";
@@ -67,6 +68,10 @@ function Squad({ squad, training }: { squad: SquadView; training: TrainingView |
             </Stack>
           </Group>
           <Group gap={36} wrap="wrap">
+            <Stack gap={6}>
+              <Text className="label">Reputation</Text>
+              <ClubStars r={squad} size={14} />
+            </Stack>
             <Stat label="Strength" value={squad.strength.toFixed(1)} />
             <Stat label="Chemistry" value={signed(squad.chemistry.score, 1)} tone={squad.chemistry.score >= 0 ? "gain" : "loss"} />
             <Stack gap={0}>

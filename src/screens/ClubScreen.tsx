@@ -7,7 +7,7 @@ import { BonusList } from "../components/BonusList";
 import { BudgetAdjuster } from "../components/BudgetAdjuster";
 import { DebtAlert } from "../components/DebtAlert";
 import { TeamLogo } from "../components/Media";
-import { Stars } from "../components/Stars";
+import { ClubStars, Stars } from "../components/Stars";
 import { Empty, Loading, PageHeader, Screen, Section } from "../components/Ui";
 import { longDate, money } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -43,7 +43,7 @@ function Club({ b }: { b: BoardView }) {
           <Group gap="xl">
             <Stack gap={2} align="flex-end">
               <Text className="eyebrow">Club reputation</Text>
-              <Stars value={b.reputation.team_stars} size={18} label={`${b.reputation.team} (prestige ${b.reputation.prestige})`} />
+              <ClubStars r={b.reputation} size={16} />
             </Stack>
             <Stack gap={2} align="flex-end">
               <Text className="eyebrow">{career.manager}</Text>
@@ -154,6 +154,13 @@ function Club({ b }: { b: BoardView }) {
 
             <Section title={`${career.league} by reputation`} pad={false}>
               <Table verticalSpacing={5}>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th colSpan={2} />
+                    <Table.Th className="label">World</Table.Th>
+                    <Table.Th className="label">{b.reputation.region}</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
                 <Table.Tbody>
                   {b.league_reputation.map((row, i) => (
                     <Table.Tr key={row.team.id} style={row.team.id === career.team.id ? { background: "rgba(200, 170, 110, 0.08)" } : undefined}>
@@ -169,7 +176,10 @@ function Club({ b }: { b: BoardView }) {
                         </Group>
                       </Table.Td>
                       <Table.Td>
-                        <Stars value={row.stars} size={12} label={`Reputation ${row.reputation}`} />
+                        <Stars value={row.world_stars} size={12} label={`Reputation ${row.reputation}, weighed by league strength`} />
+                      </Table.Td>
+                      <Table.Td>
+                        <Stars value={row.region_stars} size={12} label={`Reputation ${row.reputation}`} />
                       </Table.Td>
                     </Table.Tr>
                   ))}

@@ -7,7 +7,7 @@ import type { Vacancy } from "../api/types";
 import { shortDate } from "../lib/format";
 import { useCareer } from "../state/career";
 import { TeamLogo } from "./Media";
-import { Stars } from "./Stars";
+import { ClubStars } from "./Stars";
 import { Empty } from "./Ui";
 
 /**
@@ -36,9 +36,9 @@ export function Vacancies({ vacancies, reach }: { vacancies: Vacancy[]; reach: n
                       {v.team.name}
                     </Text>
                     <Group gap={6} wrap="nowrap">
-                      <Stars value={v.stars} size={11} />
+                      <ClubStars r={v} size={10} inline />
                       <Text fz={11} c="dimmed">
-                        {v.league_name} · until {shortDate(v.closes)}
+                        until {shortDate(v.closes)}
                       </Text>
                     </Group>
                   </Stack>

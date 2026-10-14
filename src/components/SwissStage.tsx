@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import type { MatchSummary, StageView, TeamRef } from "../api/types";
 import { cx, shortDate } from "../lib/format";
 import { useCareer } from "../state/career";
-import { TeamLogo } from "./Media";
+import { TeamLink, TeamLogo } from "./Media";
 import classes from "./SwissStage.module.css";
 
 interface Cell {
@@ -216,7 +216,7 @@ function Side({ team, score, m, animate }: { team: TeamRef | null; score: number
       <Group gap={6} wrap="nowrap" miw={0}>
         <TeamLogo team={team} size={20} />
         <Text fz="sm" fw={won ? 800 : 500} truncate>
-          {team?.tag ?? "TBD"}
+          {team ? <TeamLink team={team}>{team.tag}</TeamLink> : "TBD"}
         </Text>
       </Group>
       {done && (
@@ -246,7 +246,7 @@ function Decided({ cell, teams }: { cell: Cell; teams: TeamRef[] }) {
           <Group key={t?.id ?? i} gap={6} wrap="nowrap" className={cx(classes.side, t?.id === career.team.id && classes.mine)}>
             <TeamLogo team={t} size={20} />
             <Text fz="sm" c={t ? undefined : "dimmed"} truncate>
-              {t?.tag ?? "TBD"}
+              {t ? <TeamLink team={t}>{t.tag}</TeamLink> : "TBD"}
             </Text>
           </Group>
         ))}
@@ -407,7 +407,7 @@ function DrawnTeam({ team }: { team: TeamRef | null }) {
     <Stack gap={4} align="center" w={90} className={team ? classes.reveal : undefined}>
       <TeamLogo team={team} size={48} />
       <Text fw={800} fz="sm">
-        {team?.tag ?? "?"}
+        {team ? <TeamLink team={team}>{team.tag}</TeamLink> : "?"}
       </Text>
     </Stack>
   );

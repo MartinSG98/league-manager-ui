@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 
 import { api, ApiError } from "../api/client";
 import type { Action, ActionResult, CareerView } from "../api/types";
+import { OfflineScreen } from "../components/OfflineScreen";
 import { Empty, Loading } from "../components/Ui";
 
 interface CareerContextValue {
@@ -23,18 +24,25 @@ const OFFLINE = "server-offline";
 
 export function CareerProvider({ id, children }: { id: string; children: ReactNode }) {
   const [career, setCareer] = useState<CareerView | null>(null);
-  const [missing, setMissing] = useState(false);
+  // Why the career did not load: no such save, a server that is not running, or an error from it.
+  const [failure, setFailure] = useState<{ kind: "missing" | "offline" | "error"; message?: string } | null>(null);
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setCareer(null);
+    setFailure(null);
     api
       .career(id)
       .then(setCareer)
-      .catch(() => setMissing(true));
+      .catch((err) => {
+        if (!(err instanceof ApiError)) setFailure({ kind: "offline" });
+        else setFailure(err.status === 404 ? { kind: "missing" } : { kind: "error", message: err.message });
+      });
   }, [id]);
+
+  useEffect(load, [load]);
 
   const act = useCallback(
     (action: Action, options: { quiet?: boolean } = {}) => {
@@ -72,7 +80,9 @@ export function CareerProvider({ id, children }: { id: string; children: ReactNo
     [id],
   );
 
-  if (missing) return <Empty>This career does not exist any more.</Empty>;
+  if (failure?.kind === "missing") return <Empty>This career does not exist any more.</Empty>;
+  if (failure?.kind === "offline") return <OfflineScreen onRetry={load} />;
+  if (failure?.kind === "error") return <Empty>The server could not open this career: {failure.message}</Empty>;
   if (!career) return <Loading text="Loading your career…" />;
 
   return <CareerContext.Provider value={{ career, revision, busy, act }}>{children}</CareerContext.Provider>;

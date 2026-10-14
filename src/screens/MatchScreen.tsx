@@ -8,7 +8,7 @@ import {
   IconArrowLeft, IconBolt, IconChevronDown, IconChevronsDown, IconChevronsUp, IconChevronUp, IconPlayerPlayFilled, IconPlayerTrackNext,
   IconRobot, IconSearch, IconSwords,
 } from "@tabler/icons-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
@@ -16,7 +16,7 @@ import type {
   BoardChoice, BoardEntry, Champion, GameRecord, GameView, LiveView, PlayChoice, PlayerLine, Role, ScoutingReport as ScoutReport, Side, SideView,
   Suggestion, Tactics, TimelineEvent,
 } from "../api/types";
-import { GameIcon } from "../components/GameIcons";
+import { GameIcon, type GameIconKind } from "../components/GameIcons";
 import { GameReport } from "../components/GameReport";
 import { ChampIcon, ChampPortrait, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
 import { PlayerHoverCard } from "../components/PlayerHoverCard";
@@ -1340,7 +1340,7 @@ function Playback({ view, data, busy, onNext }: { view: LiveView; data: GameView
               </Group>
             }
           >
-            <SideGraph gold={gold} minute={minute} events={upTo} blue={blueTeam.tag} red={redTeam.tag} />
+            <SideGraph gold={gold} seconds={timeline.t} events={upTo} blue={blueTeam.tag} red={redTeam.tag} />
           </Section>
         </Box>
 
@@ -1527,32 +1527,117 @@ function PlayCard({ event, t, worked }: { event: TimelineEvent; t: number; worke
 }
 
 /**
- * Gold difference minute by minute in the sides' colours: above the line blue is ahead, below it
- * red is. Key moments are dots in the colour of the side they went to, a set play in gold. Scaled
- * to what has been played, so neither the axis nor the scale gives away how the game goes on.
+ * A smooth curve through the points that never overshoots them (monotone cubic, Fritsch–Carlson):
+ * its path, and its height at any x, so marks sit on the curve itself.
  */
-function SideGraph({ gold, minute, events, blue, red, height = 300 }: { gold: number[]; minute: number; events: TimelineEvent[]; blue: string; red: string; height?: number }) {
+function smooth(pts: [number, number][]): { d: string; yAt: (px: number) => number } {
+  const f = (v: number) => v.toFixed(1);
+  const n = pts.length;
+  if (n < 2) return { d: n ? `M${f(pts[0][0])},${f(pts[0][1])}` : "", yAt: () => (n ? pts[0][1] : 0) };
+  const dx: number[] = [];
+  const slope: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx.push(pts[i + 1][0] - pts[i][0]);
+    slope.push((pts[i + 1][1] - pts[i][1]) / dx[i]);
+  }
+  const tan = [slope[0]];
+  for (let i = 1; i < n - 1; i++) tan.push(slope[i - 1] * slope[i] <= 0 ? 0 : (slope[i - 1] + slope[i]) / 2);
+  tan.push(slope[n - 2]);
+  for (let i = 0; i < n - 1; i++) {
+    if (slope[i] === 0) {
+      tan[i] = tan[i + 1] = 0;
+      continue;
+    }
+    const a = tan[i] / slope[i];
+    const b = tan[i + 1] / slope[i];
+    const s = a * a + b * b;
+    if (s > 9) {
+      tan[i] = (3 / Math.sqrt(s)) * a * slope[i];
+      tan[i + 1] = (3 / Math.sqrt(s)) * b * slope[i];
+    }
+  }
+  // Control points a third of the way along each segment, so x runs evenly with the curve's t.
+  const controls = (i: number) => [pts[i][1], pts[i][1] + (tan[i] * dx[i]) / 3, pts[i + 1][1] - (tan[i + 1] * dx[i]) / 3, pts[i + 1][1]];
+  let d = `M${f(pts[0][0])},${f(pts[0][1])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const [, c1, c2, end] = controls(i);
+    d += ` C${f(pts[i][0] + dx[i] / 3)},${f(c1)} ${f(pts[i + 1][0] - dx[i] / 3)},${f(c2)} ${f(pts[i + 1][0])},${f(end)}`;
+  }
+  const yAt = (px: number) => {
+    if (px <= pts[0][0]) return pts[0][1];
+    if (px >= pts[n - 1][0]) return pts[n - 1][1];
+    let i = 0;
+    while (i < n - 2 && px > pts[i + 1][0]) i++;
+    const t = (px - pts[i][0]) / dx[i];
+    const [p0, p1, p2, p3] = controls(i);
+    const u = 1 - t;
+    return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
+  };
+  return { d, yAt };
+}
+
+/** Objectives get an icon in the lane under the graph; fights stay dots on the line. */
+const LANE: Record<string, GameIconKind> = { dragon: "dragon", soul: "dragon", elder: "dragon", baron: "baron", herald: "herald", inhibitor: "inhibitor", play: "play" };
+
+const lead = (g: number, blue: string, red: string) => (Math.abs(g) < 50 ? "Even" : `+${(Math.abs(g) / 1000).toFixed(1)}k ${g > 0 ? blue : red}`);
+const tone = (side: Side | null) => (side === "blue" ? "var(--side-blue)" : side === "red" ? "var(--side-red)" : "#8e99ae");
+
+/**
+ * Gold difference minute by minute in the sides' colours: above the line blue is ahead, below it
+ * red is. Fights are dots on the line in the colour of the side they went to, objectives icons in
+ * the lane under it, and hovering a minute shows what happened in it. Scaled to what has been
+ * played, so neither the axis nor the scale gives away how the game goes on.
+ */
+function SideGraph({ gold, seconds, events, blue, red, height = 300 }: { gold: number[]; seconds: number; events: TimelineEvent[]; blue: string; red: string; height?: number }) {
   const { ref, width: measured } = useElementSize();
   const id = useId();
+  const [hover, setHover] = useState<number | null>(null);
   const width = Math.max(320, Math.round(measured) || 700);
+  const minute = Math.floor(seconds / 60);
   const series = gold.slice(0, Math.max(1, minute + 1));
+  // The line runs to this very second, between the last whole minute and the next.
+  const part = seconds / 60 - minute;
+  const live = minute + 1 < gold.length && part > 0 ? series[series.length - 1] + (gold[minute + 1] - series[series.length - 1]) * part : null;
   const minutes = Math.max(20, minute + 4);
   // At least 10k either way, so an early lead of a thousand looks like one; past that, the next 5k up.
-  const peak = Math.max(10000, Math.ceil(Math.max(...series.map((g) => Math.abs(g))) / 5000) * 5000);
+  const peak = Math.max(10000, Math.ceil(Math.max(...series.map((g) => Math.abs(g)), Math.abs(live ?? 0)) / 5000) * 5000);
   const left = 44;
-  const right = 14;
-  const top = 14;
-  const bottom = 24;
+  const right = 16;
+  const top = 12;
+  const lane = 30; // the objective icons, between the plot and the minutes
+  const bottom = 20 + lane;
+  const plotBottom = height - bottom;
   const x = (m: number) => left + (m / minutes) * (width - left - right);
-  const mid = top + (height - top - bottom) / 2;
-  const y = (g: number) => mid - (g / peak) * ((height - top - bottom) / 2);
-  const line = series.map((g, m) => `${x(m).toFixed(1)},${y(g).toFixed(1)}`).join(" ");
-  const area = `${x(0)},${mid} ${line} ${x(series.length - 1).toFixed(1)},${mid}`;
-  const at = (seconds: number) => series[Math.max(0, Math.min(series.length - 1, Math.floor(seconds / 60)))] ?? 0;
-  const marks = events.filter((e) => kindOf(e.kind).key && e.kind !== "nexus" && e.kind !== "highlight");
-  const k = `${Math.round(peak / 1000)}k`;
+  const mid = top + (plotBottom - top) / 2;
+  const y = (g: number) => mid - (g / peak) * ((plotBottom - top) / 2);
+  const points = series.map((g, m) => [x(m), y(g)] as [number, number]);
+  if (live !== null) points.push([x(minute + part), y(live)]);
+  const curve = smooth(points);
+  const line = curve.d;
+  const last = points[points.length - 1];
+  const area = `${line} L${last[0].toFixed(1)},${mid} L${x(0)},${mid} Z`;
+  const now = live ?? series[series.length - 1] ?? 0;
+  const key = events.filter((e) => kindOf(e.kind).key && e.kind !== "nexus" && e.kind !== "highlight");
+  const dots = key.filter((e) => !LANE[e.kind]);
+  const marks = key.filter((e) => LANE[e.kind]);
+  const half = Math.round(peak / 2000);
+  const full = Math.round(peak / 1000);
+  const ticks = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50].filter((m) => m <= minutes);
+  const headColor = now > 50 ? "var(--side-blue)" : now < -50 ? "var(--side-red)" : "var(--gold)";
+  const label = lead(now, blue, red);
+  const labelWidth = label.length * 7 + 16;
+  const labelLeft = last[0] + 12 + labelWidth > width - right;
+  const hovered = hover !== null ? Math.min(hover, series.length - 1) : null;
+  const inMinute = hovered === null ? [] : key.filter((e) => Math.floor(e.t / 60) === hovered).slice(0, 4);
+
+  function move(ev: MouseEvent<HTMLDivElement>) {
+    const box = ev.currentTarget.getBoundingClientRect();
+    const m = Math.round(((ev.clientX - box.left - left) / (width - left - right)) * minutes);
+    setHover(m < 0 || m > series.length - 1 ? null : m);
+  }
+
   return (
-    <div ref={ref}>
+    <div ref={ref} className={classes.graph} onMouseMove={move} onMouseLeave={() => setHover(null)}>
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} role="img" aria-label="Gold difference over time: above the line blue is ahead, below it red">
         <defs>
           <clipPath id={`${id}-above`}>
@@ -1561,48 +1646,118 @@ function SideGraph({ gold, minute, events, blue, red, height = 300 }: { gold: nu
           <clipPath id={`${id}-below`}>
             <rect x="0" y={mid} width={width} height={height - mid} />
           </clipPath>
+          <linearGradient id={`${id}-blue`} x1="0" y1={top} x2="0" y2={mid} gradientUnits="userSpaceOnUse">
+            <stop offset="0" style={{ stopColor: "var(--side-blue)", stopOpacity: 0.5 }} />
+            <stop offset="1" style={{ stopColor: "var(--side-blue)", stopOpacity: 0.02 }} />
+          </linearGradient>
+          <linearGradient id={`${id}-red`} x1="0" y1={mid} x2="0" y2={plotBottom} gradientUnits="userSpaceOnUse">
+            <stop offset="0" style={{ stopColor: "var(--side-red)", stopOpacity: 0.02 }} />
+            <stop offset="1" style={{ stopColor: "var(--side-red)", stopOpacity: 0.5 }} />
+          </linearGradient>
+          <filter id={`${id}-glow`} x="-10%" y="-30%" width="120%" height="160%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
-        {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50].filter((m) => m <= minutes).map((m) => (
-          <g key={m}>
-            <line x1={x(m)} x2={x(m)} y1={top} y2={height - bottom} stroke="var(--line-soft)" strokeDasharray="2 4" />
-            <text x={x(m)} y={height - 6} textAnchor="middle" fill="#5e6982" fontSize="11">
-              {m}′
-            </text>
-          </g>
+
+        {/* The scale: half and full either way, and the even line. */}
+        {[peak, peak / 2, -peak / 2, -peak].map((g) => (
+          <line key={g} x1={left} x2={width - right} y1={y(g)} y2={y(g)} stroke="rgba(255,255,255,0.05)" />
         ))}
-        <text x={left - 6} y={top + 4} textAnchor="end" fill="#5e6982" fontSize="11">
-          {k}
+        {[
+          [peak, `+${full}k`],
+          [peak / 2, `+${half}k`],
+          [-peak / 2, `+${half}k`],
+          [-peak, `+${full}k`],
+        ].map(([g, text]) => (
+          <text key={g} x={left - 8} y={y(g as number) + 4} textAnchor="end" fill="#5e6982" fontSize="11">
+            {text}
+          </text>
+        ))}
+        <text x={left - 8} y={mid + 4} textAnchor="end" fill="#8e99ae" fontSize="11" fontWeight="700">
+          0
         </text>
-        <text x={left - 6} y={mid + 4} textAnchor="end" fill="#5e6982" fontSize="11">
-          even
-        </text>
-        <text x={left - 6} y={height - bottom + 2} textAnchor="end" fill="#5e6982" fontSize="11">
-          {k}
-        </text>
+        {ticks.map((m) => (
+          <text key={m} x={x(m)} y={height - 5} textAnchor="middle" fill="#5e6982" fontSize="11">
+            {m}′
+          </text>
+        ))}
+        <line x1={left} x2={width - right} y1={plotBottom + lane / 2} y2={plotBottom + lane / 2} stroke="rgba(255,255,255,0.05)" />
+
+        {/* Who is ahead: the area fades towards even, the line glows in the leader's colour. */}
+        <path d={area} fill={`url(#${id}-blue)`} clipPath={`url(#${id}-above)`} />
+        <path d={area} fill={`url(#${id}-red)`} clipPath={`url(#${id}-below)`} />
         <line x1={left} x2={width - right} y1={mid} y2={mid} stroke="#3a4560" strokeWidth="1.5" />
-        <polygon points={area} style={{ fill: "color-mix(in srgb, var(--side-blue) 30%, transparent)" }} clipPath={`url(#${id}-above)`} />
-        <polygon points={area} style={{ fill: "color-mix(in srgb, var(--side-red) 30%, transparent)" }} clipPath={`url(#${id}-below)`} />
-        <polyline points={line} fill="none" style={{ stroke: "var(--gold)" }} strokeWidth="2.5" strokeLinejoin="round" />
-        <text x={left + 8} y={top + 14} fill="var(--side-blue)" fontSize="12" fontWeight="800">
+        <g filter={`url(#${id}-glow)`} fill="none" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d={line} style={{ stroke: "var(--side-blue)" }} clipPath={`url(#${id}-above)`} />
+          <path d={line} style={{ stroke: "var(--side-red)" }} clipPath={`url(#${id}-below)`} />
+        </g>
+        <text x={left + 10} y={top + 14} style={{ fill: "var(--side-blue)" }} fontSize="11" fontWeight="800" letterSpacing="0.08em">
           {blue} AHEAD
         </text>
-        <text x={left + 8} y={height - bottom - 8} fill="var(--side-red)" fontSize="12" fontWeight="800">
+        <text x={left + 10} y={plotBottom - 8} style={{ fill: "var(--side-red)" }} fontSize="11" fontWeight="800" letterSpacing="0.08em">
           {red} AHEAD
         </text>
-        {marks.map((e, i) => (
-          <circle
-            key={i}
-            cx={x(e.t / 60)}
-            cy={y(at(e.t))}
-            r={e.kind === "play" || e.kind === "baron" ? 6 : 4.5}
-            style={{ fill: e.kind === "play" ? "var(--gold)" : e.side === "blue" ? "var(--side-blue)" : e.side === "red" ? "var(--side-red)" : "#8e99ae" }}
-            stroke="#070a12"
-            strokeWidth="2"
-          >
+
+        {/* Fights and other moments on the line. */}
+        {dots.map((e, i) => (
+          <circle key={i} cx={x(e.t / 60)} cy={curve.yAt(x(e.t / 60))} r={e.kind === "throw" ? 4.5 : 3.5} style={{ fill: tone(e.side) }} stroke="#070a12" strokeWidth="1.5">
             <title>{`${clock(e.t)} ${e.text}`}</title>
           </circle>
         ))}
+
+        {/* Hover: the minute under the mouse. */}
+        {hovered !== null && (
+          <g pointerEvents="none">
+            <line x1={x(hovered)} x2={x(hovered)} y1={top} y2={plotBottom} stroke="rgba(255,255,255,0.25)" strokeDasharray="3 4" />
+            <circle cx={x(hovered)} cy={y(series[hovered])} r="5" fill="#070a12" strokeWidth="2.5" style={{ stroke: tone(series[hovered] > 0 ? "blue" : series[hovered] < 0 ? "red" : null) }} />
+          </g>
+        )}
+
+        {/* Now: where the game stands, with a pulse and the lead. */}
+        <line x1={last[0]} x2={last[0]} y1={top} y2={plotBottom} stroke="rgba(255,255,255,0.08)" />
+        <circle className={classes.graphPulse} cx={last[0]} cy={last[1]} r="5" style={{ fill: headColor }} />
+        <circle cx={last[0]} cy={last[1]} r="5" style={{ fill: headColor }} stroke="#070a12" strokeWidth="2" />
+        <g transform={`translate(${labelLeft ? last[0] - 12 - labelWidth : last[0] + 12}, ${Math.max(top, Math.min(plotBottom - 22, last[1] - 11))})`}>
+          <rect width={labelWidth} height="22" rx="11" fill="#0b111c" style={{ stroke: headColor }} strokeWidth="1.2" />
+          <text x={labelWidth / 2} y="15" textAnchor="middle" fontSize="12" fontWeight="800" style={{ fill: headColor }}>
+            {label}
+          </text>
+        </g>
       </svg>
+
+      {/* Objectives in the lane, in the colour of the side that took them. */}
+      {marks.map((e, i) => (
+        <span
+          key={i}
+          className={classes.graphMark}
+          title={`${clock(e.t)} ${e.text}`}
+          style={{ left: x(e.t / 60), top: plotBottom + lane / 2, color: e.kind === "play" ? "var(--gold)" : e.kind === "elder" ? "#f0c64a" : tone(e.side) }}
+        >
+          <GameIcon kind={LANE[e.kind]} size={13} />
+        </span>
+      ))}
+
+      {hovered !== null && (
+        <div className={classes.graphTip} style={x(hovered) > width - 280 ? { right: width - x(hovered) + 12 } : { left: x(hovered) + 12 }}>
+          <Group justify="space-between" gap="md" wrap="nowrap">
+            <Text fz={11} fw={700} c="dimmed">
+              {hovered}′
+            </Text>
+            <Text fz={13} fw={800} style={{ color: tone(series[hovered] > 50 ? "blue" : series[hovered] < -50 ? "red" : null) }}>
+              {lead(series[hovered], blue, red)}
+            </Text>
+          </Group>
+          {inMinute.map((e, i) => (
+            <Text key={i} fz={11} c="gray.4" mt={4} lh={1.35}>
+              <span style={{ color: e.kind === "play" ? "var(--gold)" : tone(e.side), fontWeight: 700 }}>{kindOf(e.kind).label}</span> · {e.text}
+            </Text>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

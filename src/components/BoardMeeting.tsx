@@ -47,8 +47,8 @@ export function BoardMeeting() {
       ) : (
         <Stack gap="md">
           <Text fz="sm" c="gray.4">
-            The board ranks the club by its reputation{" "}
-            <Stars value={b.reputation.team_stars} size={12} label={`Club reputation ${b.reputation.team}`} /> and asks for the
+            The board ranks the club by its standing in the {b.reputation.region}{" "}
+            <Stars value={b.reputation.region_stars} size={12} label={`Club reputation ${b.reputation.team}`} /> and asks for the
             following. Ask for less and the budget shrinks by {Math.round(b.finances.budget_step * 100)}% a step, promise more and it
             grows by as much. Every objective you miss costs the board's confidence.
           </Text>

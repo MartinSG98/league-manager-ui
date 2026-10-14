@@ -12,7 +12,7 @@ import { DrawPrompt } from "../components/DrawPrompt";
 import { JobOffers } from "../components/JobOffers";
 import { LeagueLogo, TeamLogo } from "../components/Media";
 import { SeasonTrack } from "../components/SeasonTrack";
-import { Stars } from "../components/Stars";
+import { ClubStars } from "../components/Stars";
 import { Meter } from "../components/Ui";
 import { dayLabel, money, shortDate, vars, whenLabel } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -182,10 +182,7 @@ export function CareerLayout() {
               <Text fw={800} fz="md" lh={1.15}>
                 {career.team.name}
               </Text>
-              <Stars value={career.reputation.team_stars} size={12} label={`Club reputation ${career.reputation.team}`} />
-              <Text fz="xs" c="dimmed" truncate>
-                {career.manager}
-              </Text>
+              <ClubStars r={career.reputation} size={11} />
             </Stack>
           </Group>
 

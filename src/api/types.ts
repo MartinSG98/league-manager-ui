@@ -391,14 +391,22 @@ export interface BoardBonus {
   payment: number;
 }
 
-export interface Reputation {
+/** A club rated twice: by the whole scene (reputation weighed by league strength) and by its own region. */
+export interface ClubRatings {
+  world_stars: number;
+  region_stars: number;
+  /** The region's league, the label of region_stars. */
+  region: string;
+}
+
+export interface Reputation extends ClubRatings {
   team: number;
   team_stars: number;
   manager: number;
   manager_stars: number;
 }
 
-export interface JobOffer {
+export interface JobOffer extends ClubRatings {
   team: TeamRef;
   stars: number;
   budget: number;
@@ -407,9 +415,8 @@ export interface JobOffer {
 }
 
 /** An AI club looking for a head coach. */
-export interface Vacancy {
+export interface Vacancy extends ClubRatings {
   team: TeamRef;
-  stars: number;
   league_name: string;
   opened: string;
   closes: string;
@@ -573,7 +580,7 @@ export interface BudgetAdjust {
   wage_cut: string | null;
 }
 
-export interface SquadView {
+export interface SquadView extends ClubRatings {
   team: TeamRef;
   is_mine: boolean;
   lineup: Partial<Record<Role, string>>;
@@ -930,7 +937,7 @@ export interface BoardView {
   history: string[];
   reputation: Reputation & { prestige: number };
   finances: { budget: number; payroll: number; cash: number; sponsors_per_week: number; budget_step: number };
-  league_reputation: { team: TeamRef; reputation: number; stars: number }[];
+  league_reputation: ({ team: TeamRef; reputation: number; stars: number } & ClubRatings)[];
   job_offers: JobOffer[];
   vacancies: Vacancy[];
   /** The most stars a club can have and still want you. */

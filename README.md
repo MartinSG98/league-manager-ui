@@ -63,7 +63,7 @@ Both public folders are git-ignored, about 42 MB together. Every image tries its
 | `/career/:id/meta` | Champion tier list per role on the current patch and patch notes |
 | `/career/:id/training` | Scrim load, team focus areas, set plays to drill, every player's condition and own training, the analyst's review |
 | `/career/:id/transfers` | The transfer window: bids for your players, your bids, players who want to talk, your transfer list, every move, the shortlist, and the budget slider |
-| `/career/:id/club` | Board confidence and job security, objectives, the board's reviews, reputation in stars, finances and the budget slider (salary budget against the bank, as in Football Manager) |
+| `/career/:id/club` | Board confidence and job security, objectives, the board's reviews, the club's world and region stars and your reputation, the league by reputation, finances and the budget slider (salary budget against the bank, as in Football Manager) |
 | `/career/:id/jobs` | Job center: head coach jobs at clubs that sacked their coach, with your manager reputation; each club links to its team page; apply, or take or decline an offer |
 | `/career/:id/inbox` | News, scouting reports, analyst reviews, patch notes and previews, draft, contract and transfer messages, with the decisions they ask for |
 
@@ -87,7 +87,7 @@ Two things block the career until you deal with them, so they open over every sc
 
 ## The board and the club
 
-At the meeting the board proposes a finish for each split and a target at Worlds. Each one can be accepted, lowered (4 percent less budget) or raised (4 percent more). The club screen then tracks confidence, job security and every objective, with where the team stands in the split right now. Reputation shows as stars, for the club and for you; the sidebar and the meeting show the club's, the job offers yours.
+At the meeting the board proposes a finish for each split and a target at Worlds. Each one can be accepted, lowered (4 percent less budget) or raised (4 percent more). The club screen then tracks confidence, job security and every objective, with where the team stands in the split right now. Reputation shows as stars. A club has two ratings: world stars weigh its reputation by its league's strength, region stars measure it against the biggest club of its region. The sidebar, the club screen, every team page, the job offers and the vacancies show both; the meeting shows the region's, since the board ranks the club in its league; the job offers show yours against the clubs' world stars.
 
 ## Training
 

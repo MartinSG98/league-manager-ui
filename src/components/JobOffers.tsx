@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { money } from "../lib/format";
 import { useCareer } from "../state/career";
 import { TeamLogo } from "./Media";
-import { ClubStars, Stars } from "./Stars";
+import { ClubStars } from "./Stars";
 
 /**
  * After a sacking: the clubs that want you. Nothing else can happen until you pick one, but you can
@@ -76,8 +76,9 @@ export function JobOffers({ browsing, onBrowse }: { browsing: boolean; onBrowse:
     >
       <Stack gap="md">
         <Text fz="sm" c="gray.4">
-          Your reputation <Stars value={career.reputation.manager_stars} size={12} label={`Manager reputation ${career.reputation.manager}`} />{" "}
-          reaches clubs up to one and a half world stars above it. Pick where your career goes next; the new board will want to meet you first.
+          Your reputation <ClubStars r={career.reputation.manager_ratings ?? {}} size={11} inline who="manager" /> reaches clubs up to one and a
+          half stars above it: clubs of the {career.reputation.manager_ratings?.region ?? "region"} go by its stars, the rest by world stars. Pick where
+          your career goes next; the new board will want to meet you first.
         </Text>
         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
           {career.job_offers.map((offer) => (

@@ -2,7 +2,7 @@ import { Badge, Stack, Text } from "@mantine/core";
 import { IconBriefcase } from "@tabler/icons-react";
 
 import { api } from "../api/client";
-import { Stars } from "../components/Stars";
+import { ClubStars, Stars } from "../components/Stars";
 import { Loading, PageHeader, Screen, Section } from "../components/Ui";
 import { Vacancies } from "../components/Vacancies";
 import { useApi } from "../lib/useApi";
@@ -25,7 +25,11 @@ export function JobCenterScreen() {
         right={
           <Stack gap={2} align="flex-end">
             <Text className="label">{career.manager}</Text>
-            <Stars value={b.reputation.manager_stars} size={18} label={`Manager reputation ${b.reputation.manager}`} />
+            {b.reputation.manager_ratings ? (
+              <ClubStars r={b.reputation.manager_ratings} size={16} who="manager" />
+            ) : (
+              <Stars value={b.reputation.manager_stars} size={18} label={`Manager reputation ${b.reputation.manager}`} />
+            )}
           </Stack>
         }
       />

@@ -47,7 +47,11 @@ function Club({ b }: { b: BoardView }) {
             </Stack>
             <Stack gap={2} align="flex-end">
               <Text className="eyebrow">{career.manager}</Text>
-              <Stars value={b.reputation.manager_stars} size={18} label={`Manager reputation ${b.reputation.manager}`} />
+              {b.reputation.manager_ratings ? (
+                <ClubStars r={b.reputation.manager_ratings} size={16} who="manager" />
+              ) : (
+                <Stars value={b.reputation.manager_stars} size={18} label={`Manager reputation ${b.reputation.manager}`} />
+              )}
             </Stack>
           </Group>
         }

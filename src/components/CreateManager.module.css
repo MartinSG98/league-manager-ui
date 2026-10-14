@@ -1,0 +1,110 @@
+/* Create your manager: who you are on the left, your attributes on the right. */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: var(--mantine-spacing-xl);
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.backgrounds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.background {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.background:hover {
+  border-color: var(--line);
+}
+
+.background[data-selected] {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(200, 170, 110, 0.12), var(--surface) 75%);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(200, 170, 110, 0.12);
+  color: var(--gold-bright);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.points {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.group + .group {
+  margin-top: 14px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 34px 96px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepValue {
+  width: 22px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.final {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bonus {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-bright);
+}

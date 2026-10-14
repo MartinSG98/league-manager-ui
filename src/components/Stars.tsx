@@ -16,16 +16,28 @@ export function Stars({ value, size = 14, label }: { value: number; size?: numbe
   );
 }
 
-const WORLD = "How the whole scene sees the club: its reputation weighed by its league's strength";
-const regionTip = (region: string) => `How the ${region} sees the club: against the region's biggest club, who is five stars`;
+const TIPS = {
+  club: {
+    world: "How the whole scene sees the club: its reputation weighed by its league's strength",
+    region: (region: string) => `How the ${region} sees the club: against the region's biggest club, who is five stars`,
+  },
+  manager: {
+    world: "How the whole scene sees you: titles at home count by the league's strength, international results in full",
+    region: (region: string) => `How the ${region} sees you: everything you did there counts in full`,
+  },
+};
 
-/** A club's two ratings: in the world and in its region. Stacked (a label over each row) or in one line. */
-export function ClubStars({ r, size = 12, inline = false }: { r: Partial<ClubRatings>; size?: number; inline?: boolean }) {
+/**
+ * Two ratings, in the world and in a region, of a club or of the manager. Stacked (a label beside
+ * each row) or in one line.
+ */
+export function ClubStars({ r, size = 12, inline = false, who = "club" }: { r: Partial<ClubRatings>; size?: number; inline?: boolean; who?: "club" | "manager" }) {
   if (r.world_stars === undefined || r.region_stars === undefined) return null;
   const region = r.region ?? "Region";
+  const tips = TIPS[who];
   const rows = [
-    { key: "world", label: "World", value: r.world_stars, tip: `${WORLD}: ${r.world_stars} stars` },
-    { key: "region", label: region, value: r.region_stars, tip: `${regionTip(region)}: ${r.region_stars} stars` },
+    { key: "world", label: "World", value: r.world_stars, tip: `${tips.world}: ${r.world_stars} stars` },
+    { key: "region", label: region, value: r.region_stars, tip: `${tips.region(region)}: ${r.region_stars} stars` },
   ];
   if (inline)
     return (

@@ -1256,9 +1256,8 @@ function Playback({ view, data, busy, onNext }: { view: LiveView; data: GameView
   }, [events, timeline.t]);
   const upTo = events.slice(0, reached);
   const current = upTo[upTo.length - 1] as TimelineEvent | undefined;
-  const minute = Math.floor(timeline.t / 60);
   const gold = data.timeline!.gold;
-  const goldLead = gold[timeline.done ? gold.length - 1 : Math.min(minute, gold.length - 1)] ?? 0;
+  const goldLead = timeline.done ? (gold[gold.length - 1] ?? 0) : goldAt(gold, events, timeline.t);
   const ourSide = view.our_side;
   const ourId = view[ourSide].team.id;
   const blueTeam = view.blue.team;
@@ -1576,6 +1575,21 @@ function smooth(pts: [number, number][]): { d: string; yAt: (px: number) => numb
   return { d, yAt };
 }
 
+/**
+ * The gold lead at second t, without looking ahead. gold[m] is the lead at the end of minute m,
+ * after that minute's fights, so at t it is the last whole minute's value, then the latest event
+ * since; each event carries the lead right after it.
+ */
+function goldAt(gold: number[], events: TimelineEvent[], t: number): number {
+  const m = Math.floor(t / 60);
+  let value = m >= 1 ? (gold[Math.min(m - 1, gold.length - 1)] ?? 0) : 0;
+  for (const e of events) {
+    if (e.t > t) break;
+    if (e.t >= m * 60) value = e.gold;
+  }
+  return value;
+}
+
 /** Objectives get an icon in the lane under the graph; fights stay dots on the line. */
 const LANE: Record<string, GameIconKind> = { dragon: "dragon", soul: "dragon", elder: "dragon", baron: "baron", herald: "herald", inhibitor: "inhibitor", play: "play" };
 
@@ -1593,11 +1607,11 @@ function SideGraph({ gold, seconds, events, blue, red, height = 300 }: { gold: n
   const id = useId();
   const [hover, setHover] = useState<number | null>(null);
   const width = Math.max(320, Math.round(measured) || 700);
-  const minute = Math.floor(seconds / 60);
-  const series = gold.slice(0, Math.max(1, minute + 1));
-  // The line runs to this very second, between the last whole minute and the next.
-  const part = seconds / 60 - minute;
-  const live = minute + 1 < gold.length && part > 0 ? series[series.length - 1] + (gold[minute + 1] - series[series.length - 1]) * part : null;
+  // gold[m] is the lead at the end of minute m, so it sits at m + 1; the game starts even at 0. Only
+  // minutes already over are drawn, then the line runs to this very second at the latest event's lead.
+  const minute = Math.min(Math.floor(seconds / 60), gold.length);
+  const series = [0, ...gold.slice(0, minute)]; // the lead at 0′, 1′, … minute′
+  const live = seconds / 60 > minute ? goldAt(gold, events, seconds) : null;
   const minutes = Math.max(20, minute + 4);
   // At least 10k either way, so an early lead of a thousand looks like one; past that, the next 5k up.
   const peak = Math.max(10000, Math.ceil(Math.max(...series.map((g) => Math.abs(g)), Math.abs(live ?? 0)) / 5000) * 5000);
@@ -1611,7 +1625,7 @@ function SideGraph({ gold, seconds, events, blue, red, height = 300 }: { gold: n
   const mid = top + (plotBottom - top) / 2;
   const y = (g: number) => mid - (g / peak) * ((plotBottom - top) / 2);
   const points = series.map((g, m) => [x(m), y(g)] as [number, number]);
-  if (live !== null) points.push([x(minute + part), y(live)]);
+  if (live !== null) points.push([x(seconds / 60), y(live)]);
   const curve = smooth(points);
   const line = curve.d;
   const last = points[points.length - 1];
@@ -1628,7 +1642,8 @@ function SideGraph({ gold, seconds, events, blue, red, height = 300 }: { gold: n
   const labelWidth = label.length * 7 + 16;
   const labelLeft = last[0] + 12 + labelWidth > width - right;
   const hovered = hover !== null ? Math.min(hover, series.length - 1) : null;
-  const inMinute = hovered === null ? [] : key.filter((e) => Math.floor(e.t / 60) === hovered).slice(0, 4);
+  // What happened in the minute that ends at the hovered mark.
+  const inMinute = hovered === null ? [] : key.filter((e) => Math.floor(e.t / 60) === hovered - 1).slice(0, 4);
 
   function move(ev: MouseEvent<HTMLDivElement>) {
     const box = ev.currentTarget.getBoundingClientRect();

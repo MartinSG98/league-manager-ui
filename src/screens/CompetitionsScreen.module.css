@@ -1,0 +1,268 @@
+/* Competitions: the season as a strip of phases on top, the chosen phase in detail under it. */
+
+.stripWrap {
+  overflow-x: auto;
+  margin-bottom: var(--mantine-spacing-lg);
+}
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 8px;
+  min-width: 860px;
+}
+
+.node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 30px 14px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.node:hover {
+  border-color: var(--line);
+}
+
+.node[data-selected] {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(200, 170, 110, 0.1), var(--surface) 70%);
+}
+
+/* The rail: a line through every node with a dot for its state. */
+.node::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: -9px;
+  right: -9px;
+  border-top: 2px solid #263149;
+}
+
+.node:first-child::before {
+  left: 14px;
+}
+
+.node:last-child::before {
+  right: 50%;
+}
+
+.node[data-state="finished"]::before {
+  border-top-color: var(--gold);
+}
+
+.dot {
+  position: absolute;
+  top: 9px;
+  left: 14px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #3a4560;
+  background: #0b111c;
+}
+
+.node[data-state="finished"] .dot {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+
+.node[data-state="running"] .dot {
+  border-color: #0ac8b9;
+  background: #0ac8b9;
+  box-shadow: 0 0 0 0 rgba(10, 200, 185, 0.6);
+  animation: nowPulse 1.8s ease-out infinite;
+}
+
+.node[data-state="tba"] .dot {
+  border-style: dashed;
+}
+
+@keyframes nowPulse {
+  to {
+    box-shadow: 0 0 0 10px rgba(10, 200, 185, 0);
+  }
+}
+
+.nodeLogos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  min-height: 20px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.card:hover {
+  border-color: var(--line);
+}
+
+.card[data-mine] {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(200, 170, 110, 0.08), var(--surface) 60%);
+}
+
+.miniRow {
+  display: grid;
+  grid-template-columns: 18px 20px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.miniRow[data-mine] {
+  color: var(--gold-bright);
+  font-weight: 700;
+}
+
+.region {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--line-soft);
+}
+
+.entrant {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.entrant[data-mine] {
+  color: var(--gold-bright);
+  font-weight: 800;
+}
+
+/* The whole season at a glance: a row per league; the splits and, between them, the international events. */
+
+.matrixWrap {
+  overflow-x: auto;
+}
+
+.matrix {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) repeat(6, minmax(130px, 1fr));
+  min-width: 1040px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.matrixHead,
+.matrixLeague,
+.matrixCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  min-width: 0;
+}
+
+.matrixHead {
+  min-height: 34px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+button.matrixHead {
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+button.matrixHead:disabled {
+  cursor: default;
+}
+
+button.matrixHead:not(:disabled):hover,
+.matrixHead[data-selected] {
+  color: var(--gold-bright);
+}
+
+/* The international events stand out from the splits around them. */
+.matrixHead[data-event],
+.matrixCell[data-event] {
+  background: rgba(10, 200, 185, 0.035);
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.matrixLeague {
+  cursor: pointer;
+}
+
+.matrixLeague:hover {
+  color: var(--gold-bright);
+}
+
+.matrixLeague[data-mine],
+.matrixCell[data-mine] {
+  background: rgba(200, 170, 110, 0.07);
+}
+
+.matrixCell {
+  cursor: pointer;
+}
+
+.matrixCell[data-empty] {
+  cursor: default;
+}
+
+.matrixCell:not([data-empty]):hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.eventTeam {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.eventTeam[data-mine] {
+  color: var(--gold-bright);
+}
+
+.eventTeam[data-champion] .eventPlace {
+  color: var(--gold-bright);
+}
+
+.eventPlace {
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-4);
+  letter-spacing: 0;
+  text-transform: none;
+}

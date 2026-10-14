@@ -58,7 +58,7 @@ Both public folders are git-ignored, about 42 MB together. Every image tries its
 | `/career/:id/match` | Match day, full window: the tale of the tape, champion select, the game played back minute by minute, each game's result and the series |
 | `/career/:id/matches/:match` | Series report: every game's picks, bans, scoreboard, gold graph and timeline |
 | `/career/:id/schedule` | Your matches and results |
-| `/career/:id/competitions` | Every competition of the season by split |
+| `/career/:id/competitions` | The season as a strip of phases (splits and international events, winners' logos, the current one pulsing) with the chosen phase in detail: each league's winner and final, its top three and your place, or its holders and start; an event's champion, your status and next match, and its teams by region. Under it the season at a glance: a row per league, a column per split and event, with winners, leaders, and each league's teams and places at the events; a league opens its standings now, a cell that competition's |
 | `/career/:id/competitions/:comp` | Standings, brackets, Swiss records and results |
 | `/career/:id/meta` | Champion tier list per role on the current patch and patch notes |
 | `/career/:id/training` | Scrim load, team focus areas, set plays to drill, every player's condition and own training, the analyst's review |

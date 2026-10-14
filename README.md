@@ -163,7 +163,7 @@ While a series is live, the match screen takes the whole window. The office's to
    - **Gold difference.** A smooth line up to the current second, in the colour of the side ahead, over an area that fades towards even. A pulsing point at its end carries the lead ("+2.2k GAM"). Each minute's value is the lead once that minute is over, so it sits at the minute's end. The line's end, and the lead above the graph, follow the latest event, so neither shows a fight before it happens.
      - **Moments:** fights are dots on the line in the colour of the side they went to. Drakes, Soul, Elder, Baron, Herald, inhibitors and set plays are icons in a lane under it.
      - **Hover:** a minute shows its lead and what happened in it.
-     - **Scale:** it covers only what has been played, at least 10k either way, so it gives nothing away.
+     - **Scale:** the time axis shows 30 minutes from the start and grows once the game nears them; the gold axis covers only what has been played, at least 10k either way. Neither gives anything away.
    - **Set play.** A card for your set play shows whether it worked once it has had time to play out.
    - **Feed.** It lists the key moments, or everything on request.
 

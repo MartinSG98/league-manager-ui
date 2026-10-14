@@ -525,12 +525,20 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
     return null;
   }
 
+  /** A lock by hand answers this step: the clock must not lock it again while the next view loads. */
+  async function lockByHand(champion: string, pickRole: Role | null) {
+    const key = stepKey;
+    moved.current = key;
+    const result = await lock(champion, pickRole);
+    if (!result && moved.current === key) moved.current = null; // refused: the clock still runs for this step
+  }
+
   async function lockIn() {
-    if (selected) await lock(selected, role);
+    if (selected) await lockByHand(selected, role);
   }
 
   async function take(sg: Suggestion) {
-    await lock(sg.champion, sg.role ?? null);
+    await lockByHand(sg.champion, sg.role ?? null);
   }
 
   async function timeUp() {
@@ -1409,8 +1417,12 @@ function ObjectiveSide({ side, events, right = false }: { side: Side; events: Ti
   const mine = events.filter((e) => e.side === side);
   const count = (...kinds: string[]) => mine.filter((e) => kinds.includes(e.kind)).length;
   const towers = count("tower");
-  const drakes = mine.filter((e) => e.kind === "dragon" || e.kind === "soul" || e.kind === "elder");
-  const types = drakes.map((e) => /the (\w+) Drake/.exec(e.text)?.[1] ?? (e.kind === "elder" ? "Elder" : e.kind === "soul" ? "Soul" : "Drake"));
+  const dragons = mine.filter((e) => e.kind === "dragon" || e.kind === "soul" || e.kind === "elder");
+  // Elemental drakes only, as the game's record counts them; the Elder still shows among the types.
+  const drakes = dragons.filter((e) => e.kind !== "elder");
+  const types = dragons.map((e) =>
+    e.kind === "elder" ? "Elder" : e.kind === "soul" ? `${/the (\w+) Soul/.exec(e.text)?.[1] ?? ""} Soul`.trim() : /the (\w+) Drake/.exec(e.text)?.[1] ?? "Drake",
+  );
   const heralds = count("herald");
   const grubs = count("grubs");
   const barons = count("baron");

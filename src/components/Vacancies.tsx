@@ -14,7 +14,13 @@ import { Empty } from "./Ui";
  * AI clubs looking for a head coach. A club may offer you the job on its own; you can also apply.
  * Taking an offer means leaving your club, so it asks first. Each club links to its team page.
  */
-export function Vacancies({ vacancies, reach }: { vacancies: Vacancy[]; reach: number }) {
+function reachText(reach: number | { region: number; world: number; region_name: string }): string {
+  const upTo = (n: number) => (n >= 5 ? "every club" : `clubs up to ${n.toFixed(1)} stars`);
+  if (typeof reach === "number") return `Your reputation reaches ${upTo(reach)}.`;
+  return `In the ${reach.region_name} your reputation reaches ${upTo(reach.region)}; elsewhere ${upTo(reach.world)} (world stars).`;
+}
+
+export function Vacancies({ vacancies, reach }: { vacancies: Vacancy[]; reach: number | { region: number; world: number; region_name: string } }) {
   const { career, act, busy } = useCareer();
   const [taking, setTaking] = useState<Vacancy | null>(null);
   if (!vacancies.length) {
@@ -52,8 +58,7 @@ export function Vacancies({ vacancies, reach }: { vacancies: Vacancy[]; reach: n
         </Table.Tbody>
       </Table>
       <Text fz="xs" c="dimmed" mt="sm">
-        {reach >= 5 ? "Your reputation reaches every club." : `Your reputation reaches clubs up to ${reach.toFixed(1)} stars.`} Clubs out of
-        reach turn applications down.
+        {reachText(reach)} Clubs out of reach turn applications down.
       </Text>
       {taking && <TakeJob v={taking} onClose={() => setTaking(null)} />}
     </>

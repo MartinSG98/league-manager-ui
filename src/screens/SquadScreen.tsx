@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { PlayerDetail, Role, SquadView, StaffRow, TrainingView } from "../api/types";
-import { PlayerPhoto, PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
+import type { PlayerDetail, Role, SquadView, TrainingView } from "../api/types";
+import { PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
+import { StaffPanel } from "../components/StaffPanel";
 import { ClubStars } from "../components/Stars";
 import { TacticsPanel } from "../components/TacticsPanel";
 import { Empty, Loading, Meter, Ovr, Screen, Section, Stat, Tag } from "../components/Ui";
-import { ATTRIBUTE_NAMES, flag, money, ROLE_NAMES, ROLES, signed, STAFF_ATTRIBUTES, STAFF_KIND_NAMES, vars } from "../lib/format";
+import { ATTRIBUTE_NAMES, flag, money, ROLE_NAMES, ROLES, signed, vars } from "../lib/format";
 import { ATTRS, teamAverages } from "../lib/squad";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
@@ -116,13 +117,12 @@ function Squad({ squad, training }: { squad: SquadView; training: TrainingView |
               )}
             </Section>
             {squad.is_mine && <TacticsPanel tactics={squad.tactics} />}
-            <Section title="Staff" pad={false}>
-              <StaffLine person={squad.staff.coach} kind="coach" />
-              <StaffLine person={squad.staff.analyst} kind="analyst" />
-            </Section>
             {squad.is_mine && bench.length > 0 && <LineupPanel squad={squad} />}
           </Stack>
         </div>
+        <Box mt="lg">
+          <StaffPanel staff={squad.staff} mine={squad.is_mine} />
+        </Box>
       </Box>
     </Screen>
   );
@@ -347,41 +347,6 @@ function TeamProfile({ squad, five, bench, avg, training }: { squad: SquadView; 
       )}
       {view !== "profile" && <Box h={16} />}
     </Section>
-  );
-}
-
-/** A staff member on one line: who, what they are good at, how good overall. */
-function StaffLine({ person, kind }: { person: StaffRow | null; kind: "coach" | "analyst" }) {
-  const { career } = useCareer();
-  if (!person) {
-    return (
-      <Group className={classes.staffLine} gap="sm">
-        <Text fz="sm" c="dimmed">
-          No {STAFF_KIND_NAMES[kind].toLowerCase()}. The team works as if it had a weak one.
-        </Text>
-      </Group>
-    );
-  }
-  return (
-    <Group className={classes.staffLine} gap="sm" wrap="nowrap">
-      <PlayerPhoto photo={person.photo} name={person.name} size={40} ring={kind === "analyst" ? "var(--teal)" : undefined} />
-      <Stack gap={2} style={{ flex: 1 }} miw={0}>
-        <Text fz="md" fw={700} truncate>
-          <Link to={`/career/${career.id}/staff/${person.id}`} className="link">
-            {person.name}
-          </Link>{" "}
-          <Text span fz="sm" c="dimmed" fw={500}>
-            · {STAFF_KIND_NAMES[kind].toLowerCase()}
-          </Text>
-        </Text>
-        <Text fz="xs" c="dimmed" truncate>
-          {Object.entries(person.attributes)
-            .map(([a, v]) => `${STAFF_ATTRIBUTES[a]?.name ?? a} ${v}`)
-            .join(" · ")}
-        </Text>
-      </Stack>
-      <Ovr value={person.overall} size="md" plain />
-    </Group>
   );
 }
 

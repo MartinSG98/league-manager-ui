@@ -1,6 +1,6 @@
 import type {
   Action, ActionResult, BoardView, CareerView, Catalog, CompetitionRow, CompetitionView, DraftView, GameView, LiveView,
-  MatchSummary, MatchView, MetaView, NegotiationView, PlayerDetail, PlayerRow, Role, SaveRow, SquadView, StaffDetail,
+  ManagerView, MatchSummary, MatchView, MetaView, NegotiationView, PlayerDetail, PlayerRow, Role, SaveRow, SquadView, StaffDetail,
   StaffKind, StaffRow, TeamPreview,
   ShortlistRow, TrainingView, TransfersView,
 } from "./types";
@@ -87,6 +87,7 @@ export const api = {
   negotiation: (id: string, player: string) => request<NegotiationView>(`${career(id)}/negotiate/${player}`),
   training: (id: string) => request<TrainingView>(`${career(id)}/training`),
   board: (id: string) => request<BoardView>(`${career(id)}/board`),
+  manager: (id: string) => request<ManagerView>(`${career(id)}/manager`),
   transfers: (id: string) => request<TransfersView>(`${career(id)}/transfers`),
   shortlist: (id: string) => request<ShortlistRow[]>(`${career(id)}/shortlist`),
 };

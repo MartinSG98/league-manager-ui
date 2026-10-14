@@ -1,0 +1,104 @@
+/* Me: the manager's profile, as Football Manager's. */
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background: radial-gradient(circle at 30% 25%, rgba(200, 170, 110, 0.35), #0b111c 70%);
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.6fr);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+
+@media (max-width: 700px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tile {
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 16px;
+  align-items: center;
+}
+
+.attrGroup + .attrGroup {
+  margin-top: 14px;
+}
+
+.doer {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+.doer[data-mine] {
+  color: var(--gold-bright);
+}
+
+.cabinet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.trophy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px 14px;
+  border: 1px solid rgba(200, 170, 110, 0.35);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(200, 170, 110, 0.14), var(--surface) 70%);
+  text-align: center;
+}
+
+.trophy[data-kind="WORLDS"] {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(240, 198, 74, 0.25), var(--surface) 75%);
+}
+
+.compRow td {
+  border-top: 0 !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+.seasonRow td {
+  padding-top: 10px !important;
+}

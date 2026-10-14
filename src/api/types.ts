@@ -338,6 +338,8 @@ export interface LiveSummary {
 export interface CareerView {
   id: string;
   manager: string;
+  /** null: the manager is still to be created; absent from servers older than the manager profile. */
+  profile?: { background: string; country: string | null } | null;
   season: number;
   day: string;
   phase: Phase;
@@ -399,11 +401,19 @@ export interface ClubRatings {
   region: string;
 }
 
+/** The manager, rated like a club: in the world, and in the region they work in. */
+export interface ManagerRatings extends ClubRatings {
+  world: number;
+  regional: number;
+}
+
 export interface Reputation extends ClubRatings {
   team: number;
   team_stars: number;
   manager: number;
   manager_stars: number;
+  /** Absent from servers older than the manager's two ratings. */
+  manager_ratings?: ManagerRatings;
 }
 
 export interface JobOffer extends ClubRatings {
@@ -940,8 +950,8 @@ export interface BoardView {
   league_reputation: ({ team: TeamRef; reputation: number; stars: number } & ClubRatings)[];
   job_offers: JobOffer[];
   vacancies: Vacancy[];
-  /** The most stars a club can have and still want you. */
-  reach: number;
+  /** The most stars a club can have and still want you: in your region on its scale, elsewhere on the world's. */
+  reach: number | { region: number; world: number; region_name: string };
   star_reach: number;
   thresholds: { warning: number; safe: number };
 }
@@ -1043,4 +1053,77 @@ export type Action =
   | { type: "shortlist"; player: string; on: boolean }
   | { type: "scout_player"; player: string }
   | { type: "adjust_budget"; budget: number }
-  | { type: "talk"; conversation: number; choice: TalkChoice };
+  | { type: "talk"; conversation: number; choice: TalkChoice }
+  | { type: "create_manager"; background: string; attributes: Record<string, number>; name?: string; country?: string | null }
+  | { type: "set_duty"; attribute: string; who: DutyChoice };
+
+// ---------- the manager ----------
+
+export type DutyChoice = "auto" | "manager" | "staff";
+
+export interface ManagerAttribute {
+  id: string;
+  name: string;
+  text: string;
+  /** The staff seat that shares this work; null for the manager's own attributes. */
+  seat: StaffKind | null;
+}
+
+export interface ManagerBackground {
+  id: string;
+  name: string;
+  text: string;
+  reputation: number;
+  bonus: Record<string, number>;
+  /** Points to spend above the base with this background. */
+  points: number;
+}
+
+export interface Duty {
+  attribute: string;
+  seat: StaffKind;
+  staff: StaffRow | null;
+  staff_value: number | null;
+  mine: number;
+  /** Who does the work now. */
+  who: "manager" | "staff";
+  choice: DutyChoice;
+}
+
+/** How the manager's club did in one competition. */
+export interface CompetitionRecordView {
+  name: string;
+  kind: "league" | "FST" | "MSI" | "WORLDS";
+  team: TeamRef | null;
+  series: [number, number];
+  games: [number, number];
+  /** The final place, once the competition is over. */
+  place: number | null;
+}
+
+export interface ManagerRecord {
+  /** When the manager took the current job; null without a club. */
+  since: string | null;
+  totals: { series: [number, number]; games: [number, number]; titles: number; seasons: number };
+  /** Newest first; the current season is counted from its matches so far. */
+  seasons: { season: number; current: boolean; teams: TeamRef[]; series: [number, number]; games: [number, number]; titles: string[]; competitions: CompetitionRecordView[] }[];
+  trophies: { name: string; kind: CompetitionRecordView["kind"]; season: number; team: TeamRef | null }[];
+  clubs: { team: TeamRef | null; start: string; end: string | null; left: "" | "moved" | "sacked"; series: [number, number]; games: [number, number]; titles: number }[];
+  /** [day, reputation] each time it changed. */
+  /** [day, world, region] each time it changed; the oldest entries may lack the region. */
+  reputation_log: [string, number, number?][];
+}
+
+export interface ManagerView {
+  name: string;
+  club: TeamRef | null;
+  record: ManagerRecord;
+  reputation: number;
+  stars: number;
+  ratings?: ManagerRatings;
+  profile: { background: string; background_name: string; country: string | null; attributes: Record<string, number>; created: string } | null;
+  attributes: ManagerAttribute[];
+  backgrounds: ManagerBackground[];
+  rules: { base: number; lowest: number; highest: number; cap: number; name_length: number };
+  duties: Duty[];
+}

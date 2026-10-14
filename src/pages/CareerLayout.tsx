@@ -1,13 +1,14 @@
 import { AppShell, Badge, Box, Button, Group, NavLink, Stack, Text, Tooltip, UnstyledButton } from "@mantine/core";
 import {
   IconArrowLeft, IconBarbell, IconBriefcase, IconBuildingSkyscraper, IconCalendar, IconChartBar, IconHome, IconMail, IconPlayerPlayFilled,
-  IconSwords, IconTransfer, IconTrophy, IconUserSearch, IconUsersGroup, IconWand,
+  IconSwords, IconTransfer, IconTrophy, IconUser, IconUserSearch, IconUsersGroup, IconWand,
 } from "@tabler/icons-react";
 import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
 import { BoardMeeting } from "../components/BoardMeeting";
+import { CreateManager } from "../components/CreateManager";
 import { DrawPrompt } from "../components/DrawPrompt";
 import { JobOffers } from "../components/JobOffers";
 import { LeagueLogo, TeamLogo } from "../components/Media";
@@ -39,7 +40,11 @@ export function CareerLayout() {
   // Unread mail comes before the next day, one message a press, oldest first, as in Football Manager.
   const unread = [...career.inbox].reverse().find((m) => !m.read);
 
+  // A career whose manager is not created yet (null; a server from before managers sends nothing) waits for it.
+  const creating = career.profile === null;
+
   async function proceed() {
+    if (creating) return;
     if (career.board.sacked) return setBrowsing(false);
     if (career.board.meeting) return;
     if (career.phase === "draft") return navigate(`${base}/draft`);
@@ -54,7 +59,8 @@ export function CareerLayout() {
   // The button says what it does next, and its second line says where that leads.
   let label = "Continue";
   let sub: string | null = null;
-  if (career.board.sacked) [label, sub] = ["Choose a club", "Offers from other clubs"];
+  if (creating) [label, sub] = ["Create your manager", "Before anything else"];
+  else if (career.board.sacked) [label, sub] = ["Choose a club", "Offers from other clubs"];
   else if (career.board.meeting) [label, sub] = ["Board meeting", "Agree the season's objectives"];
   else if (career.phase === "draft") [label, sub] = career.draft?.my_turn ? ["Your pick", "You are on the clock"] : ["Draft room", career.draft ? `Pick ${career.draft.number} of ${career.draft.total}` : null];
   else if (career.live) [label, sub] = ["Match day", opponent ? `vs ${opponent.name}` : null];
@@ -62,13 +68,14 @@ export function CareerLayout() {
   else if (unread) [label, sub] = ["Next message", `${career.unread} unread`];
   else if (next && opponent) sub = `Next: ${opponent.tag} · ${whenLabel(next.day, career.day)}`;
   else if (career.window) sub = `Window closes ${shortDate(career.window.closes)}`;
-  const urgent = !!career.live || !!career.draft?.my_turn || pending > 0 || career.board.meeting;
+  const urgent = creating || !!career.live || !!career.draft?.my_turn || pending > 0 || career.board.meeting;
 
   const groups: { label: string | null; items: NavItem[] }[] = [
     {
       label: null,
       items: [
         { to: base, label: "Home", icon: IconHome },
+        { to: `${base}/me`, label: "Me", icon: IconUser },
         { to: `${base}/inbox`, label: "Inbox", icon: IconMail, badge: career.unread ? String(career.unread) : undefined },
         { to: `${base}/draft`, label: "Draft room", icon: IconWand, show: career.phase === "draft", badge: career.draft?.my_turn ? "!" : undefined },
         { to: `${base}/match`, label: "Match day", icon: IconSwords, show: !!career.live, badge: "LIVE" },
@@ -231,7 +238,9 @@ export function CareerLayout() {
 
       <AppShell.Main className={classes.main}>
         <Outlet />
-        {career.board.sacked ? (
+        {creating ? (
+          <CreateManager />
+        ) : career.board.sacked ? (
           <JobOffers browsing={browsing} onBrowse={setBrowsing} />
         ) : career.board.meeting ? (
           <BoardMeeting />

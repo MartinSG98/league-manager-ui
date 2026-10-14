@@ -51,7 +51,8 @@ Both public folders are git-ignored, about 42 MB together. Every image tries its
 | `/new` | Choose a league and a team, see the franchise player you keep and the 2026 roster you release |
 | `/career/:id` | Manager's office: the next match on a stage (both teams, the analyst's read from the scouting report, your run through the competition), or the transfer window in the off-season; **This week**, the things that need you; the race around the playoff line; every match of the current round, with arrows to the others; storylines picked from the results |
 | `/career/:id/draft` | Draft room: the team on the clock, pick order, the region's players and staff with photos and filters, your roster and budget, rivals |
-| `/career/:id/squad` | Starting five as portrait cards with each player's two best attributes and weak spot; a team profile of attributes, condition or contracts side by side, coloured only where a player stands two points above or below the five; chemistry, tactics, staff, lineup |
+| `/career/:id/me` | You, as Football Manager shows a manager: the profile and reputation (world and region stars, and both over time), the nine attributes with who does each piece of the work, the record (series and games won, trophies, seasons), a trophy cabinet, every season with each competition's record and finish, every club with dates, and the reputation over time |
+| `/career/:id/squad` | Starting five as portrait cards with each player's two best attributes and weak spot; a team profile of attributes, condition or contracts side by side, coloured only where a player stands two points above or below the five; chemistry, tactics, lineup; under them the staff: a card for each seat with its share of the work and who does it (you, them, or Auto: the better one), and a card with your own attributes |
 | `/career/:id/team/:team` | Any other team's squad |
 | `/career/:id/player/:player` | Profile with photo and real name and a verdict from your analyst (or the shortlist report); condition and development; transfer bid or transfer list and contract talks; attributes as a radar against the team's five; four key numbers for this season or 2026, the rest on request; champion pool split into signature champions and the ones strong on this patch |
 | `/career/:id/players` | Scouting: every player by region and role, free agents |
@@ -83,11 +84,16 @@ The **Continue** button in the top bar always does the next sensible thing, and 
 - With unread mail, it opens the oldest unread message, one per press.
 - Otherwise it moves the calendar one day, in the season and in the transfer window alike, as in Football Manager.
 
-Two things block the career until you deal with them, so they open over every screen: the **board meeting** about the season's objectives (when a job starts and every off-season) and, after a sacking, the **job offers**. Each offer can open the club's team page first: the offers then fold into a bar at the bottom, and the bar or Continue brings them back.
+Three things block the career until you deal with them, so they open over every screen:
+- **Create your manager.** Before anything else: in a new career right after the club is picked, and once in a career from before managers had attributes. Pick a name, a nationality and a background (each with its bonus, reputation and points), then spend the points on nine attributes with steppers, showing the background's bonus and the final value.
+- **The board meeting** about the season's objectives, when a job starts and every off-season.
+- **The job offers**, after a sacking.
+
+Each job offer can open the club's team page first: the offers then fold into a bar at the bottom, and the bar or Continue brings them back.
 
 ## The board and the club
 
-At the meeting the board proposes a finish for each split and a target at Worlds. Each one can be accepted, lowered (4 percent less budget) or raised (4 percent more). The club screen then tracks confidence, job security and every objective, with where the team stands in the split right now. Reputation shows as stars. A club has two ratings: world stars weigh its reputation by its league's strength, region stars measure it against the biggest club of its region. The sidebar, the club screen, every team page, the job offers and the vacancies show both; the meeting shows the region's, since the board ranks the club in its league; the job offers show yours against the clubs' world stars.
+At the meeting the board proposes a finish for each split and a target at Worlds. Each one can be accepted, lowered (4 percent less budget) or raised (4 percent more). The club screen then tracks confidence, job security and every objective, with where the team stands in the split right now. Reputation shows as stars. A club has two ratings: world stars weigh its reputation by its league's strength, region stars measure it against the biggest club of its region. You are rated the same way, in your region and in the world: the club screen, the job center and Me show both, and the vacancies say how far each reaches. The sidebar, the club screen, every team page, the job offers and the vacancies show both club ratings; the meeting shows the region's, since the board ranks the club in its league; the job offers show yours against the clubs' world stars.
 
 ## Training
 

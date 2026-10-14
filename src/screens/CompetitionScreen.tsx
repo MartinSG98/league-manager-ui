@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 
 import { api } from "../api/client";
 import type { MatchSummary, StageView, TeamRef } from "../api/types";
-import { LeagueLogo, TeamLogo } from "../components/Media";
+import { LeagueLogo, TeamLink, TeamLogo } from "../components/Media";
 import { StandingsTable } from "../components/StandingsTable";
 import { SwissStage } from "../components/SwissStage";
 import { Empty, Loading, PageHeader, Screen, Section } from "../components/Ui";
@@ -44,7 +44,7 @@ export function CompetitionScreen() {
                 <Stack gap={0}>
                   <Text className="eyebrow">{i === 0 ? "Champion" : ordinal(i + 1)}</Text>
                   <Text fw={800} fz={i === 0 ? "lg" : "sm"}>
-                    {t.name}
+                    <TeamLink team={t}>{t.name}</TeamLink>
                   </Text>
                 </Stack>
               </Group>
@@ -190,7 +190,7 @@ function TieSide({ team, score, won, done, mine }: { team: TeamRef | null; score
       <Group gap={8} wrap="nowrap" miw={0}>
         <TeamLogo team={team} size={24} />
         <Text fz="sm" fw={won ? 800 : 500} truncate>
-          {team?.name ?? "TBD"}
+          {team ? <TeamLink team={team}>{team.name}</TeamLink> : "TBD"}
         </Text>
       </Group>
       <Text fw={800} className="display" fz="lg">

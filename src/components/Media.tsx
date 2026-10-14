@@ -1,6 +1,6 @@
 import { Avatar, Box, Group, Text, Tooltip } from "@mantine/core";
-import type { CSSProperties } from "react";
-import { Link } from "react-router-dom";
+import type { CSSProperties, ReactNode } from "react";
+import { Link, useParams } from "react-router-dom";
 
 import type { Role, TeamRef } from "../api/types";
 import { championIcon, championLoading, championSplash, roleIcon } from "../lib/art";
@@ -23,6 +23,20 @@ export function TeamLogo({ team, size = 28 }: { team: Team | null | undefined; s
     <Box w={size} h={size} className={classes.logo}>
       <Img sources={[team.logo]} fallback={tag} alt={team.tag} loading="lazy" />
     </Box>
+  );
+}
+
+/**
+ * A team's name (or anything else) as a link to its page in the career on screen. The click stops
+ * there, so a clickable card around it does not open as well.
+ */
+export function TeamLink({ team, children }: { team: TeamRef | null | undefined; children: ReactNode }) {
+  const { id } = useParams();
+  if (!team || !id) return <>{children}</>;
+  return (
+    <Link className="link" to={`/career/${id}/team/${team.id}`} onClick={(e) => e.stopPropagation()} style={{ minWidth: 0 }}>
+      {children}
+    </Link>
   );
 }
 

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { CompetitionRow, CompetitionView, MatchSummary, TeamRef } from "../api/types";
-import { LeagueLogo, TeamLogo } from "../components/Media";
+import { LeagueLogo, TeamLink, TeamLogo } from "../components/Media";
 import { Empty, Loading, PageHeader, Screen, Section } from "../components/Ui";
 import { ordinal, shortDate } from "../lib/format";
 import { useApi } from "../lib/useApi";
@@ -340,7 +340,7 @@ function LeagueCard({ c, view, holder }: { c: CompetitionRow; view: CompetitionV
               </Text>
               <TeamLogo team={holder} size={20} />
               <Text fz="sm" fw={700} c={holder.id === career.team.id ? "gold.4" : undefined} truncate>
-                {holder.name}
+                <TeamLink team={holder}>{holder.name}</TeamLink>
               </Text>
             </Group>
           )}
@@ -371,7 +371,7 @@ function Finished({ view, me, mine }: { view: CompetitionView; me: string; mine:
           <TeamLogo team={winner} size={30} />
           <Stack gap={0} miw={0}>
             <Text fw={800} truncate>
-              {winner.name}
+              <TeamLink team={winner}>{winner.name}</TeamLink>
             </Text>
             {loser && (
               <Text fz="xs" c="dimmed" truncate>
@@ -411,7 +411,7 @@ function Running({ view, me }: { view: CompetitionView; me: string }) {
             </Text>
             <TeamLogo team={r.team} size={18} />
             <Text span fz={13} truncate fw="inherit">
-              {r.team.name}
+              <TeamLink team={r.team}>{r.team.name}</TeamLink>
             </Text>
             <Text span fz={13} fw={700}>
               {r.wins}–{r.losses}
@@ -516,7 +516,9 @@ function EventPhase({ phase }: { phase: Phase }) {
             <TeamLogo team={c.winner} size={36} />
             <Stack gap={0}>
               <Text className="eyebrow">Champion</Text>
-              <Text fw={800}>{c.winner.name}</Text>
+              <Text fw={800}>
+                <TeamLink team={c.winner}>{c.winner.name}</TeamLink>
+              </Text>
               {final && (
                 <Text fz="xs" c="dimmed">
                   {[...final.score].sort((a, b) => b - a).join("–")} over {(final.winner === final.home?.id ? final.away : final.home)?.name} in the final
@@ -547,7 +549,7 @@ function EventPhase({ phase }: { phase: Phase }) {
               {teams.map((t) => (
                 <span key={t.id} className={classes.entrant} data-mine={t.id === me || undefined}>
                   <TeamLogo team={t} size={20} />
-                  {t.name}
+                  <TeamLink team={t}>{t.name}</TeamLink>
                 </span>
               ))}
             </div>

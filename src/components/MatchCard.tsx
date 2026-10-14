@@ -2,7 +2,7 @@ import { Box, Group, Stack, Text } from "@mantine/core";
 
 import type { MatchSummary, TeamRef } from "../api/types";
 import { cx, longDate } from "../lib/format";
-import { LeagueLogo, TeamLogo } from "./Media";
+import { LeagueLogo, TeamLink, TeamLogo } from "./Media";
 import classes from "./MatchCard.module.css";
 
 /** Two teams face to face with their logos, the score once there is one, and what and when it is. */
@@ -50,7 +50,7 @@ function Side({ team, size, lost }: { team: TeamRef | null; size: number; lost: 
     <Stack align="center" gap={6} className={cx(lost && classes.lost)}>
       <TeamLogo team={team} size={size} />
       <Text fw={700} ta="center" fz="sm" lineClamp={1}>
-        {team?.name ?? "TBD"}
+        {team ? <TeamLink team={team}>{team.name}</TeamLink> : "TBD"}
       </Text>
     </Stack>
   );

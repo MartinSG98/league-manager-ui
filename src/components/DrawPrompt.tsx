@@ -21,6 +21,8 @@ export function DrawPrompt({ draw }: { draw: PendingDraw }) {
       onClose={() => act({ type: "read_message", id: draw.message })}
       centered
       size="sm"
+      // The screen behind may already list the new round's matches: blurred, it gives nothing away.
+      overlayProps={{ backgroundOpacity: 0.7, blur: 12 }}
       title={
         <Group gap="sm">
           <IconArrowsShuffle size={20} color="var(--gold-bright)" />

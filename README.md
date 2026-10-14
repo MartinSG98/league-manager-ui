@@ -133,7 +133,10 @@ While a series is live, the match screen takes the whole window. The office's to
 3. **The game.** A running game clock plays the game back:
    - **Scoreboard.** Kills, the clock, who leads in gold, and each side's towers, drakes by type, Herald, grubs and Baron.
    - **The latest moment.** A banner for the last key moment. When a fight gets a caster's call ("TRIPLE KILL for…"), the call is the headline and the fight's result sits under it.
-   - **Gold difference.** Minute by minute in the sides' colours: above the line blue is ahead, below it red. Key moments are dots in the colour of the side they went to, a set play in gold. It is scaled to what has been played, so it gives nothing away.
+   - **Gold difference.** A smooth line up to the current second, in the colour of the side ahead, over an area that fades towards even. A pulsing point at its end carries the lead ("+2.2k GAM").
+     - **Moments:** fights are dots on the line in the colour of the side they went to. Drakes, Soul, Elder, Baron, Herald, inhibitors and set plays are icons in a lane under it.
+     - **Hover:** a minute shows its lead and what happened in it.
+     - **Scale:** it covers only what has been played, at least 10k either way, so it gives nothing away.
    - **Set play.** A card for your set play shows whether it worked once it has had time to play out.
    - **Feed.** It lists the key moments, or everything on request.
 

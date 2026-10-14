@@ -816,3 +816,56 @@
   background: linear-gradient(135deg, transparent 46%, rgba(255, 90, 95, 0.85) 48%, rgba(255, 90, 95, 0.85) 52%, transparent 54%);
   pointer-events: none;
 }
+
+/* ---- the gold graph during a game ---- */
+
+.graph {
+  position: relative;
+  cursor: crosshair;
+}
+
+.graphPulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: graphPulse 1.8s ease-out infinite;
+}
+
+@keyframes graphPulse {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+.graphMark {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: #0b111c;
+  box-shadow: 0 0 10px color-mix(in srgb, currentColor 35%, transparent);
+  pointer-events: none;
+}
+
+.graphTip {
+  position: absolute;
+  top: 10px;
+  min-width: 150px;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(11, 17, 28, 0.92);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  pointer-events: none;
+}

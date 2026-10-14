@@ -23,3 +23,6 @@ Thumbs.db
 # Champion and role art from Data Dragon and CommunityDragon (npm run fetch:art)
 public/champions/
 public/roles/
+
+# Champion select music: your own audio files, see README
+public/music/

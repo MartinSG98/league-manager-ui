@@ -16,6 +16,7 @@ import type {
   BoardChoice, BoardEntry, Champion, GameRecord, GameView, LiveView, PlayChoice, PlayerLine, Role, ScoutingReport as ScoutReport, Side, SideView,
   Suggestion, Tactics, TimelineEvent,
 } from "../api/types";
+import { ChampSelectMusic } from "../components/ChampSelectMusic";
 import { GameIcon, type GameIconKind } from "../components/GameIcons";
 import { GameReport } from "../components/GameReport";
 import { ChampIcon, ChampPortrait, LeagueLogo, PlayerPhoto, RoleIcon, TeamLogo } from "../components/Media";
@@ -577,6 +578,7 @@ function ChampSelectStage({ view, onFinished }: { view: LiveView; onFinished: (i
 
   return (
     <Stack gap="md">
+      <ChampSelectMusic match={view.match} game={view.game} active={view.phase === "draft"} />
       <BanRow view={view} />
       <FearlessStrip view={view} />
       <Box className={classes.selectBody}>

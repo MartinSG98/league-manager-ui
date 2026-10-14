@@ -43,6 +43,21 @@ Text is Barlow, and titles and big numbers are Barlow Condensed. Each screen has
 
 Both public folders are git-ignored, about 42 MB together. Every image tries its local copy, then the CDN. If both fail, a fallback appears: the team tag on its colour, initials, or two letters for a champion. See [ADR 0006](docs/adr/0006-local-champion-art-and-esports-images.md).
 
+## Champion select music
+
+Champion select plays music from your own audio files. The game ships none: put the files in three git-ignored folders, named however you like (mp3, m4a, ogg, opus, webm, wav or flac).
+
+| Folder | Plays in |
+|---|---|
+| `public/music/splits/` | the regions' splits and playoffs |
+| `public/music/international/` | First Stand, MSI and Worlds |
+| `public/music/decider/` | game 5 of a best of five at 2-2, in any competition |
+
+- **Choosing.** Each champion select picks a track at random from its folder, never the one that folder played last when there is a choice. A reload in the middle of a select keeps its track.
+- **Playing.** The track fades in when the select starts, loops, and fades out when the select ends.
+- **Controls.** A pill in the bottom-left corner of champion select shows the track and mutes it or sets the volume. A music button in the top bar does the same anywhere and counts the tracks in each folder. If the browser blocks sound until a click, the pill shows a play button.
+- **How the folders are read.** The dev server lists them at `/music/index.json` on every request, so new files play from the next champion select. `vite build` writes the list into the build.
+
 ## Screens
 
 | Route | Screen |

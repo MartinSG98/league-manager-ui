@@ -8,6 +8,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { api } from "../api/client";
 import { BoardMeeting } from "../components/BoardMeeting";
+import { MusicControl } from "../components/ChampSelectMusic";
 import { CreateManager } from "../components/CreateManager";
 import { DrawPrompt } from "../components/DrawPrompt";
 import { JobOffers } from "../components/JobOffers";
@@ -163,6 +164,7 @@ export function CareerLayout() {
                 </UnstyledButton>
               </Tooltip>
             )}
+            <MusicControl />
             <Button
               h={52}
               color={urgent ? "gold" : "hextech"}

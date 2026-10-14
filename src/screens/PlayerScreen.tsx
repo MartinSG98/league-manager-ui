@@ -12,7 +12,7 @@ import { ShortlistButton } from "../components/ShortlistButton";
 import { TransferPanel } from "../components/TransferPanel";
 import { ChampIcon, PlayerPhoto, PlayerPortrait, RoleIcon, SplashBackdrop, TeamLogo } from "../components/Media";
 import { Empty, FormArrow, Loading, Meter, Ovr, Screen, Section, Stat } from "../components/Ui";
-import { ATTRIBUTE_NAMES, flag, longDate, money, ROLE_NAMES, signed, vars } from "../lib/format";
+import { ATTRIBUTE_NAMES, flag, longDate, money, ROLE_NAMES, shortDate, signed, vars } from "../lib/format";
 import { ATTRS, teamAverages } from "../lib/squad";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
@@ -105,6 +105,7 @@ export function PlayerScreen() {
                 <RoleIcon role={d.role} size={20} />
                 <Text className="eyebrow">{ROLE_NAMES[d.role]}</Text>
                 {d.franchise && <Text className={classes.franchise}>Franchise player</Text>}
+                {mine && career.franchise_choice && !d.retired && <MakeFranchise player={d.id} name={d.name} until={career.franchise_choice} />}
                 {d.retired && (
                   <Badge size="sm" color="gray" variant="light">
                     retired
@@ -559,5 +560,17 @@ function ScoutPanel({ player: d }: { player: PlayerDetail }) {
         </Stack>
       )}
     </Section>
+  );
+}
+
+/** While the club has no franchise player: make this one the face of the club. */
+function MakeFranchise({ player, name, until }: { player: string; name: string; until: string }) {
+  const { act, busy } = useCareer();
+  return (
+    <Tooltip label={`Name ${name} the franchise player by ${shortDate(until)}: not for sale unless a club bids twice his value, never released, kept on when the contract ends`} multiline w={280}>
+      <Button size="compact-xs" color="gold" disabled={busy} onClick={() => act({ type: "set_franchise", player })}>
+        Make franchise player
+      </Button>
+    </Tooltip>
   );
 }

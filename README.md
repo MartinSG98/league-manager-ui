@@ -70,19 +70,20 @@ Champion select plays music from your own audio files. The game ships none: put 
 | `/career/:id/me` | You, as Football Manager shows a manager: the profile and reputation (world and region stars), the nine attributes with who does each piece of the work, the record (series and games won, trophies, seasons), a reputation graph (the world in gold, and a line for each region, starting where you took a job there), a trophy cabinet, every season with each competition's record and finish, and every club with dates, each spell at a club counted on its own |
 | `/career/:id/squad` | Starting five as portrait cards with each player's two best attributes and weak spot; a team profile of attributes, condition or contracts side by side, coloured only where a player stands two points above or below the five; chemistry, tactics, lineup; under them the staff: a card for each seat with its share of the work and who does it (you, them, or Auto: the better one), and a card with your own attributes |
 | `/career/:id/team/:team` | Any other team's squad |
-| `/career/:id/player/:player` | Profile with photo and real name and a verdict from your analyst (or the shortlist report); condition and development; transfer bid or transfer list and contract talks; attributes as a radar against the team's five; four key numbers for this season or 2026, the rest on request; champion pool split into signature champions and the ones strong on this patch |
+| `/career/:id/player/:player` | Profile with photo and real name and a verdict from your analyst (or the shortlist report); while your club has no franchise player, a button that names this one; condition and development; transfer bid or transfer list and contract talks; attributes as a radar against the team's five; four key numbers for this season or 2026, the rest on request; champion pool split into signature champions and the ones strong on this patch |
 | `/career/:id/players` | Scouting: every player by region and role (free agents or rookies only), and every assistant coach and analyst |
 | `/career/:id/staff/:staff` | A coach or analyst: who they are, and talks to hire, extend or release them |
 | `/career/:id/match` | Match day, full window: the tale of the tape, champion select, the game played back minute by minute, each game's result and the series |
 | `/career/:id/matches/:match` | Series report: every game's picks, bans, scoreboard, gold graph and timeline |
 | `/career/:id/schedule` | Your matches and results |
 | `/career/:id/competitions` | The season as a strip of phases (splits and international events, winners' logos, the current one pulsing) with the chosen phase in detail: each league's winner and final, its top three and your place, or its holders and start; an event's champion, your status and next match, and its teams by region. Under it the season at a glance: a row per league, a column per split and event, with winners, leaders, and each league's teams and places at the events; a league opens its standings now, a cell that competition's |
+| `/career/:id/rankings` | Global Rankings, as LoL Esports publishes them: the six regions as cards (rank, strength, Elo and its change this season, best team) and every tier-one team by power score, with its change, for the world or one league |
 | `/career/:id/competitions/:comp` | Standings, brackets, Swiss records and results; every team name opens the team's page. After a Swiss round is drawn, its pairings can come out of the pots one by one |
 | `/career/:id/meta` | Champion tier list per role on the current patch and patch notes |
 | `/career/:id/training` | Scrim load, team focus areas, set plays to drill, every player's condition and own training, the analyst's review |
 | `/career/:id/transfers` | The transfer window: bids for your players, your bids, players who want to talk, your transfer list, every move, the shortlist, and the budget slider |
 | `/career/:id/club` | Board confidence and job security, objectives, the board's reviews, the club's world and region stars and your reputation, the league by reputation, finances and the budget slider (salary budget against the bank, as in Football Manager) |
-| `/career/:id/jobs` | Job center: head coach jobs at clubs that sacked their coach, with your manager reputation; each club links to its team page; apply, or take or decline an offer |
+| `/career/:id/jobs` | Job center: head coach jobs at clubs that sacked their coach, with your manager reputation; filters by league, world stars and reach (offers always show); each club links to its team page; apply, or take or decline an offer |
 | `/career/:id/inbox` | News, scouting reports, analyst reviews, patch notes and previews, draft, contract and transfer messages, with the decisions they ask for |
 
 The top bar shows:
@@ -93,7 +94,7 @@ The top bar shows:
 - the bank, but only while it is in debt
 - the champion select music: on or off, the volume, and the tracks in each folder
 
-The menu starts with Home, Me and Inbox, plus the draft room or match day when they apply. Then it groups Team (Squad, Training), Club (Transfers, Board & finances, Job center) and League (Schedule, Competitions, Scouting, Meta & patches).
+The menu starts with Home, Me and Inbox, plus the draft room or match day when they apply. Then it groups Team (Squad, Training), Club (Transfers, Board & finances, Job center) and League (Schedule, Competitions, Global Rankings, Scouting, Meta & patches).
 
 The **Continue** button in the top bar always does the next sensible thing, and its second line says where that leads:
 - While a decision blocks the career, it names it: Create your manager, Board meeting, or Choose a club, which brings the job offers back.

@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Modal, Stack, Table, Text } from "@mantine/core";
+import { Badge, Button, Group, Modal, SegmentedControl, Select, Stack, Switch, Table, Text } from "@mantine/core";
 import { IconBriefcase } from "@tabler/icons-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -13,6 +13,7 @@ import { Empty } from "./Ui";
 /**
  * AI clubs looking for a head coach. A club may offer you the job on its own; you can also apply.
  * Taking an offer means leaving your club, so it asks first. Each club links to its team page.
+ * The list filters by league, by world stars and to the clubs in reach; offers always show.
  */
 function reachText(reach: number | { region: number; world: number; region_name: string }): string {
   const upTo = (n: number) => (n >= 5 ? "every club" : `clubs up to ${n.toFixed(1)} stars`);
@@ -23,14 +24,52 @@ function reachText(reach: number | { region: number; world: number; region_name:
 export function Vacancies({ vacancies, reach }: { vacancies: Vacancy[]; reach: number | { region: number; world: number; region_name: string } }) {
   const { career, act, busy } = useCareer();
   const [taking, setTaking] = useState<Vacancy | null>(null);
+  const [league, setLeague] = useState<string | null>(null);
+  const [stars, setStars] = useState("0");
+  const [reachOnly, setReachOnly] = useState(false);
   if (!vacancies.length) {
     return <Empty>No club is looking for a head coach right now. Clubs that sack theirs appear here.</Empty>;
   }
+  const leagues = [...new Set(vacancies.map((v) => v.league_name))].sort();
+  const shown = vacancies.filter(
+    (v) => !!v.offer_until || ((!league || v.league_name === league) && v.world_stars >= Number(stars) && (!reachOnly || v.in_reach)),
+  );
   return (
     <>
+      <Group gap="md" mb="sm" wrap="wrap">
+        <Select
+          size="xs"
+          w={150}
+          placeholder="All leagues"
+          clearable
+          value={league}
+          onChange={setLeague}
+          data={leagues}
+          aria-label="League"
+        />
+        <Group gap={6} wrap="nowrap">
+          <Text fz="xs" c="dimmed">
+            World stars
+          </Text>
+          <SegmentedControl
+            size="xs"
+            value={stars}
+            onChange={setStars}
+            data={[
+              { value: "0", label: "Any" },
+              { value: "2", label: "2+" },
+              { value: "3", label: "3+" },
+              { value: "4", label: "4+" },
+              { value: "5", label: "5" },
+            ]}
+          />
+        </Group>
+        <Switch size="xs" label="In reach only" checked={reachOnly} onChange={(e) => setReachOnly(e.currentTarget.checked)} />
+      </Group>
+      {shown.length === 0 && <Empty>No club looking for a coach matches these filters.</Empty>}
       <Table verticalSpacing={6}>
         <Table.Tbody>
-          {vacancies.map((v) => (
+          {shown.map((v) => (
             <Table.Tr key={v.team.id}>
               <Table.Td>
                 <Group gap="sm" wrap="nowrap">

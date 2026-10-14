@@ -1,6 +1,6 @@
 import type {
   Action, ActionResult, BoardView, CareerView, Catalog, CompetitionRow, CompetitionView, DraftView, GameView, LiveView,
-  ManagerView, MatchSummary, MatchView, MetaView, NegotiationView, PlayerDetail, PlayerRow, Role, SaveRow, SquadView, StaffDetail,
+  ManagerView, MatchSummary, MatchView, MetaView, NegotiationView, PlayerDetail, PlayerRow, PowerView, Role, SaveRow, SquadView, StaffDetail,
   StaffKind, StaffRow, TeamPreview,
   ShortlistRow, TrainingView, TransfersView,
 } from "./types";
@@ -76,6 +76,7 @@ export const api = {
   },
   staffMember: (id: string, staff: string) => request<StaffDetail>(`${career(id)}/staff/${staff}`),
   competitions: (id: string) => request<CompetitionRow[]>(`${career(id)}/competitions`),
+  power: (id: string) => request<PowerView>(`${career(id)}/power`),
   competition: (id: string, comp: string) => request<CompetitionView>(`${career(id)}/competitions/${comp}`),
   schedule: (id: string, team?: string) =>
     request<MatchSummary[]>(`${career(id)}/schedule${team ? `?team=${team}` : ""}`),

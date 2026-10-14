@@ -1,0 +1,81 @@
+/* Global Rankings: the regions as cards, every team in one table. */
+
+.regions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+
+.region {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.region[data-mine] {
+  border-color: color-mix(in srgb, var(--team) 70%, transparent);
+  box-shadow: inset 0 3px 0 var(--team);
+}
+
+.rank {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--gold-bright);
+}
+
+.bar {
+  height: 6px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--gold);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 90px 70px 70px;
+  gap: 12px;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 14px;
+}
+
+.row[data-head] {
+  min-height: 30px;
+  border-top: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+.row[data-mine] {
+  background: color-mix(in srgb, var(--team) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--team);
+}
+
+@media (max-width: 600px) {
+  .row {
+    grid-template-columns: 28px minmax(0, 1fr) 56px 52px;
+  }
+
+  .row > :nth-child(3) {
+    display: none;
+  }
+}

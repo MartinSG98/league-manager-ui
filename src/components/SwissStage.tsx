@@ -52,16 +52,19 @@ const NEW_POOL_MS = 1800;
 /**
  * The Swiss stage the way broadcasts draw it: a column per round, a pool per record, and the teams
  * that reach three wins or three defeats leaving at the top and the bottom. With `draw` set, that
- * round's pairings come out of the pots one team at a time.
+ * round's pairings come out of the pots one team at a time. A `sealed` round, drawn but not yet
+ * watched or skipped, keeps its pairings hidden, so nothing behind the draw prompt gives them away.
  */
 export function SwissStage({
   stage,
   draw,
+  sealed = null,
   onWatch,
   onDrawDone,
 }: {
   stage: StageView;
   draw: number | null;
+  sealed?: number | null;
   onWatch: (round: number) => void;
   onDrawDone: () => void;
 }) {
@@ -82,6 +85,7 @@ export function SwissStage({
 
   const slot = new Map(order.map((m, i) => [m.id, i]));
   const revealed = (m: MatchSummary, side: 0 | 1) => {
+    if (draw === null && sealed !== null && roundOf(m) === sealed) return false;
     const i = slot.get(m.id);
     return i === undefined || 2 * i + side < shown;
   };

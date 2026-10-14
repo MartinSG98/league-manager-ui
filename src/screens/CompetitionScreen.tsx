@@ -83,6 +83,7 @@ export function CompetitionScreen() {
           <SwissStage
             stage={stage}
             draw={draw}
+            sealed={career.draw?.competition === c.id ? career.draw.round : null}
             onWatch={(round) => setParams({ draw: String(round) }, { replace: true })}
             onDrawDone={() => setParams({}, { replace: true })}
           />

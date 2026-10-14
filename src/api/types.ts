@@ -202,6 +202,38 @@ export interface InboxMessage {
 }
 
 /** A Swiss round drawn and not played yet, while its message is unread. */
+/** A region in the global power rankings: its Elo, and its strength (100 for the strongest). */
+export interface PowerRegion {
+  rank: number;
+  region: string;
+  league: string;
+  name: string;
+  logo: string | null;
+  elo: number;
+  /** Elo gained or lost since the season began. */
+  change: number;
+  strength: number;
+  best: TeamRef | null;
+}
+
+export interface PowerTeam {
+  rank: number;
+  team: TeamRef;
+  region: string;
+  league: string;
+  /** The team's Elo blended with its region's, 80 to 20. */
+  score: number;
+  elo: number;
+  change: number;
+  mine: boolean;
+}
+
+export interface PowerView {
+  season: number;
+  regions: PowerRegion[];
+  teams: PowerTeam[];
+}
+
 export interface PendingDraw {
   message: number;
   competition: string;
@@ -361,6 +393,8 @@ export interface CareerView {
   inbox: InboxMessage[];
   season_over: boolean;
   draw: PendingDraw | null;
+  /** While the club has no franchise player (sold or retired): the day by which you name one. */
+  franchise_choice: string | null;
   /** The players on the shortlist. */
   shortlist: string[];
   board: {
@@ -1058,7 +1092,8 @@ export type Action =
   | { type: "adjust_budget"; budget: number }
   | { type: "talk"; conversation: number; choice: TalkChoice }
   | { type: "create_manager"; background: string; attributes: Record<string, number>; name?: string; country?: string | null }
-  | { type: "set_duty"; attribute: string; who: DutyChoice };
+  | { type: "set_duty"; attribute: string; who: DutyChoice }
+  | { type: "set_franchise"; player: string };
 
 // ---------- the manager ----------
 

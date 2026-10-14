@@ -1,7 +1,7 @@
 import { AppShell, Badge, Box, Button, Group, NavLink, Stack, Text, Tooltip, UnstyledButton } from "@mantine/core";
 import {
   IconArrowLeft, IconBarbell, IconBriefcase, IconBuildingSkyscraper, IconCalendar, IconChartBar, IconHome, IconMail, IconPlayerPlayFilled,
-  IconSwords, IconTransfer, IconTrophy, IconUser, IconUserSearch, IconUsersGroup, IconWand,
+  IconSwords, IconTransfer, IconTrophy, IconUser, IconUserSearch, IconUsersGroup, IconWand, IconWorld,
 } from "@tabler/icons-react";
 import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -102,6 +102,7 @@ export function CareerLayout() {
       items: [
         { to: `${base}/schedule`, label: "Schedule", icon: IconCalendar },
         { to: `${base}/competitions`, label: "Competitions", icon: IconTrophy },
+        { to: `${base}/rankings`, label: "Global Rankings", icon: IconWorld },
         { to: `${base}/players`, label: "Scouting", icon: IconUserSearch },
         { to: `${base}/meta`, label: "Meta & patches", icon: IconChartBar },
       ],

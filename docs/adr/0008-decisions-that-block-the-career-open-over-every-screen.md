@@ -1,7 +1,7 @@
 # 0008. Decisions that block the career open over every screen
 
 Date: 2026-10-12
-Status: Accepted
+Status: Accepted, amended by [0010](0010-creating-the-manager-blocks-the-career-first.md)
 
 ## Context
 

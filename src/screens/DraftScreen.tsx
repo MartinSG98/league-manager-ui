@@ -44,8 +44,11 @@ function DraftRoom({ d }: { d: DraftView }) {
   const [paused, setPaused] = useState(false);
   const league = catalog.league[d.league];
 
-  // The team on the clock thinks for a moment, then the server makes its pick.
-  const waiting = !d.my_turn && !d.done && career.phase === "draft";
+  // The team on the clock thinks for a moment, then the server makes its pick. Not while the manager
+  // is still to be created or the board waits to meet: the server makes no pick then, and the clock
+  // would spend this pick's one try on nothing.
+  const blocked = career.profile === null || career.board.meeting;
+  const waiting = !d.my_turn && !d.done && career.phase === "draft" && !blocked;
   const key = String(d.number);
   const thinking = useThinkingTime(key, ...AI_PICK_SECONDS);
   const left = useClock(key, thinking, waiting && !paused);

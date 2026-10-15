@@ -1,10 +1,25 @@
 # League Manager UI
 
+![League Manager](docs/screenshots/title.jpg)
+
 React client for League Manager, Football Manager for League of Legends esports. You take over a tier-one team from the 2026 season and keep its franchise player. The rest of your roster comes from a draft of every pro in the region. Then you run it season after season: three splits, First Stand, MSI and Worlds, a new patch every two weeks, champion select in every game your team plays, a weekly training plan, a board that judges you on the objectives you agreed, and a transfer window every off-season.
 
 This repo only draws what the API returns. The game engine, all rules and the saved careers live in [league-manager-backend](https://github.com/MartinSG98/league-manager-backend), which has to run for the client to work.
 
 UI decisions are recorded in [docs/adr](docs/adr/README.md).
+
+## Screenshots
+
+From a career in its third season, at Top Esports in the LPL Split 1 2029 playoffs.
+
+| | |
+|---|---|
+| ![Choose your team](docs/screenshots/new-career.png) **Choose your team.** 56 tier-one teams in six leagues. You keep the franchise player, and the rest of the roster goes into the draft. | ![Home](docs/screenshots/home.png) **Home.** The next match with the analyst's read, the split so far, the race and this week's agenda. |
+| ![Squad](docs/screenshots/squad.png) **Squad.** Your five with their strengths, form and morale, and a heatmap of the team's profile. | ![Champion select](docs/screenshots/champion-select.png) **Champion select.** On a clock, in tournament order, with fearless draft and the suggestions of whoever drafts. |
+| ![Set plays](docs/screenshots/set-plays.png) **Set plays.** Call one play for the game. Some suit the comp you drafted better than others. | ![Live game](docs/screenshots/live-game.png) **The game.** Minute by minute, with the gold difference, objectives and the key moments. |
+| ![After the game](docs/screenshots/post-game.png) **After the game.** Why you won or lost, the player of the game and every player's rating. | ![Competitions](docs/screenshots/competitions.png) **Competitions.** The season's splits and international events, and every league at once. |
+| ![Global rankings](docs/screenshots/global-rankings.png) **Global rankings.** Team and region Elo, as in Riot's Global Power Rankings. A region's strength weighs reputation and sets the Worlds Swiss pots. | ![Manager](docs/screenshots/manager.png) **You.** Your attributes, who does each job, your reputation in the world and in your region, and your record. |
+| ![Inbox](docs/screenshots/inbox.png) **Inbox.** Scouting reports, analyst reviews, patch notes, news and offers. | |
 
 ## Running locally
 
@@ -198,4 +213,4 @@ scripts/fetch-art.mjs   champion and role art download
 
 State is plain React. The career summary lives in one context and is replaced after every action. Each screen loads its own view and reloads when the career's revision changes. The Competitions screen fetches each competition it shows in detail once per action, keyed by its id, and the phase cards and the season table share it.
 
-League Manager is a fan project. It is not affiliated with or endorsed by Riot Games. League of Legends and all related names are trademarks of Riot Games. Logos belong to their teams and leagues.
+League Manager was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project. League of Legends and all related names are trademarks of Riot Games. Logos belong to their teams and leagues.

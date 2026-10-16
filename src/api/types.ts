@@ -178,6 +178,20 @@ export interface PlayerDetail extends PlayerRow {
   games_2026: number;
   pool: PoolChampion[];
   season: PlayerSeason;
+  /** One of your players while the club has a franchise player: can they take over, and does the board ask why. */
+  franchise_change?: FranchiseChange | null;
+}
+
+export type FranchiseReason = "future" | "best" | "fans" | "past_best";
+
+export interface FranchiseChange {
+  /** Why the board will not hear of it now, or null. */
+  problem: string | null;
+  /** The board trusts the manager (Secure) and agrees without asking why. */
+  trusted: boolean;
+  /** The franchise player now. */
+  current: string;
+  reasons: { id: FranchiseReason; text: string }[];
 }
 
 // ---------- career ----------
@@ -1093,7 +1107,8 @@ export type Action =
   | { type: "talk"; conversation: number; choice: TalkChoice }
   | { type: "create_manager"; background: string; attributes: Record<string, number>; name?: string; country?: string | null }
   | { type: "set_duty"; attribute: string; who: DutyChoice }
-  | { type: "set_franchise"; player: string };
+  | { type: "set_franchise"; player: string }
+  | { type: "change_franchise"; player: string; reason?: FranchiseReason | null };
 
 // ---------- the manager ----------
 

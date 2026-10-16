@@ -1,10 +1,11 @@
-import { Badge, Box, Button, Group, Paper, Progress, SegmentedControl, SimpleGrid, Stack, Text, Tooltip } from "@mantine/core";
-import { IconBinoculars } from "@tabler/icons-react";
+import { Badge, Box, Button, Group, Modal, Paper, Progress, Radio, SegmentedControl, SimpleGrid, Stack, Text, Tooltip } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { IconBinoculars, IconCrown } from "@tabler/icons-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
-import type { PlayerDetail, PoolChampion } from "../api/types";
+import type { FranchiseChange, FranchiseReason, PlayerDetail, PoolChampion } from "../api/types";
 import { AttributeRadar } from "../components/AttributeRadar";
 import { ContractPanel } from "../components/ContractPanel";
 import { PlayerReport } from "../components/PlayerReport";
@@ -106,6 +107,7 @@ export function PlayerScreen() {
                 <Text className="eyebrow">{ROLE_NAMES[d.role]}</Text>
                 {d.franchise && <Text className={classes.franchise}>Franchise player</Text>}
                 {mine && career.franchise_choice && !d.retired && <MakeFranchise player={d.id} name={d.name} until={career.franchise_choice} />}
+                {mine && d.franchise_change && !d.retired && <ChangeFranchise player={d.id} name={d.name} change={d.franchise_change} />}
                 {d.retired && (
                   <Badge size="sm" color="gray" variant="light">
                     retired
@@ -560,6 +562,72 @@ function ScoutPanel({ player: d }: { player: PlayerDetail }) {
         </Stack>
       )}
     </Section>
+  );
+}
+
+/** While the club has a franchise player: ask the board to make this one the face of the club instead. */
+function ChangeFranchise({ player, name, change }: { player: string; name: string; change: FranchiseChange }) {
+  const { act, busy } = useCareer();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState<FranchiseReason | null>(null);
+
+  async function ask() {
+    const result = await act({ type: "change_franchise", player, reason: change.trusted ? null : reason });
+    if (!result) return;
+    setOpen(false);
+    // The board's answer is the newest board message (the inbox comes newest first).
+    const answer = result.career.inbox.find((m) => m.kind === "board");
+    const agreed = answer?.subject === `${name} is the new franchise player`;
+    notifications.show({ color: agreed ? "teal" : "orange", title: answer?.subject ?? "The board has answered", message: answer?.body });
+  }
+
+  return (
+    <>
+      <Tooltip label={change.problem ?? `Ask the board to make ${name} the franchise player instead of ${change.current}`} multiline w={280}>
+        <span>
+          <Button size="compact-xs" variant="light" color="gold" leftSection={<IconCrown size={12} />} disabled={busy || !!change.problem} onClick={() => setOpen(true)}>
+            Make franchise player
+          </Button>
+        </span>
+      </Tooltip>
+      {open && (
+        <Modal opened onClose={() => setOpen(false)} centered title={<Text fw={800}>A new franchise player</Text>}>
+          <Stack gap="md">
+            <Text fz="sm">
+              {name} would take over from {change.current} as the face of the club: not for sale unless a club bids twice his value, never
+              released, kept on when the contract runs out. {change.current} would be an ordinary member of the squad.
+            </Text>
+            {change.trusted ? (
+              <Text fz="sm" c="teal.4">
+                The board trusts your judgement and will agree.
+              </Text>
+            ) : (
+              <>
+                <Text fz="sm">
+                  The board wants to know why. It weighs your answer against the facts and its confidence in you. If it says no, it will not hear of it
+                  again this season, and an answer the facts do not bear out costs you some of its confidence.
+                </Text>
+                <Radio.Group value={reason} onChange={(v) => setReason(v as FranchiseReason)}>
+                  <Stack gap="xs">
+                    {change.reasons.map((r) => (
+                      <Radio key={r.id} value={r.id} label={r.text} />
+                    ))}
+                  </Stack>
+                </Radio.Group>
+              </>
+            )}
+            <Group justify="flex-end">
+              <Button variant="default" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button loading={busy} disabled={!change.trusted && !reason} onClick={ask}>
+                Ask the board
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+      )}
+    </>
   );
 }
 

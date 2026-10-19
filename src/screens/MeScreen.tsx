@@ -1,5 +1,5 @@
 import { Badge, Group, Stack, Table, Text } from "@mantine/core";
-import { IconTrophy } from "@tabler/icons-react";
+import { IconCrown, IconTrophy } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 
 import { api } from "../api/client";
@@ -7,7 +7,7 @@ import type { CompetitionRecordView, ManagerView } from "../api/types";
 import { TeamLogo } from "../components/Media";
 import { ClubStars, Stars } from "../components/Stars";
 import { AttrBar, Empty, Loading, PageHeader, Screen, Section } from "../components/Ui";
-import { flag, longDate, ordinal, shortDate } from "../lib/format";
+import { flag, initialsOf, longDate, ordinal, shortDate } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import classes from "./MeScreen.module.css";
@@ -18,7 +18,13 @@ const GROUPS: { title: string; seat: "coach" | "analyst" | null }[] = [
   { title: "Management", seat: null },
 ];
 
-const TROPHY_COLOR: Record<string, string> = { WORLDS: "#f0c64a", MSI: "#0ac8b9", FST: "#c8aa6e", league: "var(--gold-bright)" };
+const TROPHY_COLOR: Record<string, string> = {
+  WORLDS: "#f0c64a",
+  MSI: "#0ac8b9",
+  FST: "#c8aa6e",
+  league: "var(--gold-bright)",
+  golden: "#ffd76a",
+};
 
 const pct = ([w, l]: [number, number]) => (w + l ? `${Math.round((100 * w) / (w + l))}%` : "–");
 const wl = ([w, l]: [number, number]) => `${w}–${l}`;
@@ -47,12 +53,7 @@ export function MeScreen() {
         <Empty>Create your manager first.</Empty>
       </Screen>
     );
-  const initials = v.name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = initialsOf(v.name);
   const country = countryName(v.profile.country);
   const first = v.record.clubs[v.record.clubs.length - 1]?.start;
 
@@ -171,8 +172,9 @@ function Attributes({ v }: { v: ManagerView }) {
 
 function Trophies({ v }: { v: ManagerView }) {
   const list = v.record.trophies;
+  const titles = list.filter((t) => t.kind !== "golden").length;
   return (
-    <Section title="Trophy cabinet" right={<Text fz="xs" c="dimmed">{list.length ? `${list.length} won` : null}</Text>}>
+    <Section title="Trophy cabinet" right={<Text fz="xs" c="dimmed">{titles ? `${titles} won` : null}</Text>}>
       {list.length === 0 ? (
         <Text fz="sm" c="dimmed">
           No trophies yet. The first one is the hardest.
@@ -181,10 +183,19 @@ function Trophies({ v }: { v: ManagerView }) {
         <div className={classes.cabinet}>
           {list.map((t, i) => (
             <div key={i} className={classes.trophy} data-kind={t.kind}>
-              <IconTrophy size={34} color={TROPHY_COLOR[t.kind] ?? TROPHY_COLOR.league} stroke={1.6} />
-              <Text fw={800} fz="sm" lh={1.2}>
+              {t.kind === "golden" ? (
+                <IconCrown size={38} color={TROPHY_COLOR.golden} stroke={1.6} />
+              ) : (
+                <IconTrophy size={34} color={TROPHY_COLOR[t.kind] ?? TROPHY_COLOR.league} stroke={1.6} />
+              )}
+              <Text fw={800} fz={t.kind === "golden" ? "md" : "sm"} lh={1.2} className={t.kind === "golden" ? classes.goldenName : undefined}>
                 {t.name}
               </Text>
+              {t.kind === "golden" && (
+                <Text fz="xs" c="dimmed">
+                  Every trophy of the season
+                </Text>
+              )}
               <Group gap={6} justify="center">
                 {t.team && <TeamLogo team={t.team} size={18} />}
                 <Text fz="xs" c="dimmed">
@@ -257,10 +268,10 @@ function Seasons({ v }: { v: ManagerView }) {
               <Table.Td ta="right">{pct(s.series)}</Table.Td>
               <Table.Td>
                 {s.titles.length > 0 ? (
-                  <Group gap={4}>
-                    <IconTrophy size={14} color="var(--gold-bright)" />
+                  <Group gap={4} wrap="nowrap">
+                    {s.golden ? <IconCrown size={14} color={TROPHY_COLOR.golden} /> : <IconTrophy size={14} color="var(--gold-bright)" />}
                     <Text fz="sm" fw={700} c="gold.4">
-                      {s.titles.length} {s.titles.length === 1 ? "title" : "titles"}
+                      {s.golden ? "Golden Road" : `${s.titles.length} ${s.titles.length === 1 ? "title" : "titles"}`}
                     </Text>
                   </Group>
                 ) : (

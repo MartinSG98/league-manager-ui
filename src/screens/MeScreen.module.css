@@ -93,6 +93,28 @@
   background: linear-gradient(180deg, rgba(240, 198, 74, 0.25), var(--surface) 75%);
 }
 
+/* The Golden Road: every trophy of a season. Twice as wide, and it shines. */
+.trophy[data-kind="golden"] {
+  grid-column: span 2;
+  justify-content: center;
+  border: 1px solid #ffd76a;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 215, 106, 0.35), transparent 70%),
+    linear-gradient(180deg, rgba(240, 198, 74, 0.18), var(--surface) 80%);
+  box-shadow: 0 0 22px rgba(255, 215, 106, 0.22), inset 0 0 0 1px rgba(255, 215, 106, 0.15);
+}
+
+.goldenName {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, #f0c64a, #fff1b8 50%, #f0c64a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .compRow td {
   border-top: 0 !important;
   padding-top: 2px !important;

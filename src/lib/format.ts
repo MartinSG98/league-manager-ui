@@ -111,6 +111,20 @@ export function ordinal(n: number): string {
 }
 
 /** Regional indicator flag from a two-letter country code, or the code itself when it has none. */
+/** Two letters for an avatar: the first and last names' first letters, skipping quotes and other marks,
+ * so Martin "MartinSG" Georgiev is MG. */
+export function initialsOf(name: string): string {
+  const words = name
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, ""))
+    .filter(Boolean);
+  const picked = words.length > 1 ? [words[0], words[words.length - 1]] : words;
+  return picked
+    .map((w) => [...w][0])
+    .join("")
+    .toUpperCase();
+}
+
 export function flag(code: string | null): string {
   if (!code || code.length !== 2) return code ?? "";
   const base = 0x1f1e6;

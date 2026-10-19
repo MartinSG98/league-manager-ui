@@ -1159,8 +1159,19 @@ export interface ManagerRecord {
   since: string | null;
   totals: { series: [number, number]; games: [number, number]; titles: number; seasons: number };
   /** Newest first; the current season is counted from its matches so far. */
-  seasons: { season: number; current: boolean; teams: TeamRef[]; series: [number, number]; games: [number, number]; titles: string[]; competitions: CompetitionRecordView[] }[];
-  trophies: { name: string; kind: CompetitionRecordView["kind"]; season: number; team: TeamRef | null }[];
+  seasons: {
+    season: number;
+    current: boolean;
+    teams: TeamRef[];
+    series: [number, number];
+    games: [number, number];
+    titles: string[];
+    /** Every trophy of the season: all three splits, First Stand, MSI and Worlds. */
+    golden?: boolean;
+    competitions: CompetitionRecordView[];
+  }[];
+  /** Newest first. A "golden" entry is the Golden Road of a season, not a title of its own. */
+  trophies: { name: string; kind: CompetitionRecordView["kind"] | "golden"; season: number; team: TeamRef | null }[];
   clubs: { team: TeamRef | null; start: string; end: string | null; left: "" | "moved" | "sacked"; series: [number, number]; games: [number, number]; titles: number }[];
   /** [day, world, region's reputation, the region's league] each time it changed; the oldest entries have the world alone. */
   reputation_log: [string, number, number?, string?][];

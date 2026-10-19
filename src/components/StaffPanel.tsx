@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { api } from "../api/client";
 import type { Duty, DutyChoice, ManagerView, StaffRow, TeamStaff } from "../api/types";
-import { STAFF_ATTRIBUTES, STAFF_KIND_NAMES } from "../lib/format";
+import { initialsOf, STAFF_ATTRIBUTES, STAFF_KIND_NAMES } from "../lib/format";
 import { useApi } from "../lib/useApi";
 import { useCareer } from "../state/career";
 import { PlayerPhoto } from "./Media";
@@ -112,12 +112,7 @@ function You({ v }: { v: ManagerView }) {
   const { career } = useCareer();
   const own = v.attributes.filter((a) => !a.seat);
   const doing = v.duties.filter((d) => d.who === "manager").map((d) => STAFF_ATTRIBUTES[d.attribute]?.name ?? d.attribute);
-  const initials = v.name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = initialsOf(v.name);
   return (
     <div className={classes.card} data-you>
       <div className={classes.head}>
